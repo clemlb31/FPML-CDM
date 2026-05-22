@@ -61,7 +61,7 @@ class DataDrivenValidationTest {
         }
     }
 
-    @ParameterizedTest(name = "{0}/{1}")
+    @ParameterizedTest(name = "{0}: {1}")
     @MethodSource("pairs")
     void semanticallyEqual(String category, Path xml, Path expectedJson) throws Exception {
         assertTrue(Files.exists(expectedJson),

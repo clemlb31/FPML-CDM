@@ -40,6 +40,15 @@ public final class SemanticDiff {
      *    Java model has no setter for it, so it cannot be produced via the standard builders. */
     private static final Set<String> DROPPED_ANYWHERE = Set.of("globalReference", "assetType");
 
+    /** Fields the reference dataset serialises as a single-element JSON array but the CDM 6.19.0
+     *  Java model exposes as a singular scalar (no list accessor). We unwrap to enable equality. */
+    private static final Set<String> UNWRAP_SINGLE_ARRAY = Set.of("stubPeriodType");
+
+    /** JSON-only wrapper objects in the reference that the CDM 6.19.0 Java model omits:
+     *  the wrapper carries no fields of its own — it just discriminates a choice. Its single
+     *  child is hoisted up one level so the JSON path matches what our builders emit. */
+    private static final Set<String> HOIST_WRAPPER = Set.of("unscheduledTransfer");
+
     private SemanticDiff() {}
 
     public static Result compare(JsonNode expected, JsonNode actual) {
@@ -71,8 +80,19 @@ public final class SemanticDiff {
                     } else {
                         e.setValue(normalise(cleaned));
                     }
+                } else if (UNWRAP_SINGLE_ARRAY.contains(e.getKey())
+                        && e.getValue().isArray() && e.getValue().size() == 1) {
+                    e.setValue(normalise(e.getValue().get(0)));
                 } else {
                     e.setValue(normalise(e.getValue()));
+                }
+            }
+            // Hoist wrapper children: e.g. transferExpression.unscheduledTransfer.{x} → transferExpression.{x}
+            for (String wrapper : HOIST_WRAPPER) {
+                JsonNode child = obj.get(wrapper);
+                if (child != null && child.isObject()) {
+                    obj.remove(wrapper);
+                    child.fields().forEachRemaining(f -> obj.set(f.getKey(), f.getValue()));
                 }
             }
         } else if (node.isArray()) {
