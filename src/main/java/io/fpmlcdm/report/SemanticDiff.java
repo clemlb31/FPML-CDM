@@ -31,6 +31,15 @@ public final class SemanticDiff {
     /** Keys removed everywhere (their content cannot be reproduced deterministically). */
     private static final Set<String> DROPPED_META_KEYS = Set.of("globalKey");
 
+    /** Field names dropped *anywhere they occur*, not just inside meta. They cannot be reproduced
+     *  without the Regnosys content-hash algorithm.
+     *
+     *  - globalReference: content-hash of target object
+     *  - assetType: appears in the reference CDM JSONs but is not a field on
+     *    {@code FloatingRateIndex}/{@code IndexBase}/{@code AssetBase} in CDM 6.19.0 — the CDM
+     *    Java model has no setter for it, so it cannot be produced via the standard builders. */
+    private static final Set<String> DROPPED_ANYWHERE = Set.of("globalReference", "assetType");
+
     private SemanticDiff() {}
 
     public static Result compare(JsonNode expected, JsonNode actual) {
@@ -53,7 +62,9 @@ public final class SemanticDiff {
             Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
             while (it.hasNext()) {
                 Map.Entry<String, JsonNode> e = it.next();
-                if (e.getKey().equals("meta")) {
+                if (DROPPED_ANYWHERE.contains(e.getKey())) {
+                    it.remove();
+                } else if (e.getKey().equals("meta")) {
                     JsonNode cleaned = stripDroppedKeys(e.getValue().deepCopy());
                     if (cleaned == null || (cleaned.isObject() && cleaned.size() == 0)) {
                         it.remove();

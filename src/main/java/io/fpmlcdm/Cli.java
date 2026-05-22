@@ -127,7 +127,15 @@ public class Cli implements Callable<Integer> {
      */
     private Path locateReference(Path xml) {
         if (validate == null) return null;
-        String rel = input.relativize(xml).toString().replace("/fpml/", "/cdm/");
+        String rel;
+        if (Files.isDirectory(input)) {
+            rel = input.relativize(xml).toString().replace("/fpml/", "/cdm/");
+        } else {
+            // Single-file input — assume the xml lives under .../fpml/<name>.xml
+            // and the matching ref is .../cdm/<name>.json relative to validate.
+            String base = xml.getFileName().toString().replaceFirst("\\.xml$", "");
+            rel = "cdm/" + base + ".json";
+        }
         if (!rel.endsWith(".json")) rel = rel.replaceFirst("\\.xml$", ".json");
         return validate.resolve(rel);
     }
