@@ -1,6 +1,11 @@
-.env
-__pycache__/
+*.class
+*.iml
 *.pyc
 *.pyo
+.DS_Store
+.env
+.idea/
 .venv/
+__pycache__/
+target/
 venv/
