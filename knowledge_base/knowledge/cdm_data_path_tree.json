@@ -1,0 +1,1678 @@
+{
+  "trade": {
+    "product": {
+      "taxonomy": {
+        "source": null,
+        "productQualifier": null,
+        "value": {
+          "name": {
+            "value": null,
+            "meta": {
+              "scheme": null
+            }
+          }
+        },
+        "primaryAssetClass": {
+          "value": null
+        }
+      },
+      "economicTerms": {
+        "payout": {
+          "InterestRatePayout": {
+            "payerReceiver": {
+              "payer": null,
+              "receiver": null
+            },
+            "priceQuantity": {
+              "quantitySchedule": {
+                "address": {
+                  "scope": null,
+                  "value": null
+                }
+              },
+              "meta": {
+                "globalKey": null
+              },
+              "quantityReference": {
+                "externalReference": null
+              },
+              "quantityMultiplier": {
+                "fxLinkedNotionalSchedule": {
+                  "varyingNotionalCurrency": {
+                    "value": null
+                  },
+                  "varyingNotionalFixingDates": {
+                    "periodMultiplier": null,
+                    "period": null,
+                    "meta": {
+                      "globalKey": null
+                    },
+                    "dayType": null,
+                    "businessDayConvention": null,
+                    "businessCenters": {
+                      "businessCenter": {
+                        "value": null
+                      },
+                      "meta": {
+                        "globalKey": null
+                      }
+                    },
+                    "dateRelativeTo": {
+                      "globalReference": null,
+                      "externalReference": null
+                    }
+                  },
+                  "fxSpotRateSource": {
+                    "primarySource": {
+                      "sourceProvider": {
+                        "value": null
+                      }
+                    }
+                  },
+                  "fixingTime": {
+                    "hourMinuteTime": null,
+                    "businessCenter": {
+                      "value": null
+                    }
+                  },
+                  "varyingNotionalInterimExchangePaymentDates": {
+                    "periodMultiplier": null,
+                    "period": null,
+                    "meta": {
+                      "globalKey": null
+                    },
+                    "businessDayConvention": null,
+                    "dateRelativeTo": {
+                      "globalReference": null,
+                      "externalReference": null
+                    }
+                  }
+                }
+              }
+            },
+            "rateSpecification": {
+              "FloatingRateSpecification": {
+                "rateOption": {
+                  "address": {
+                    "scope": null,
+                    "value": null
+                  }
+                },
+                "meta": {
+                  "globalKey": null
+                },
+                "finalRateRounding": {
+                  "roundingDirection": null,
+                  "precision": null
+                },
+                "spreadSchedule": {
+                  "price": {
+                    "address": {
+                      "scope": null,
+                      "value": null
+                    }
+                  }
+                },
+                "initialRate": {
+                  "value": null,
+                  "priceType": null
+                },
+                "capRateSchedule": {
+                  "price": {
+                    "address": {
+                      "scope": null,
+                      "value": null
+                    }
+                  }
+                },
+                "floorRateSchedule": {
+                  "price": {
+                    "address": {
+                      "scope": null,
+                      "value": null
+                    }
+                  }
+                }
+              },
+              "FixedRateSpecification": {
+                "rateSchedule": {
+                  "price": {
+                    "address": {
+                      "scope": null,
+                      "value": null
+                    }
+                  }
+                },
+                "meta": {
+                  "globalKey": null
+                }
+              }
+            },
+            "dayCountFraction": {
+              "value": null
+            },
+            "calculationPeriodDates": {
+              "effectiveDate": {
+                "adjustableDate": {
+                  "unadjustedDate": null,
+                  "dateAdjustments": {
+                    "businessDayConvention": null,
+                    "meta": {
+                      "globalKey": null
+                    },
+                    "businessCenters": {
+                      "businessCenter": {
+                        "value": null
+                      },
+                      "meta": {
+                        "globalKey": null
+                      }
+                    }
+                  },
+                  "meta": {
+                    "globalKey": null
+                  },
+                  "adjustedDate": {
+                    "value": null,
+                    "meta": {
+                      "globalKey": null
+                    }
+                  }
+                },
+                "meta": {
+                  "globalKey": null,
+                  "externalKey": null
+                },
+                "relativeDate": {
+                  "periodMultiplier": null,
+                  "period": null,
+                  "meta": {
+                    "globalKey": null
+                  },
+                  "dayType": null,
+                  "businessDayConvention": null,
+                  "businessCenters": {
+                    "businessCenter": {
+                      "value": null
+                    },
+                    "meta": {
+                      "globalKey": null
+                    }
+                  },
+                  "dateRelativeTo": {
+                    "globalReference": null,
+                    "externalReference": null
+                  },
+                  "relativeDateAdjustments": {
+                    "businessDayConvention": null,
+                    "businessCenters": {
+                      "businessCenter": {
+                        "value": null
+                      },
+                      "meta": {
+                        "globalKey": null
+                      }
+                    },
+                    "meta": {
+                      "globalKey": null
+                    }
+                  }
+                }
+              },
+              "terminationDate": {
+                "adjustableDate": {
+                  "unadjustedDate": null,
+                  "dateAdjustments": {
+                    "businessDayConvention": null,
+                    "businessCenters": {
+                      "businessCenter": {
+                        "value": null
+                      },
+                      "meta": {
+                        "globalKey": null,
+                        "externalKey": null
+                      },
+                      "businessCentersReference": {
+                        "globalReference": null,
+                        "externalReference": null
+                      }
+                    },
+                    "meta": {
+                      "globalKey": null
+                    }
+                  },
+                  "meta": {
+                    "globalKey": null
+                  },
+                  "adjustedDate": {
+                    "value": null,
+                    "meta": {
+                      "globalKey": null
+                    }
+                  }
+                },
+                "meta": {
+                  "globalKey": null
+                },
+                "relativeDate": {
+                  "periodMultiplier": null,
+                  "period": null,
+                  "meta": {
+                    "globalKey": null
+                  },
+                  "businessDayConvention": null,
+                  "businessCenters": {
+                    "businessCenter": {
+                      "value": null
+                    },
+                    "meta": {
+                      "globalKey": null
+                    }
+                  },
+                  "dateRelativeTo": {
+                    "externalReference": null
+                  }
+                }
+              },
+              "calculationPeriodDatesAdjustments": {
+                "businessDayConvention": null,
+                "businessCenters": {
+                  "businessCentersReference": {
+                    "globalReference": null,
+                    "externalReference": null
+                  },
+                  "meta": {
+                    "globalKey": null
+                  },
+                  "businessCenter": {
+                    "value": null
+                  }
+                },
+                "meta": {
+                  "globalKey": null
+                }
+              },
+              "calculationPeriodFrequency": {
+                "periodMultiplier": null,
+                "period": null,
+                "meta": {
+                  "globalKey": null
+                },
+                "rollConvention": null
+              },
+              "meta": {
+                "globalKey": null,
+                "externalKey": null
+              },
+              "firstRegularPeriodStartDate": null,
+              "firstPeriodStartDate": {
+                "adjustableDate": {
+                  "unadjustedDate": null,
+                  "dateAdjustments": {
+                    "businessDayConvention": null,
+                    "meta": {
+                      "globalKey": null
+                    }
+                  },
+                  "meta": {
+                    "globalKey": null
+                  }
+                },
+                "meta": {
+                  "globalKey": null
+                }
+              },
+              "lastRegularPeriodEndDate": null,
+              "stubPeriodType": null
+            },
+            "paymentDates": {
+              "paymentFrequency": {
+                "periodMultiplier": null,
+                "period": null,
+                "meta": {
+                  "globalKey": null
+                }
+              },
+              "payRelativeTo": null,
+              "paymentDatesAdjustments": {
+                "businessDayConvention": null,
+                "businessCenters": {
+                  "businessCentersReference": {
+                    "globalReference": null,
+                    "externalReference": null
+                  },
+                  "meta": {
+                    "globalKey": null,
+                    "externalKey": null
+                  },
+                  "businessCenter": {
+                    "value": null
+                  }
+                },
+                "meta": {
+                  "globalKey": null
+                }
+              },
+              "meta": {
+                "globalKey": null,
+                "externalKey": null
+              },
+              "firstPaymentDate": null,
+              "paymentDaysOffset": {
+                "periodMultiplier": null,
+                "period": null,
+                "meta": {
+                  "globalKey": null
+                },
+                "dayType": null
+              },
+              "lastRegularPaymentDate": null
+            },
+            "resetDates": {
+              "calculationPeriodDatesReference": {
+                "globalReference": null,
+                "externalReference": null
+              },
+              "resetRelativeTo": null,
+              "fixingDates": {
+                "periodMultiplier": null,
+                "period": null,
+                "meta": {
+                  "globalKey": null
+                },
+                "dayType": null,
+                "businessDayConvention": null,
+                "businessCenters": {
+                  "businessCenter": {
+                    "value": null
+                  },
+                  "meta": {
+                    "globalKey": null,
+                    "externalKey": null
+                  }
+                },
+                "dateRelativeTo": {
+                  "globalReference": null,
+                  "externalReference": null
+                }
+              },
+              "resetFrequency": {
+                "periodMultiplier": null,
+                "period": null,
+                "meta": {
+                  "globalKey": null
+                }
+              },
+              "resetDatesAdjustments": {
+                "businessDayConvention": null,
+                "businessCenters": {
+                  "businessCentersReference": {
+                    "globalReference": null,
+                    "externalReference": null
+                  },
+                  "meta": {
+                    "globalKey": null
+                  },
+                  "businessCenter": {
+                    "value": null
+                  }
+                },
+                "meta": {
+                  "globalKey": null
+                }
+              },
+              "meta": {
+                "globalKey": null,
+                "externalKey": null
+              }
+            },
+            "cashflowRepresentation": {
+              "cashflowsMatchParameters": null,
+              "paymentCalculationPeriod": {
+                "adjustedPaymentDate": null,
+                "calculationPeriod": {
+                  "adjustedStartDate": null,
+                  "adjustedEndDate": null,
+                  "meta": {
+                    "globalKey": null
+                  },
+                  "notionalAmount": null,
+                  "floatingRateDefinition": {
+                    "rateObservation": {
+                      "adjustedFixingDate": null,
+                      "observationWeight": null,
+                      "meta": {
+                        "globalKey": null
+                      }
+                    }
+                  },
+                  "fixedRate": null,
+                  "calculationPeriodNumberOfDays": null
+                },
+                "meta": {
+                  "globalKey": null
+                }
+              }
+            },
+            "stubPeriod": {
+              "calculationPeriodDatesReference": {
+                "globalReference": null,
+                "externalReference": null
+              },
+              "initialStub": {
+                "floatingRate": {
+                  "floatingRateIndex": null,
+                  "indexTenor": {
+                    "periodMultiplier": null,
+                    "period": null,
+                    "meta": {
+                      "globalKey": null
+                    }
+                  }
+                },
+                "stubRate": null
+              },
+              "finalStub": {
+                "floatingRate": {
+                  "floatingRateIndex": null,
+                  "indexTenor": {
+                    "periodMultiplier": null,
+                    "period": null,
+                    "meta": {
+                      "globalKey": null
+                    }
+                  }
+                }
+              }
+            },
+            "compoundingMethod": null,
+            "principalPayment": {
+              "initialPayment": null,
+              "finalPayment": null,
+              "intermediatePayment": null,
+              "principalPaymentSchedule": {
+                "initialPrincipalPayment": {
+                  "principalPaymentDate": {
+                    "adjustedDate": {
+                      "value": null,
+                      "meta": {
+                        "globalKey": null
+                      }
+                    },
+                    "meta": {
+                      "globalKey": null
+                    },
+                    "unadjustedDate": null
+                  },
+                  "payerReceiver": {
+                    "payer": null,
+                    "receiver": null
+                  },
+                  "principalAmount": {
+                    "value": null,
+                    "unit": {
+                      "currency": {
+                        "value": null
+                      }
+                    },
+                    "meta": {
+                      "globalKey": null
+                    }
+                  },
+                  "meta": {
+                    "globalKey": null
+                  }
+                },
+                "finalPrincipalPayment": {
+                  "principalPaymentDate": {
+                    "adjustedDate": {
+                      "value": null,
+                      "meta": {
+                        "globalKey": null
+                      }
+                    },
+                    "meta": {
+                      "globalKey": null
+                    },
+                    "unadjustedDate": null
+                  },
+                  "payerReceiver": {
+                    "payer": null,
+                    "receiver": null
+                  },
+                  "principalAmount": {
+                    "value": null,
+                    "unit": {
+                      "currency": {
+                        "value": null
+                      }
+                    },
+                    "meta": {
+                      "globalKey": null
+                    }
+                  },
+                  "meta": {
+                    "globalKey": null
+                  }
+                }
+              },
+              "meta": {
+                "globalKey": null
+              }
+            },
+            "paymentDate": {
+              "unadjustedDate": null,
+              "dateAdjustments": {
+                "businessDayConvention": null,
+                "businessCenters": {
+                  "businessCenter": {
+                    "value": null
+                  },
+                  "meta": {
+                    "globalKey": null
+                  }
+                },
+                "meta": {
+                  "globalKey": null
+                }
+              },
+              "meta": {
+                "globalKey": null
+              }
+            },
+            "discountingMethod": {
+              "discountingType": null
+            },
+            "settlementTerms": {
+              "settlementType": null,
+              "settlementCurrency": {
+                "value": null
+              },
+              "meta": {
+                "globalKey": null
+              },
+              "cashSettlementTerms": {
+                "valuationMethod": {
+                  "valuationSource": {
+                    "settlementRateOption": {
+                      "settlementRateOption": {
+                        "value": null
+                      }
+                    }
+                  }
+                },
+                "valuationDate": {
+                  "fxFixingDate": {
+                    "periodMultiplier": null,
+                    "period": null,
+                    "meta": {
+                      "globalKey": null
+                    },
+                    "dayType": null,
+                    "businessDayConvention": null,
+                    "businessCenters": {
+                      "businessCenter": {
+                        "value": null
+                      },
+                      "meta": {
+                        "globalKey": null
+                      }
+                    },
+                    "dateRelativeToPaymentDates": {
+                      "paymentDatesReference": {
+                        "globalReference": null,
+                        "externalReference": null
+                      }
+                    }
+                  }
+                },
+                "meta": {
+                  "globalKey": null
+                }
+              }
+            }
+          },
+          "meta": {
+            "globalKey": null
+          },
+          "OptionPayout": {
+            "payerReceiver": {
+              "payer": null,
+              "receiver": null
+            },
+            "settlementTerms": {
+              "settlementType": null,
+              "meta": {
+                "globalKey": null
+              },
+              "physicalSettlementTerms": {
+                "clearedPhysicalSettlement": null,
+                "meta": {
+                  "globalKey": null
+                }
+              },
+              "cashSettlementTerms": {
+                "cashSettlementMethod": null,
+                "valuationMethod": {
+                  "valuationSource": {
+                    "informationSource": {
+                      "primarySource": {
+                        "sourceProvider": {
+                          "value": null
+                        }
+                      }
+                    }
+                  },
+                  "quotationMethod": null,
+                  "cashCollateralValuationMethod": {
+                    "agreedDiscountRate": {
+                      "value": null
+                    }
+                  }
+                },
+                "valuationDate": {
+                  "valuationDate": {
+                    "periodMultiplier": null,
+                    "period": null,
+                    "meta": {
+                      "globalKey": null
+                    },
+                    "businessDayConvention": null,
+                    "dateRelativeTo": {
+                      "globalReference": null,
+                      "externalReference": null
+                    }
+                  }
+                },
+                "valuationTime": {
+                  "hourMinuteTime": null,
+                  "businessCenter": {
+                    "value": null
+                  }
+                },
+                "meta": {
+                  "globalKey": null,
+                  "externalKey": null
+                }
+              },
+              "settlementCurrency": {
+                "value": null
+              }
+            },
+            "buyerSeller": {
+              "buyer": null,
+              "seller": null
+            },
+            "underlier": {
+              "Product": {
+                "NonTransferableProduct": {
+                  "taxonomy": {
+                    "source": null,
+                    "value": {
+                      "name": {
+                        "value": null
+                      }
+                    },
+                    "productQualifier": null
+                  },
+                  "economicTerms": {
+                    "payout": {
+                      "InterestRatePayout": {
+                        "payerReceiver": {
+                          "payer": null,
+                          "receiver": null
+                        },
+                        "priceQuantity": {
+                          "quantitySchedule": {
+                            "address": {
+                              "scope": null,
+                              "value": null
+                            }
+                          },
+                          "meta": {
+                            "globalKey": null
+                          }
+                        },
+                        "rateSpecification": {
+                          "FloatingRateSpecification": {
+                            "rateOption": {
+                              "address": {
+                                "scope": null,
+                                "value": null
+                              }
+                            },
+                            "spreadSchedule": {
+                              "price": {
+                                "address": {
+                                  "scope": null,
+                                  "value": null
+                                }
+                              }
+                            },
+                            "meta": {
+                              "globalKey": null
+                            }
+                          },
+                          "FixedRateSpecification": {
+                            "rateSchedule": {
+                              "price": {
+                                "address": {
+                                  "scope": null,
+                                  "value": null
+                                }
+                              }
+                            },
+                            "meta": {
+                              "globalKey": null
+                            }
+                          }
+                        },
+                        "dayCountFraction": {
+                          "value": null
+                        },
+                        "calculationPeriodDates": {
+                          "effectiveDate": {
+                            "adjustableDate": {
+                              "unadjustedDate": null,
+                              "dateAdjustments": {
+                                "businessDayConvention": null,
+                                "businessCenters": {
+                                  "businessCenter": {
+                                    "value": null
+                                  },
+                                  "meta": {
+                                    "globalKey": null
+                                  }
+                                },
+                                "meta": {
+                                  "globalKey": null
+                                }
+                              },
+                              "meta": {
+                                "globalKey": null
+                              }
+                            },
+                            "meta": {
+                              "globalKey": null
+                            }
+                          },
+                          "terminationDate": {
+                            "adjustableDate": {
+                              "unadjustedDate": null,
+                              "dateAdjustments": {
+                                "businessDayConvention": null,
+                                "businessCenters": {
+                                  "businessCenter": {
+                                    "value": null
+                                  },
+                                  "meta": {
+                                    "globalKey": null,
+                                    "externalKey": null
+                                  }
+                                },
+                                "meta": {
+                                  "globalKey": null
+                                }
+                              },
+                              "meta": {
+                                "globalKey": null
+                              }
+                            },
+                            "meta": {
+                              "globalKey": null
+                            }
+                          },
+                          "calculationPeriodDatesAdjustments": {
+                            "businessDayConvention": null,
+                            "businessCenters": {
+                              "businessCenter": {
+                                "value": null
+                              },
+                              "meta": {
+                                "globalKey": null
+                              },
+                              "businessCentersReference": {
+                                "globalReference": null,
+                                "externalReference": null
+                              }
+                            },
+                            "meta": {
+                              "globalKey": null
+                            }
+                          },
+                          "calculationPeriodFrequency": {
+                            "periodMultiplier": null,
+                            "period": null,
+                            "meta": {
+                              "globalKey": null
+                            },
+                            "rollConvention": null
+                          },
+                          "meta": {
+                            "globalKey": null,
+                            "externalKey": null
+                          }
+                        },
+                        "paymentDates": {
+                          "paymentFrequency": {
+                            "periodMultiplier": null,
+                            "period": null,
+                            "meta": {
+                              "globalKey": null
+                            }
+                          },
+                          "payRelativeTo": null,
+                          "paymentDatesAdjustments": {
+                            "businessDayConvention": null,
+                            "businessCenters": {
+                              "businessCenter": {
+                                "value": null
+                              },
+                              "meta": {
+                                "globalKey": null,
+                                "externalKey": null
+                              }
+                            },
+                            "meta": {
+                              "globalKey": null
+                            }
+                          },
+                          "meta": {
+                            "globalKey": null,
+                            "externalKey": null
+                          }
+                        },
+                        "resetDates": {
+                          "calculationPeriodDatesReference": {
+                            "globalReference": null,
+                            "externalReference": null
+                          },
+                          "resetRelativeTo": null,
+                          "fixingDates": {
+                            "periodMultiplier": null,
+                            "period": null,
+                            "meta": {
+                              "globalKey": null
+                            },
+                            "dayType": null,
+                            "businessDayConvention": null,
+                            "businessCenters": {
+                              "businessCenter": {
+                                "value": null
+                              },
+                              "meta": {
+                                "globalKey": null,
+                                "externalKey": null
+                              }
+                            },
+                            "dateRelativeTo": {
+                              "globalReference": null,
+                              "externalReference": null
+                            }
+                          },
+                          "resetFrequency": {
+                            "periodMultiplier": null,
+                            "period": null,
+                            "meta": {
+                              "globalKey": null
+                            }
+                          },
+                          "resetDatesAdjustments": {
+                            "businessDayConvention": null,
+                            "businessCenters": {
+                              "businessCenter": {
+                                "value": null
+                              },
+                              "meta": {
+                                "globalKey": null
+                              },
+                              "businessCentersReference": {
+                                "globalReference": null,
+                                "externalReference": null
+                              }
+                            },
+                            "meta": {
+                              "globalKey": null
+                            }
+                          },
+                          "meta": {
+                            "globalKey": null,
+                            "externalKey": null
+                          }
+                        },
+                        "cashflowRepresentation": {
+                          "cashflowsMatchParameters": null,
+                          "paymentCalculationPeriod": {
+                            "adjustedPaymentDate": null,
+                            "calculationPeriod": {
+                              "adjustedStartDate": null,
+                              "adjustedEndDate": null,
+                              "meta": {
+                                "globalKey": null
+                              },
+                              "notionalAmount": null,
+                              "fixedRate": null,
+                              "floatingRateDefinition": {
+                                "rateObservation": {
+                                  "adjustedFixingDate": null,
+                                  "observationWeight": null,
+                                  "meta": {
+                                    "globalKey": null
+                                  }
+                                }
+                              }
+                            },
+                            "meta": {
+                              "globalKey": null
+                            }
+                          }
+                        }
+                      },
+                      "meta": {
+                        "globalKey": null
+                      }
+                    },
+                    "terminationProvision": {
+                      "earlyTerminationProvision": {
+                        "mandatoryEarlyTermination": {
+                          "mandatoryEarlyTerminationDate": {
+                            "unadjustedDate": null,
+                            "dateAdjustments": {
+                              "businessDayConvention": null,
+                              "businessCenters": {
+                                "businessCenter": {
+                                  "value": null
+                                },
+                                "meta": {
+                                  "globalKey": null
+                                }
+                              },
+                              "meta": {
+                                "globalKey": null
+                              }
+                            },
+                            "meta": {
+                              "globalKey": null
+                            }
+                          },
+                          "cashSettlement": {
+                            "settlementType": null,
+                            "settlementCurrency": {
+                              "value": null
+                            },
+                            "meta": {
+                              "globalKey": null
+                            },
+                            "cashSettlementTerms": {
+                              "cashSettlementMethod": null,
+                              "valuationMethod": {
+                                "cashCollateralValuationMethod": {
+                                  "applicableCsa": null
+                                }
+                              },
+                              "valuationDate": {
+                                "valuationDate": {
+                                  "periodMultiplier": null,
+                                  "period": null,
+                                  "meta": {
+                                    "globalKey": null
+                                  },
+                                  "dayType": null,
+                                  "businessDayConvention": null,
+                                  "businessCenters": {
+                                    "businessCenter": {
+                                      "value": null
+                                    },
+                                    "meta": {
+                                      "globalKey": null
+                                    }
+                                  },
+                                  "dateRelativeTo": {
+                                    "externalReference": null
+                                  }
+                                }
+                              },
+                              "valuationTime": {
+                                "hourMinuteTime": null,
+                                "businessCenter": {
+                                  "value": null
+                                }
+                              },
+                              "meta": {
+                                "globalKey": null
+                              }
+                            }
+                          },
+                          "meta": {
+                            "globalKey": null
+                          }
+                        },
+                        "meta": {
+                          "globalKey": null
+                        }
+                      }
+                    }
+                  },
+                  "meta": {
+                    "globalKey": null
+                  }
+                }
+              }
+            },
+            "exerciseTerms": {
+              "style": null,
+              "expirationDate": {
+                "adjustableDate": {
+                  "unadjustedDate": null,
+                  "dateAdjustments": {
+                    "businessDayConvention": null,
+                    "businessCenters": {
+                      "businessCenter": {
+                        "value": null
+                      },
+                      "meta": {
+                        "globalKey": null
+                      }
+                    },
+                    "meta": {
+                      "globalKey": null
+                    }
+                  },
+                  "meta": {
+                    "globalKey": null
+                  }
+                },
+                "meta": {
+                  "globalKey": null
+                }
+              },
+              "earliestExerciseTime": {
+                "hourMinuteTime": null,
+                "businessCenter": {
+                  "value": null
+                }
+              },
+              "expirationTime": {
+                "hourMinuteTime": null,
+                "businessCenter": {
+                  "value": null
+                }
+              },
+              "expirationTimeType": null,
+              "exerciseProcedure": {
+                "followUpConfirmation": null,
+                "manualExercise": {
+                  "exerciseNotice": {
+                    "exerciseNoticeGiver": null,
+                    "businessCenter": {
+                      "value": null
+                    }
+                  }
+                }
+              },
+              "meta": {
+                "globalKey": null,
+                "externalKey": null
+              },
+              "exerciseDates": {
+                "adjustableDates": {
+                  "unadjustedDate": null,
+                  "dateAdjustments": {
+                    "businessDayConvention": null,
+                    "businessCenters": {
+                      "businessCenter": {
+                        "value": null
+                      },
+                      "meta": {
+                        "globalKey": null
+                      }
+                    },
+                    "meta": {
+                      "globalKey": null
+                    }
+                  },
+                  "meta": {
+                    "globalKey": null
+                  }
+                },
+                "meta": {
+                  "globalKey": null
+                }
+              },
+              "relevantUnderlyingDate": {
+                "relativeDates": {
+                  "periodMultiplier": null,
+                  "period": null,
+                  "meta": {
+                    "globalKey": null
+                  },
+                  "dayType": null,
+                  "businessDayConvention": null,
+                  "businessCenters": {
+                    "businessCenter": {
+                      "value": null
+                    },
+                    "meta": {
+                      "globalKey": null
+                    }
+                  },
+                  "dateRelativeTo": {
+                    "globalReference": null,
+                    "externalReference": null
+                  }
+                },
+                "meta": {
+                  "globalKey": null
+                }
+              },
+              "commencementDate": {
+                "adjustableDate": {
+                  "unadjustedDate": null,
+                  "dateAdjustments": {
+                    "businessDayConvention": null,
+                    "businessCenters": {
+                      "businessCenter": {
+                        "value": null
+                      },
+                      "meta": {
+                        "globalKey": null
+                      }
+                    },
+                    "meta": {
+                      "globalKey": null
+                    }
+                  },
+                  "meta": {
+                    "globalKey": null
+                  }
+                },
+                "meta": {
+                  "globalKey": null
+                }
+              },
+              "latestExerciseTime": {
+                "hourMinuteTime": null,
+                "businessCenter": {
+                  "value": null
+                }
+              }
+            },
+            "optionType": null
+          }
+        },
+        "calculationAgent": {
+          "calculationAgentParty": null
+        },
+        "terminationProvision": {
+          "earlyTerminationProvision": {
+            "optionalEarlyTermination": {
+              "exerciseNotice": {
+                "businessCenter": {
+                  "value": null
+                }
+              },
+              "followUpConfirmation": null,
+              "cashSettlement": {
+                "settlementType": null,
+                "settlementCurrency": {
+                  "value": null
+                },
+                "meta": {
+                  "globalKey": null
+                },
+                "cashSettlementTerms": {
+                  "cashSettlementMethod": null,
+                  "valuationMethod": {
+                    "quotationMethod": null,
+                    "cashCollateralValuationMethod": {
+                      "applicableCsa": null,
+                      "cashCollateralCurrency": null,
+                      "cashCollateralInterestRate": {
+                        "value": null
+                      },
+                      "agreedDiscountRate": {
+                        "value": null
+                      },
+                      "protectedParty": null,
+                      "prescribedDocumentationAdjustment": null
+                    },
+                    "valuationSource": {
+                      "informationSource": {
+                        "primarySource": {
+                          "sourceProvider": {
+                            "value": null
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "valuationDate": {
+                    "valuationDate": {
+                      "periodMultiplier": null,
+                      "period": null,
+                      "meta": {
+                        "globalKey": null
+                      },
+                      "dayType": null,
+                      "businessDayConvention": null,
+                      "businessCenters": {
+                        "businessCenter": {
+                          "value": null
+                        },
+                        "meta": {
+                          "globalKey": null
+                        }
+                      },
+                      "dateRelativeTo": {
+                        "externalReference": null
+                      }
+                    }
+                  },
+                  "valuationTime": {
+                    "hourMinuteTime": null,
+                    "businessCenter": {
+                      "value": null
+                    }
+                  },
+                  "meta": {
+                    "globalKey": null
+                  }
+                }
+              },
+              "exerciseTerms": {
+                "style": null,
+                "expirationDate": {
+                  "relativeDate": {
+                    "periodMultiplier": null,
+                    "period": null,
+                    "meta": {
+                      "globalKey": null
+                    },
+                    "dayType": null,
+                    "businessDayConvention": null,
+                    "businessCenters": {
+                      "businessCenter": {
+                        "value": null
+                      },
+                      "meta": {
+                        "globalKey": null
+                      }
+                    },
+                    "dateRelativeTo": {
+                      "externalReference": null
+                    }
+                  },
+                  "meta": {
+                    "globalKey": null
+                  }
+                },
+                "earliestExerciseTime": {
+                  "hourMinuteTime": null,
+                  "businessCenter": {
+                    "value": null
+                  }
+                },
+                "expirationTime": {
+                  "hourMinuteTime": null,
+                  "businessCenter": {
+                    "value": null
+                  }
+                },
+                "expirationTimeType": null,
+                "meta": {
+                  "globalKey": null
+                },
+                "commencementDate": {
+                  "relativeDate": {
+                    "periodMultiplier": null,
+                    "period": null,
+                    "meta": {
+                      "globalKey": null
+                    },
+                    "dayType": null,
+                    "businessDayConvention": null,
+                    "businessCenters": {
+                      "businessCenter": {
+                        "value": null
+                      },
+                      "meta": {
+                        "globalKey": null
+                      }
+                    },
+                    "dateRelativeTo": {
+                      "externalReference": null
+                    }
+                  },
+                  "meta": {
+                    "globalKey": null
+                  }
+                },
+                "relevantUnderlyingDate": {
+                  "relativeDates": {
+                    "periodMultiplier": null,
+                    "period": null,
+                    "meta": {
+                      "globalKey": null
+                    },
+                    "businessDayConvention": null,
+                    "dateRelativeTo": {
+                      "externalReference": null
+                    }
+                  },
+                  "meta": {
+                    "globalKey": null
+                  }
+                },
+                "latestExerciseTime": {
+                  "hourMinuteTime": null,
+                  "businessCenter": {
+                    "value": null
+                  }
+                }
+              }
+            },
+            "meta": {
+              "globalKey": null
+            }
+          }
+        }
+      },
+      "meta": {
+        "globalKey": null
+      },
+      "identifier": {
+        "identifier": {
+          "value": null
+        },
+        "source": null,
+        "meta": {
+          "globalKey": null
+        }
+      }
+    },
+    "tradeLot": {
+      "priceQuantity": {
+        "quantity": {
+          "value": {
+            "value": null,
+            "unit": {
+              "currency": {
+                "value": null,
+                "meta": {
+                  "scheme": null
+                }
+              }
+            },
+            "datedValue": {
+              "date": null,
+              "value": null,
+              "meta": {
+                "globalKey": null
+              }
+            }
+          },
+          "meta": {
+            "location": {
+              "scope": null,
+              "value": null
+            }
+          }
+        },
+        "observable": {
+          "value": {
+            "Index": {
+              "InterestRateIndex": {
+                "value": {
+                  "FloatingRateIndex": {
+                    "identifier": {
+                      "identifier": {
+                        "value": null
+                      },
+                      "identifierType": null
+                    },
+                    "assetClass": null,
+                    "floatingRateIndex": {
+                      "value": null
+                    },
+                    "indexTenor": {
+                      "periodMultiplier": null,
+                      "period": null,
+                      "meta": {
+                        "globalKey": null
+                      }
+                    },
+                    "assetType": null
+                  }
+                },
+                "meta": {
+                  "location": {
+                    "scope": null,
+                    "value": null
+                  }
+                }
+              }
+            }
+          },
+          "meta": {
+            "location": {
+              "scope": null,
+              "value": null
+            }
+          }
+        },
+        "meta": {
+          "globalKey": null
+        },
+        "price": {
+          "value": {
+            "value": null,
+            "unit": {
+              "currency": {
+                "value": null,
+                "meta": {
+                  "scheme": null
+                }
+              }
+            },
+            "perUnitOf": {
+              "currency": {
+                "value": null,
+                "meta": {
+                  "scheme": null
+                }
+              }
+            },
+            "priceType": null,
+            "datedValue": {
+              "date": null,
+              "value": null,
+              "meta": {
+                "globalKey": null
+              }
+            },
+            "arithmeticOperator": null
+          },
+          "meta": {
+            "location": {
+              "scope": null,
+              "value": null
+            }
+          }
+        }
+      }
+    },
+    "counterparty": {
+      "role": null,
+      "partyReference": {
+        "globalReference": null,
+        "externalReference": null
+      }
+    },
+    "tradeIdentifier": {
+      "issuerReference": {
+        "globalReference": null,
+        "externalReference": null
+      },
+      "assignedIdentifier": {
+        "identifier": {
+          "value": null,
+          "meta": {
+            "scheme": null
+          }
+        }
+      },
+      "meta": {
+        "globalKey": null
+      },
+      "issuer": {
+        "value": null,
+        "meta": {
+          "scheme": null
+        }
+      },
+      "identifierType": null
+    },
+    "tradeDate": {
+      "value": null,
+      "meta": {
+        "globalKey": null,
+        "externalKey": null
+      }
+    },
+    "party": {
+      "partyId": {
+        "identifier": {
+          "value": null,
+          "meta": {
+            "scheme": null
+          }
+        },
+        "identifierType": null,
+        "meta": {
+          "globalKey": null
+        }
+      },
+      "name": {
+        "value": null
+      },
+      "meta": {
+        "globalKey": null,
+        "externalKey": null
+      }
+    },
+    "meta": {
+      "globalKey": null
+    },
+    "ancillaryParty": {
+      "role": null,
+      "partyReference": {
+        "globalReference": null,
+        "externalReference": null
+      }
+    },
+    "contractDetails": {
+      "documentation": {
+        "legalAgreementIdentification": {
+          "agreementName": {
+            "agreementType": null,
+            "masterAgreementType": {
+              "value": null,
+              "meta": {
+                "scheme": null
+              }
+            },
+            "contractualDefinitionsType": {
+              "value": null
+            }
+          }
+        },
+        "contractualParty": {
+          "globalReference": null,
+          "externalReference": null
+        },
+        "meta": {
+          "globalKey": null
+        }
+      },
+      "meta": {
+        "globalKey": null
+      }
+    },
+    "partyRole": {
+      "partyReference": {
+        "globalReference": null,
+        "externalReference": null
+      },
+      "ownershipPartyReference": {
+        "globalReference": null,
+        "externalReference": null
+      },
+      "role": null
+    }
+  },
+  "meta": {
+    "globalKey": null
+  },
+  "transferHistory": {
+    "transfer": {
+      "quantity": {
+        "value": null,
+        "unit": {
+          "currency": {
+            "value": null
+          }
+        }
+      },
+      "asset": {
+        "Cash": {
+          "identifier": {
+            "identifier": {
+              "value": null
+            },
+            "identifierType": null
+          },
+          "assetType": null
+        }
+      },
+      "settlementDate": {
+        "unadjustedDate": null,
+        "dateAdjustments": {
+          "businessDayConvention": null,
+          "businessCenters": {
+            "businessCentersReference": {
+              "globalReference": null,
+              "externalReference": null
+            },
+            "meta": {
+              "globalKey": null
+            },
+            "businessCenter": {
+              "value": null
+            }
+          },
+          "meta": {
+            "globalKey": null
+          }
+        }
+      },
+      "payerReceiver": {
+        "payerPartyReference": {
+          "globalReference": null,
+          "externalReference": null
+        },
+        "receiverPartyReference": {
+          "globalReference": null,
+          "externalReference": null
+        }
+      },
+      "transferExpression": {
+        "unscheduledTransfer": {
+          "priceTransfer": null
+        }
+      }
+    },
+    "meta": {
+      "globalKey": null
+    }
+  }
+}
