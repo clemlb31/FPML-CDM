@@ -5,6 +5,7 @@ import io.fpmlcdm.products.CapFloorMapper;
 import io.fpmlcdm.products.FraMapper;
 import io.fpmlcdm.products.ProductMapper;
 import io.fpmlcdm.products.SwapMapper;
+import io.fpmlcdm.products.SwaptionMapper;
 import org.w3c.dom.Element;
 
 /**
@@ -24,6 +25,9 @@ import org.w3c.dom.Element;
 public class ProductDetector {
 
     public ProductMapper dispatch(Element trade) {
+        if (XmlUtils.child(trade, "swaption") != null) {
+            return new SwaptionMapper();
+        }
         if (XmlUtils.child(trade, "swap") != null) {
             return new SwapMapper();
         }

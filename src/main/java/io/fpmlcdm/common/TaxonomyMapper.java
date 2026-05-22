@@ -25,8 +25,14 @@ public final class TaxonomyMapper {
     private TaxonomyMapper() {}
 
     public static List<ProductTaxonomy> map(Element trade) {
-        List<ProductTaxonomy> out = new ArrayList<>();
         Element swap = XmlUtils.child(trade, "swap");
+        if (swap == null) return new ArrayList<>();
+        return mapForSwap(swap);
+    }
+
+    /** Maps taxonomy directly from a {@code <swap>} element (e.g. the swap inside a swaption). */
+    public static List<ProductTaxonomy> mapForSwap(Element swap) {
+        List<ProductTaxonomy> out = new ArrayList<>();
         if (swap == null) return out;
 
         Element primaryAssetClass = XmlUtils.child(swap, "primaryAssetClass");

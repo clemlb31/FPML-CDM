@@ -58,19 +58,10 @@ public class SwapMapper implements ProductMapper {
         // Determine PARTY_1 = payer of FIRST stream (in document order).
         assignCounterpartyRoles(streams, ctx);
 
-        // Pre-compute address-ref labels (quantity-N, price-K, observable-N, InterestRateIndex-N)
-        // shared between the InterestRatePayout and TradeLot.priceQuantity mappers.
-        java.util.Map<Element, StreamLabels.Labels> labels = StreamLabels.compute(streams);
+        // Build the underlier economics (taxonomy, payouts, tradeLot priceQuantities).
+        SwapEconomics swapEcon = buildSwapEconomics(trade, swap, streams, ctx);
 
-        // Build payouts in document order (preserve FpML order).
-        List<Payout> payouts = new ArrayList<>();
-        for (Element s : streams) {
-            boolean isFloating = isFloating(s);
-            payouts.add(InterestRatePayoutMapper.map(s, isFloating, labels.get(s), ctx));
-        }
-
-        EconomicTerms.EconomicTermsBuilder econ = EconomicTerms.builder();
-        for (Payout p : payouts) econ.addPayout(p);
+        EconomicTerms.EconomicTermsBuilder econ = swapEcon.economicTerms.toBuilder();
 
         // calculationAgent + ancillaryParty (trade-level)
         CalculationAgentMapper.Result ca = CalculationAgentMapper.map(trade);
@@ -79,14 +70,11 @@ public class SwapMapper implements ProductMapper {
         // partyRole entries from determiningParty, hedgingParty, brokerPartyReference, etc.
         List<PartyRole> partyRoles = PartyRoleMapper.map(trade);
 
-        NonTransferableProduct.NonTransferableProductBuilder ntp = NonTransferableProduct.builder()
+        NonTransferableProduct.NonTransferableProductBuilder ntp = swapEcon.product.toBuilder()
                 .setEconomicTerms(econ.build());
-        ProductIdentifierMapper.map(swap).forEach(ntp::addIdentifier);
-        TaxonomyMapper.map(trade).forEach(ntp::addTaxonomy);
 
         // tradeLot (priceQuantity[] in stream document order)
-        List<PriceQuantity> priceQuantities = QuantityMapper.map(streams, labels);
-        TradeLot tradeLot = TradeLot.builder().setPriceQuantity(priceQuantities).build();
+        TradeLot tradeLot = TradeLot.builder().setPriceQuantity(swapEcon.priceQuantities).build();
 
         // counterparty list
         List<Counterparty> counterparties = buildCounterparties(ctx);
@@ -136,11 +124,60 @@ public class SwapMapper implements ProductMapper {
     }
 
     /**
+     * Result of building the "swap economics" (taxonomy, payouts, tradeLot priceQuantities) —
+     * useful both for top-level swap trades and as the underlier of a swaption.
+     */
+    public static final class SwapEconomics {
+        public final NonTransferableProduct product;          // taxonomy + economicTerms.payouts
+        public final EconomicTerms economicTerms;             // econ with payout[] only
+        public final List<PriceQuantity> priceQuantities;     // tradeLot.priceQuantity[]
+        public SwapEconomics(NonTransferableProduct product, EconomicTerms econ, List<PriceQuantity> pqs) {
+            this.product = product;
+            this.economicTerms = econ;
+            this.priceQuantities = pqs;
+        }
+    }
+
+    /**
+     * Build the swap's economic terms (taxonomy, payouts, priceQuantity[]).
+     *
+     * Public so {@link io.fpmlcdm.products.SwaptionMapper} can reuse it for the underlier.
+     *
+     * @param trade   parent {@code <trade>} (used for taxonomy)
+     * @param swap    the {@code <swap>} element
+     * @param streams the {@code <swapStream>} children of {@code swap}
+     * @param ctx     mapping context with party role assignment
+     */
+    public static SwapEconomics buildSwapEconomics(
+            Element trade, Element swap, List<Element> streams, MappingContext ctx) {
+        // Pre-compute address-ref labels (quantity-N, price-K, observable-N, InterestRateIndex-N).
+        java.util.Map<Element, StreamLabels.Labels> labels = StreamLabels.compute(streams);
+
+        // Build payouts in document order (preserve FpML order).
+        List<Payout> payouts = new ArrayList<>();
+        for (Element s : streams) {
+            boolean isFloating = isFloating(s);
+            payouts.add(InterestRatePayoutMapper.map(s, isFloating, labels.get(s), ctx));
+        }
+
+        EconomicTerms.EconomicTermsBuilder econ = EconomicTerms.builder();
+        for (Payout p : payouts) econ.addPayout(p);
+
+        NonTransferableProduct.NonTransferableProductBuilder ntp = NonTransferableProduct.builder()
+                .setEconomicTerms(econ.build());
+        ProductIdentifierMapper.map(swap).forEach(ntp::addIdentifier);
+        TaxonomyMapper.mapForSwap(swap).forEach(ntp::addTaxonomy);
+
+        List<PriceQuantity> priceQuantities = QuantityMapper.map(streams, labels);
+        return new SwapEconomics(ntp.build(), econ.build(), priceQuantities);
+    }
+
+    /**
      * Scans {@code <tradeHeader>/<partyTradeInformation>} for related persons and attaches them
      * to the matching Party (matched by {@code partyReference/@href}). Returns a new list of
      * Parties (built with toBuilder() so we don't mutate the originals).
      */
-    private static List<Party> applyPartyTradeInformation(List<Party> parties, Element tradeHeader) {
+    public static List<Party> applyPartyTradeInformation(List<Party> parties, Element tradeHeader) {
         if (tradeHeader == null) return parties;
         List<Element> ptis = XmlUtils.children(tradeHeader, "partyTradeInformation");
         if (ptis.isEmpty()) return parties;
@@ -165,7 +202,7 @@ public class SwapMapper implements ProductMapper {
         return out;
     }
 
-    private static boolean isFloating(Element swapStream) {
+    public static boolean isFloating(Element swapStream) {
         Element calc = XmlUtils.path(swapStream, "calculationPeriodAmount", "calculation");
         if (calc == null) return false;
         return XmlUtils.child(calc, "floatingRateCalculation") != null;
@@ -175,7 +212,7 @@ public class SwapMapper implements ProductMapper {
      * PARTY_1 = payer of FIRST stream. PARTY_2 = the other party.
      * This overrides the default insertion-order role assignment in {@link PartyMapper}.
      */
-    private static void assignCounterpartyRoles(List<Element> streams, MappingContext ctx) {
+    public static void assignCounterpartyRoles(List<Element> streams, MappingContext ctx) {
         if (streams.isEmpty() || ctx.partyOrder.isEmpty()) return;
         Element first = streams.get(0);
         Element payerRef = XmlUtils.child(first, "payerPartyReference");
@@ -196,7 +233,7 @@ public class SwapMapper implements ProductMapper {
         ctx.partyOrder.putAll(newOrder);
     }
 
-    private static List<Counterparty> buildCounterparties(MappingContext ctx) {
+    public static List<Counterparty> buildCounterparties(MappingContext ctx) {
         // Only the first two parties become counterparties (PARTY_1, PARTY_2). Additional
         // parties are emitted as partyRole entries elsewhere.
         List<Counterparty> out = new ArrayList<>();
