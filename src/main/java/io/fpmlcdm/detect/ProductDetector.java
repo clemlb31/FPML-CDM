@@ -3,6 +3,7 @@ package io.fpmlcdm.detect;
 import io.fpmlcdm.common.XmlUtils;
 import io.fpmlcdm.products.CapFloorMapper;
 import io.fpmlcdm.products.FraMapper;
+import io.fpmlcdm.products.FxSingleLegMapper;
 import io.fpmlcdm.products.ProductMapper;
 import io.fpmlcdm.products.SwapMapper;
 import io.fpmlcdm.products.SwaptionMapper;
@@ -36,6 +37,9 @@ public class ProductDetector {
         }
         if (XmlUtils.child(trade, "fra") != null) {
             return new FraMapper();
+        }
+        if (XmlUtils.child(trade, "fxSingleLeg") != null) {
+            return new FxSingleLegMapper();
         }
         return null;
     }
