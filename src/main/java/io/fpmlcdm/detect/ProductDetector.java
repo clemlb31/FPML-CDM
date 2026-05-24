@@ -3,6 +3,7 @@ package io.fpmlcdm.detect;
 import io.fpmlcdm.common.XmlUtils;
 import io.fpmlcdm.products.CapFloorMapper;
 import io.fpmlcdm.products.CreditDefaultSwapMapper;
+import io.fpmlcdm.products.EquityOptionMapper;
 import io.fpmlcdm.products.FraMapper;
 import io.fpmlcdm.products.FxOptionMapper;
 import io.fpmlcdm.products.FxSingleLegMapper;
@@ -52,6 +53,16 @@ public class ProductDetector {
         }
         if (XmlUtils.child(trade, "creditDefaultSwap") != null) {
             return new CreditDefaultSwapMapper();
+        }
+        // Equity options
+        if (XmlUtils.child(trade, "equityOption") != null) {
+            return new EquityOptionMapper();
+        }
+        if (XmlUtils.child(trade, "brokerEquityOption") != null) {
+            return new EquityOptionMapper();
+        }
+        if (XmlUtils.child(trade, "equityOptionTransactionSupplement") != null) {
+            return new EquityOptionMapper();
         }
         return null;
     }

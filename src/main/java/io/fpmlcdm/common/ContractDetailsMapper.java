@@ -40,32 +40,62 @@ public final class ContractDetailsMapper {
     private ContractDetailsMapper() {}
 
     public static ContractDetails map(Element documentation, List<Party> parties, MappingContext ctx) {
-        if (documentation == null) return null;
+        return map(documentation, parties, ctx, null);
+    }
+
+    /**
+     * Extended version that also accepts the trade element to extract {@code governingLaw}.
+     */
+    public static ContractDetails map(Element documentation, List<Party> parties, MappingContext ctx, Element trade) {
+        if (documentation == null && trade == null) return null;
 
         List<LegalAgreement> entries = new ArrayList<>();
 
-        // Master agreements
-        for (Element ma : XmlUtils.children(documentation, "masterAgreement")) {
-            LegalAgreement la = buildMasterAgreement(ma, ctx);
-            if (la != null) entries.add(la);
+        if (documentation != null) {
+            // Master agreements
+            for (Element ma : XmlUtils.children(documentation, "masterAgreement")) {
+                LegalAgreement la = buildMasterAgreement(ma, ctx);
+                if (la != null) entries.add(la);
+            }
+
+            // Master confirmations (CDS)
+            for (Element mc : XmlUtils.children(documentation, "masterConfirmation")) {
+                LegalAgreement la = buildMasterConfirmation(mc, ctx);
+                if (la != null) entries.add(la);
+            }
+
+            // Contractual definitions → one Confirmation entry with all contractualDefinitionsType[]
+            List<Element> cds = XmlUtils.children(documentation, "contractualDefinitions");
+            if (!cds.isEmpty()) {
+                LegalAgreement la = buildConfirmation(cds, ctx);
+                if (la != null) entries.add(la);
+            }
         }
 
-        // Master confirmations (CDS)
-        for (Element mc : XmlUtils.children(documentation, "masterConfirmation")) {
-            LegalAgreement la = buildMasterConfirmation(mc, ctx);
-            if (la != null) entries.add(la);
-        }
-
-        // Contractual definitions → one Confirmation entry with all contractualDefinitionsType[]
-        List<Element> cds = XmlUtils.children(documentation, "contractualDefinitions");
-        if (!cds.isEmpty()) {
-            LegalAgreement la = buildConfirmation(cds, ctx);
-            if (la != null) entries.add(la);
-        }
-
-        if (entries.isEmpty()) return null;
+        if (entries.isEmpty() && trade == null) return null;
         ContractDetails.ContractDetailsBuilder b = ContractDetails.builder();
         entries.forEach(b::addDocumentation);
+
+        // governingLaw from <trade>
+        if (trade != null) {
+            Element govLaw = XmlUtils.child(trade, "governingLaw");
+            if (govLaw != null) {
+                String value = govLaw.getTextContent().trim();
+                cdm.legaldocumentation.common.GoverningLawEnum gle = null;
+                try { gle = cdm.legaldocumentation.common.GoverningLawEnum.valueOf(value); }
+                catch (IllegalArgumentException ignored) {}
+                if (gle == null) {
+                    try { gle = cdm.legaldocumentation.common.GoverningLawEnum.fromDisplayName(value); }
+                    catch (Exception ignored) {}
+                }
+                if (gle != null) {
+                    b.setGoverningLaw(
+                            cdm.legaldocumentation.common.metafields.FieldWithMetaGoverningLawEnum.builder()
+                                    .setValue(gle).build());
+                }
+            }
+        }
+
         return b.build();
     }
 
@@ -123,12 +153,20 @@ public final class ContractDetailsMapper {
                 .setMasterAgreementType(mb.build())
                 .build();
 
-        LegalAgreementIdentification id = LegalAgreementIdentification.builder()
-                .setAgreementName(name)
-                .build();
+        LegalAgreementIdentification.LegalAgreementIdentificationBuilder idB =
+                LegalAgreementIdentification.builder()
+                        .setAgreementName(name);
+
+        // masterAgreementVersion → vintage (integer year)
+        String version = XmlUtils.childText(ma, "masterAgreementVersion");
+        if (version != null) {
+            try {
+                idB.setVintage(Integer.parseInt(version));
+            } catch (NumberFormatException ignored) {}
+        }
 
         LegalAgreement.LegalAgreementBuilder b = LegalAgreement.builder()
-                .setLegalAgreementIdentification(id);
+                .setLegalAgreementIdentification(idB.build());
         for (ReferenceWithMetaParty p : partyRefs(ctx)) {
             b.addContractualParty(p);
         }
@@ -191,6 +229,14 @@ public final class ContractDetailsMapper {
     /** Map FpML contractualDefinitions code to CDM enum. */
     private static ContractualDefinitionsEnum mapContractualDefinitions(String value) {
         if (value == null) return null;
+        // FpML uses shorthand codes that don't always match display names
+        ContractualDefinitionsEnum mapped = switch (value) {
+            case "ISDA2002Equity" -> ContractualDefinitionsEnum.ISDA_2002_EQUITY_DERIVATIVES;
+            case "ISDA1996Equity" -> ContractualDefinitionsEnum.ISDA_1996_EQUITY_DERIVATIVES;
+            case "ISDA2011Equity" -> ContractualDefinitionsEnum.ISDA_2011_EQUITY_DERIVATIVES;
+            default -> null;
+        };
+        if (mapped != null) return mapped;
         try { return ContractualDefinitionsEnum.fromDisplayName(value); }
         catch (Exception ignored) {}
         try { return ContractualDefinitionsEnum.valueOf(value); }
