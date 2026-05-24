@@ -27,12 +27,21 @@ public final class TransferMapper {
 
     private TransferMapper() {}
 
-    public static List<TransferState> map(Element trade, Element swap) {
+    public static List<TransferState> map(Element trade, Element productElement) {
         List<TransferState> out = new ArrayList<>();
-        if (swap != null) {
-            for (Element p : XmlUtils.children(swap, "additionalPayment")) {
+        if (productElement != null) {
+            for (Element p : XmlUtils.children(productElement, "additionalPayment")) {
                 TransferState ts = buildTransferState(p);
                 if (ts != null) out.add(ts);
+            }
+            // CDS feeLeg/initialPayment
+            Element feeLeg = XmlUtils.child(productElement, "feeLeg");
+            if (feeLeg != null) {
+                Element initPay = XmlUtils.child(feeLeg, "initialPayment");
+                if (initPay != null) {
+                    TransferState ts = buildTransferState(initPay);
+                    if (ts != null) out.add(ts);
+                }
             }
         }
         if (trade != null) {

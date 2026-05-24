@@ -41,8 +41,8 @@ public class FxSwapMapper implements ProductMapper {
         FxSingleLegMapper.assignRoles(ec1PayerHref, ctx);
 
         // Build near leg (index=1) and far leg (index=2)
-        FxSingleLegMapper.LegResult nearResult = FxSingleLegMapper.buildLegResult(nearLeg, ctx, 1);
-        FxSingleLegMapper.LegResult farResult = FxSingleLegMapper.buildLegResult(farLeg, ctx, 2);
+        FxSingleLegMapper.LegResult nearResult = FxSingleLegMapper.buildLegResult(nearLeg, ctx, 1, 2);
+        FxSingleLegMapper.LegResult farResult = FxSingleLegMapper.buildLegResult(farLeg, ctx, 2, 2);
 
         List<Payout> payouts = new ArrayList<>();
         payouts.add(nearResult.payout);

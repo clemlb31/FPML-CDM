@@ -80,7 +80,7 @@ public class FxSingleLegMapper implements ProductMapper {
      * Build a single FX leg payout + tradeLot PriceQuantity.
      * Returns a {@link LegResult} so callers (FxSwapMapper) can aggregate multiple legs.
      */
-    public static LegResult buildLegResult(Element leg, MappingContext ctx, int legIndex) {
+    public static LegResult buildLegResult(Element leg, MappingContext ctx, int legIndex, int totalLegs) {
         Element ec1 = XmlUtils.child(leg, "exchangedCurrency1");
         Element ec2 = XmlUtils.child(leg, "exchangedCurrency2");
 
@@ -206,14 +206,10 @@ public class FxSingleLegMapper implements ProductMapper {
                 .build();
 
         // Second quantity label
-        int qty2LabelIdx;
-        if (legIndex == 1) {
-            qty2LabelIdx = 2;
-        } else {
-            // For FX swap far leg: near uses quantity-1, quantity-3; far uses quantity-2, quantity-4
-            qty2LabelIdx = legIndex + 2;
-        }
-        String q2Label = "quantity-" + qty2LabelIdx;
+        // For standalone fxSingleLeg (totalLegs=1): quantity-1, quantity-2
+        // For FX swap near leg (legIndex=1, totalLegs=2): quantity-1, quantity-3
+        // For FX swap far leg (legIndex=2, totalLegs=2): quantity-2, quantity-4
+        String q2Label = "quantity-" + (legIndex + totalLegs);
 
         FieldWithMetaNonNegativeQuantitySchedule qty2Field = FieldWithMetaNonNegativeQuantitySchedule.builder()
                 .setValue(NonNegativeQuantitySchedule.builder()
@@ -262,7 +258,7 @@ public class FxSingleLegMapper implements ProductMapper {
         String ec1PayerHref = ec1PayerRef != null ? ec1PayerRef.getAttribute("href") : null;
         assignRoles(ec1PayerHref, ctx);
 
-        LegResult lr = buildLegResult(leg, ctx, legIndex);
+        LegResult lr = buildLegResult(leg, ctx, legIndex, 1);
 
         return buildTradeState(doc, trade, tradeHeader, parties, ctx,
                 List.of(lr.payout), List.of(lr.priceQuantity),

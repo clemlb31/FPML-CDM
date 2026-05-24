@@ -10,7 +10,9 @@ import cdm.legaldocumentation.common.LegalAgreementIdentification;
 import cdm.legaldocumentation.common.LegalAgreementTypeEnum;
 import cdm.legaldocumentation.common.metafields.FieldWithMetaContractualDefinitionsEnum;
 import cdm.legaldocumentation.master.MasterAgreementTypeEnum;
+import cdm.legaldocumentation.master.MasterConfirmationTypeEnum;
 import cdm.legaldocumentation.master.metafields.FieldWithMetaMasterAgreementTypeEnum;
+import cdm.legaldocumentation.master.metafields.FieldWithMetaMasterConfirmationTypeEnum;
 import com.rosetta.model.metafields.MetaFields;
 import org.w3c.dom.Element;
 
@@ -48,6 +50,12 @@ public final class ContractDetailsMapper {
             if (la != null) entries.add(la);
         }
 
+        // Master confirmations (CDS)
+        for (Element mc : XmlUtils.children(documentation, "masterConfirmation")) {
+            LegalAgreement la = buildMasterConfirmation(mc, ctx);
+            if (la != null) entries.add(la);
+        }
+
         // Contractual definitions → one Confirmation entry with all contractualDefinitionsType[]
         List<Element> cds = XmlUtils.children(documentation, "contractualDefinitions");
         if (!cds.isEmpty()) {
@@ -59,6 +67,41 @@ public final class ContractDetailsMapper {
         ContractDetails.ContractDetailsBuilder b = ContractDetails.builder();
         entries.forEach(b::addDocumentation);
         return b.build();
+    }
+
+    private static LegalAgreement buildMasterConfirmation(Element mc, MappingContext ctx) {
+        String typeText = XmlUtils.childText(mc, "masterConfirmationType");
+        String dateText = XmlUtils.childText(mc, "masterConfirmationDate");
+
+        AgreementName.AgreementNameBuilder name = AgreementName.builder()
+                .setAgreementType(LegalAgreementTypeEnum.MASTER_CONFIRMATION);
+
+        if (typeText != null) {
+            MasterConfirmationTypeEnum mce = mapMasterConfirmationType(typeText);
+            FieldWithMetaMasterConfirmationTypeEnum.FieldWithMetaMasterConfirmationTypeEnumBuilder fb =
+                    FieldWithMetaMasterConfirmationTypeEnum.builder();
+            if (mce != null) fb.setValue(mce);
+            else fb.setValue(null).setMeta(MetaFields.builder().build());
+            name.setMasterConfirmationType(FieldWithMetaMasterConfirmationTypeEnum.builder()
+                    .setValue(mce).build());
+        }
+
+        LegalAgreement.LegalAgreementBuilder la = LegalAgreement.builder()
+                .setLegalAgreementIdentification(LegalAgreementIdentification.builder()
+                        .setAgreementName(name.build()).build());
+        if (dateText != null) la.setAgreementDate(DateMapper.parse(dateText));
+        for (ReferenceWithMetaParty p : partyRefs(ctx)) la.addContractualParty(p);
+        return la.build();
+    }
+
+    private static MasterConfirmationTypeEnum mapMasterConfirmationType(String text) {
+        if (text == null) return null;
+        try { return MasterConfirmationTypeEnum.fromDisplayName(text); }
+        catch (Exception ignored) {}
+        String normalized = text.replace(".", "_").replace(" ", "_").toUpperCase();
+        try { return MasterConfirmationTypeEnum.valueOf(normalized); }
+        catch (Exception ignored) {}
+        return null;
     }
 
     private static LegalAgreement buildMasterAgreement(Element ma, MappingContext ctx) {

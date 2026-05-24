@@ -24,7 +24,8 @@ public final class DateMapper {
     /** Parses an FpML {@code YYYY-MM-DD} string into a Rosetta {@link Date}. */
     public static Date parse(String iso) {
         if (iso == null) return null;
-        String[] p = iso.split("-");
+        String clean = iso.endsWith("Z") ? iso.substring(0, iso.length() - 1) : iso;
+        String[] p = clean.split("-");
         return Date.of(Integer.parseInt(p[0]), Integer.parseInt(p[1]), Integer.parseInt(p[2]));
     }
 
