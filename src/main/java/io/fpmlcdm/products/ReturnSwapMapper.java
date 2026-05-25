@@ -802,14 +802,9 @@ public class ReturnSwapMapper implements ProductMapper {
                                     .setCurrency(FieldWithMetaString.builder().setValue(ccy).build())
                                     .build());
                         }
-                        // perUnitOf: Share or IndexUnit
-                        boolean isIndex = false;
-                        if (underlyer != null) {
-                            Element su = XmlUtils.child(underlyer, "singleUnderlyer");
-                            if (su != null) isIndex = XmlUtils.child(su, "index") != null;
-                        }
+                        // perUnitOf: always Share for return swap initial price
                         psb.setPerUnitOf(UnitType.builder()
-                                .setFinancialUnit(isIndex ? FinancialUnitEnum.INDEX_UNIT : FinancialUnitEnum.SHARE)
+                                .setFinancialUnit(FinancialUnitEnum.SHARE)
                                 .build());
                         if ("AbsoluteTerms".equals(priceExpr)) {
                             psb.setPriceExpression(PriceExpressionEnum.ABSOLUTE_TERMS);
@@ -873,14 +868,19 @@ public class ReturnSwapMapper implements ProductMapper {
                 if (frc != null) {
                     String idxName = XmlUtils.childText(frc, "floatingRateIndex");
 
+                    // Interest leg notional (may be in interestLeg or fall back to equity notional)
+                    Element intNotional = XmlUtils.child(interestLeg, "notional");
+                    Element intNotionalAmt = intNotional != null ? XmlUtils.child(intNotional, "notionalAmount") : null;
+                    String intCcy = intNotionalAmt != null ? XmlUtils.childText(intNotionalAmt, "currency") : null;
+                    String intAmt = intNotionalAmt != null ? XmlUtils.childText(intNotionalAmt, "amount") : null;
+
+                    // Fall back to equity notional currency if interest leg has no notional
+                    if (intCcy == null) intCcy = notionalCcy;
+
                     // Spread price
                     Element spreadSchedule = XmlUtils.child(frc, "spreadSchedule");
                     if (spreadSchedule != null) {
                         String spreadVal = XmlUtils.childText(spreadSchedule, "initialValue");
-                        Element intNotional = XmlUtils.child(interestLeg, "notional");
-                        Element intNotionalAmt = intNotional != null ? XmlUtils.child(intNotional, "notionalAmount") : null;
-                        String intCcy = intNotionalAmt != null ? XmlUtils.childText(intNotionalAmt, "currency") : null;
-
                         if (spreadVal != null) {
                             PriceSchedule.PriceScheduleBuilder psb = PriceSchedule.builder()
                                     .setValue(new BigDecimal(spreadVal))
@@ -899,12 +899,6 @@ public class ReturnSwapMapper implements ProductMapper {
                                     .build());
                         }
                     }
-
-                    // Interest leg quantity
-                    Element intNotional = XmlUtils.child(interestLeg, "notional");
-                    Element intNotionalAmt = intNotional != null ? XmlUtils.child(intNotional, "notionalAmount") : null;
-                    String intCcy = intNotionalAmt != null ? XmlUtils.childText(intNotionalAmt, "currency") : null;
-                    String intAmt = intNotionalAmt != null ? XmlUtils.childText(intNotionalAmt, "amount") : null;
 
                     if (intAmt != null) {
                         pq2.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder()

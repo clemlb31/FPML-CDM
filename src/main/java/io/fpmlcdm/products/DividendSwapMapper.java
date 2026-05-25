@@ -169,16 +169,23 @@ public class DividendSwapMapper implements ProductMapper {
         DividendPeriod.DividendPeriodBuilder dpb = DividendPeriod.builder();
 
         // Start date
-        String startDate = XmlUtils.childText(dp, "unadjustedStartDate");
-        if (startDate != null) {
+        Element startDateEl = XmlUtils.child(dp, "unadjustedStartDate");
+        if (startDateEl != null) {
+            String startDate = startDateEl.getTextContent().trim();
+            String startDateId = startDateEl.getAttribute("id");
+
+            AdjustableOrRelativeDate.AdjustableOrRelativeDateBuilder aordb = AdjustableOrRelativeDate.builder()
+                    .setAdjustableDate(AdjustableDate.builder()
+                            .setUnadjustedDate(DateMapper.parse(startDate))
+                            .build());
+            if (startDateId != null && !startDateId.isEmpty()) {
+                aordb.setMeta(MetaFields.builder().setExternalKey(startDateId).build());
+            }
+
             dpb.setStartDate(DividendPaymentDate.builder()
                     .setDividendDate(
                             cdm.base.datetime.metafields.ReferenceWithMetaAdjustableOrRelativeDate.builder()
-                                    .setValue(AdjustableOrRelativeDate.builder()
-                                            .setAdjustableDate(AdjustableDate.builder()
-                                                    .setUnadjustedDate(DateMapper.parse(startDate))
-                                                    .build())
-                                            .build())
+                                    .setValue(aordb.build())
                                     .build())
                     .build());
         }
@@ -246,6 +253,32 @@ public class DividendSwapMapper implements ProductMapper {
                                 cdm.base.datetime.metafields.ReferenceWithMetaAdjustableOrRelativeDate.builder()
                                         .setValue(aordb.build())
                                         .build())
+                        .build());
+            }
+        }
+
+        // Valuation date
+        Element valuationDate = XmlUtils.child(dp, "valuationDate");
+        if (valuationDate != null) {
+            Element relDate = XmlUtils.child(valuationDate, "relativeDate");
+            if (relDate != null) {
+                AdjustedRelativeDateOffset.AdjustedRelativeDateOffsetBuilder rdb =
+                        AdjustedRelativeDateOffset.builder();
+                String pm2 = XmlUtils.childText(relDate, "periodMultiplier");
+                if (pm2 != null) rdb.setPeriodMultiplier(Integer.parseInt(pm2));
+                String period2 = XmlUtils.childText(relDate, "period");
+                if (period2 != null) rdb.setPeriod(EnumMappers.period(period2));
+                String dayType2 = XmlUtils.childText(relDate, "dayType");
+                if (dayType2 != null) rdb.setDayType(EquityOptionMapper.mapDayType(dayType2));
+                String bdc2 = XmlUtils.childText(relDate, "businessDayConvention");
+                if (bdc2 != null) rdb.setBusinessDayConvention(EnumMappers.bdc(bdc2));
+                Element drt2 = XmlUtils.child(relDate, "dateRelativeTo");
+                if (drt2 != null) {
+                    rdb.setDateRelativeTo(ReferenceWithMetaDate.builder()
+                            .setExternalReference(drt2.getAttribute("href")).build());
+                }
+                dpb.setDividendValuationDate(AdjustableOrRelativeDate.builder()
+                        .setRelativeDate(rdb.build())
                         .build());
             }
         }

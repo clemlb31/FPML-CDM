@@ -277,7 +277,16 @@ public class EquityOptionMapper implements ProductMapper {
             Element adjDate = XmlUtils.child(expirationDate, "adjustableDate");
             if (adjDate != null) {
                 AdjustableOrRelativeDate aord = DateMapper.adjustableOrRelative(adjDate);
-                if (aord != null) etb.addExpirationDate(aord);
+                if (aord != null) {
+                    // Preserve externalKey from expirationDate id attribute
+                    String expId = expirationDate.getAttribute("id");
+                    if (expId != null && !expId.isEmpty()) {
+                        aord = aord.toBuilder()
+                                .setMeta(MetaFields.builder().setExternalKey(expId).build())
+                                .build();
+                    }
+                    etb.addExpirationDate(aord);
+                }
             }
         }
     }
@@ -349,6 +358,10 @@ public class EquityOptionMapper implements ProductMapper {
                     rdb.setDateRelativeTo(ReferenceWithMetaDate.builder()
                             .setExternalReference(drt.getAttribute("href")).build());
                 }
+                Element bcs = XmlUtils.child(relDate, "businessCenters");
+                if (bcs != null) {
+                    rdb.setBusinessCenters(DateMapper.buildBusinessCenters(bcs));
+                }
 
                 stb.setSettlementDate(SettlementDate.builder()
                         .setAdjustableOrRelativeDate(
@@ -379,7 +392,9 @@ public class EquityOptionMapper implements ProductMapper {
     private OptionStrike buildStrike(Element strikeEl, Element underlyer, Element equityExercise) {
         if (strikeEl == null) return null;
         String strikePriceStr = XmlUtils.childText(strikeEl, "strikePrice");
-        if (strikePriceStr == null) return null;
+        String strikePercentageStr = XmlUtils.childText(strikeEl, "strikePercentage");
+        if (strikePriceStr == null && strikePercentageStr == null) return null;
+        if (strikePriceStr == null) strikePriceStr = strikePercentageStr;
 
         BigDecimal strikeValue = new BigDecimal(strikePriceStr);
 
@@ -427,9 +442,10 @@ public class EquityOptionMapper implements ProductMapper {
     private PriceQuantity buildTradeLotPriceQuantity(Element eqOption, Element underlyer) {
         PriceQuantity.PriceQuantityBuilder pqb = PriceQuantity.builder();
 
-        // Number of options
+        // Number of options OR notional amount
         String numberOfOptions = XmlUtils.childText(eqOption, "numberOfOptions");
         String optionEntitlement = XmlUtils.childText(eqOption, "optionEntitlement");
+        Element notionalEl = XmlUtils.child(eqOption, "notional");
 
         if (numberOfOptions != null) {
             NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qsb =
@@ -450,6 +466,24 @@ public class EquityOptionMapper implements ProductMapper {
                     .setValue(qsb.build())
                     .setMeta(QuantityMapper.locationMeta("quantity-1"))
                     .build());
+        } else if (notionalEl != null) {
+            // Notional-based quantity (e.g. binary/barrier options)
+            String notionalCcy = XmlUtils.childText(notionalEl, "currency");
+            String notionalAmt = XmlUtils.childText(notionalEl, "amount");
+            if (notionalAmt != null) {
+                NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qsb =
+                        NonNegativeQuantitySchedule.builder()
+                                .setValue(new BigDecimal(notionalAmt));
+                if (notionalCcy != null) {
+                    qsb.setUnit(UnitType.builder()
+                            .setCurrency(FieldWithMetaString.builder().setValue(notionalCcy).build())
+                            .build());
+                }
+                pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder()
+                        .setValue(qsb.build())
+                        .setMeta(QuantityMapper.locationMeta("quantity-1"))
+                        .build());
+            }
         }
 
         // Observable: equity or index
