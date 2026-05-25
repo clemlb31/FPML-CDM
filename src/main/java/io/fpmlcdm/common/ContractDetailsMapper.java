@@ -72,11 +72,8 @@ public final class ContractDetailsMapper {
             }
         }
 
-        if (entries.isEmpty() && trade == null) return null;
-        ContractDetails.ContractDetailsBuilder b = ContractDetails.builder();
-        entries.forEach(b::addDocumentation);
-
-        // governingLaw from <trade>
+        // Check for governingLaw
+        cdm.legaldocumentation.common.metafields.FieldWithMetaGoverningLawEnum govLawField = null;
         if (trade != null) {
             Element govLaw = XmlUtils.child(trade, "governingLaw");
             if (govLaw != null) {
@@ -89,12 +86,16 @@ public final class ContractDetailsMapper {
                     catch (Exception ignored) {}
                 }
                 if (gle != null) {
-                    b.setGoverningLaw(
-                            cdm.legaldocumentation.common.metafields.FieldWithMetaGoverningLawEnum.builder()
-                                    .setValue(gle).build());
+                    govLawField = cdm.legaldocumentation.common.metafields.FieldWithMetaGoverningLawEnum.builder()
+                            .setValue(gle).build();
                 }
             }
         }
+
+        if (entries.isEmpty() && govLawField == null) return null;
+        ContractDetails.ContractDetailsBuilder b = ContractDetails.builder();
+        entries.forEach(b::addDocumentation);
+        if (govLawField != null) b.setGoverningLaw(govLawField);
 
         return b.build();
     }
