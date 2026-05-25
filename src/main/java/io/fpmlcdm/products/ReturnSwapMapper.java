@@ -82,7 +82,14 @@ public class ReturnSwapMapper implements ProductMapper {
         boolean isEqSwapSupplement = XmlUtils.child(trade, "equitySwapTransactionSupplement") != null;
 
         Payout perfPayout = buildPerformancePayout(returnLeg, ctx);
-        Payout irPayout = interestLeg != null ? buildInterestRatePayout(interestLeg, returnLeg, ctx, isEqSwapSupplement) : null;
+        // Use quantityReference when the return leg notional has an id
+        Element notionalForRef = XmlUtils.child(returnLeg, "notional");
+        String notionalIdForRef = notionalForRef != null ? notionalForRef.getAttribute("id") : null;
+        Element notionalAmtForRef = notionalForRef != null ? XmlUtils.child(notionalForRef, "notionalAmount") : null;
+        String notionalAmtIdForRef = notionalAmtForRef != null ? notionalAmtForRef.getAttribute("id") : null;
+        boolean useQtyRef = (notionalIdForRef != null && !notionalIdForRef.isEmpty())
+                || (notionalAmtIdForRef != null && !notionalAmtIdForRef.isEmpty());
+        Payout irPayout = interestLeg != null ? buildInterestRatePayout(interestLeg, returnLeg, ctx, useQtyRef) : null;
 
         if (isEqSwapSupplement && irPayout != null) {
             econ.addPayout(irPayout);
@@ -208,6 +215,14 @@ public class ReturnSwapMapper implements ProductMapper {
                 rdb.setDateRelativeTo(ReferenceWithMetaDate.builder()
                         .setExternalReference(drt.getAttribute("href")).build());
             }
+            Element bcs = XmlUtils.child(relDate, "businessCenters");
+            if (bcs != null) rdb.setBusinessCenters(DateMapper.buildBusinessCenters(bcs));
+            Element bcsRef = XmlUtils.child(relDate, "businessCentersReference");
+            if (bcsRef != null) {
+                rdb.setBusinessCentersReference(
+                        cdm.base.datetime.metafields.ReferenceWithMetaBusinessCenters.builder()
+                                .setExternalReference(bcsRef.getAttribute("href")).build());
+            }
 
             AdjustableOrRelativeDate.AdjustableOrRelativeDateBuilder b =
                     AdjustableOrRelativeDate.builder().setRelativeDate(rdb.build());
@@ -237,10 +252,10 @@ public class ReturnSwapMapper implements ProductMapper {
 
         // notionalReset
         Element rateOfReturn = XmlUtils.child(returnLeg, "rateOfReturn");
-        boolean notionalReset = false;
+        Boolean notionalReset = null;
         if (rateOfReturn != null) {
             String notReset = XmlUtils.childText(rateOfReturn, "notionalReset");
-            notionalReset = "true".equals(notReset);
+            if (notReset != null) notionalReset = "true".equals(notReset);
         }
 
         // Check if we should use quantityReference or quantitySchedule address
@@ -251,7 +266,7 @@ public class ReturnSwapMapper implements ProductMapper {
         rpq.setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder()
                 .setReference(Reference.builder().setScope("DOCUMENT").setReference("quantity-1").build())
                 .build());
-        if (notionalReset) rpq.setReset(true);
+        if (notionalReset != null && notionalReset) rpq.setReset(true);
         if (effectiveNotionalId != null) {
             rpq.setMeta(MetaFields.builder().setExternalKey(effectiveNotionalId).build());
         }
@@ -268,6 +283,16 @@ public class ReturnSwapMapper implements ProductMapper {
             if (paymentDates != null) {
                 ppb.setPaymentDates(buildEquityPaymentDates(paymentDates));
             }
+        }
+
+        // Settlement terms (only from explicit <settlementType> element)
+        String settlementType = XmlUtils.childText(returnLeg, "settlementType");
+        if (settlementType != null) {
+            SettlementTerms.SettlementTermsBuilder stb = SettlementTerms.builder();
+            if ("Cash".equals(settlementType)) stb.setSettlementType(SettlementTypeEnum.CASH);
+            else if ("Physical".equals(settlementType)) stb.setSettlementType(SettlementTypeEnum.PHYSICAL);
+            else if ("Election".equals(settlementType)) stb.setSettlementType(SettlementTypeEnum.ELECTION);
+            ppb.setSettlementTerms(stb.build());
         }
 
         // Underlier
@@ -541,6 +566,14 @@ public class ReturnSwapMapper implements ProductMapper {
         if (drt != null) {
             b.setDateRelativeTo(ReferenceWithMetaDate.builder()
                     .setExternalReference(drt.getAttribute("href")).build());
+        }
+        Element bcs = XmlUtils.child(el, "businessCenters");
+        if (bcs != null) b.setBusinessCenters(DateMapper.buildBusinessCenters(bcs));
+        Element bcsRef = XmlUtils.child(el, "businessCentersReference");
+        if (bcsRef != null) {
+            b.setBusinessCentersReference(
+                    cdm.base.datetime.metafields.ReferenceWithMetaBusinessCenters.builder()
+                            .setExternalReference(bcsRef.getAttribute("href")).build());
         }
         return b.build();
     }
@@ -832,6 +865,16 @@ public class ReturnSwapMapper implements ProductMapper {
         // Determine currency for openUnits: use notional currency (USD), not equity currency (EUR)
         String unitCcy = notionalCcy;
 
+        // openUnits label: quantity-3 if interest leg has separate notional, quantity-2 otherwise
+        boolean interestHasNotional = false;
+        if (interestLeg != null) {
+            Element intNotional = XmlUtils.child(interestLeg, "notional");
+            Element intNotionalAmt = intNotional != null ? XmlUtils.child(intNotional, "notionalAmount") : null;
+            String intAmt = intNotionalAmt != null ? XmlUtils.childText(intNotionalAmt, "amount") : null;
+            interestHasNotional = intAmt != null;
+        }
+        String openUnitsLabel = interestHasNotional ? "quantity-3" : "quantity-2";
+
         if (openUnits != null) {
             pq1.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder()
                     .setValue(NonNegativeQuantitySchedule.builder()
@@ -840,7 +883,7 @@ public class ReturnSwapMapper implements ProductMapper {
                                     .setCurrency(FieldWithMetaString.builder().setValue(unitCcy).build())
                                     .build() : null)
                             .build())
-                    .setMeta(QuantityMapper.locationMeta("quantity-3"))
+                    .setMeta(QuantityMapper.locationMeta(openUnitsLabel))
                     .build());
         }
 
