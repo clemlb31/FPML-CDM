@@ -222,7 +222,15 @@ public final class ContractDetailsMapper {
                 any = true;
             }
         }
-        if (!any) return null;
+        // Note: emit the Confirmation entry even when no fields populated — many IRD tests
+        // have a bare <contractualDefinitions> whose value doesn't map to a CDM enum, and the
+        // reference JSON still includes the empty Confirmation documentation entry.
+        // (Suppress the variable: kept for symmetry but no longer used.)
+        if (any || !cds.isEmpty() || !cms.isEmpty() || !cts.isEmpty()) {
+            // fall through
+        } else {
+            return null;
+        }
 
         LegalAgreementIdentification id = LegalAgreementIdentification.builder()
                 .setAgreementName(nameB.build())
