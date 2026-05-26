@@ -487,11 +487,13 @@ public class ReturnSwapMapper implements ProductMapper {
 
         // declaredCashDividendPercentage from dividendConditions → cashRatio
         String cashPct = XmlUtils.childText(divCond, "declaredCashDividendPercentage");
+        String nonCashPct = XmlUtils.childText(divCond, "declaredCashEquivalentDividendPercentage");
 
-        if (totalRatio != null || cashPct != null) {
+        if (totalRatio != null || cashPct != null || nonCashPct != null) {
             DividendPayoutRatio.DividendPayoutRatioBuilder dprb = DividendPayoutRatio.builder();
             if (totalRatio != null) dprb.setTotalRatio(totalRatio);
             if (cashPct != null) dprb.setCashRatio(new BigDecimal(cashPct));
+            if (nonCashPct != null) dprb.setNonCashRatio(new BigDecimal(nonCashPct));
             drt.addDividendPayoutRatio(dprb.build());
         }
 
@@ -743,8 +745,56 @@ public class ReturnSwapMapper implements ProductMapper {
             b.setRelativeDates(buildRelativeDates(relDates));
         }
 
+        Element periodicDates = XmlUtils.child(el, "periodicDates");
+        if (periodicDates != null) {
+            b.setPeriodicDates(buildPeriodicDates(periodicDates));
+        }
+
         if (id != null && !id.isEmpty()) {
             b.setMeta(MetaFields.builder().setExternalKey(id).build());
+        }
+
+        return b.build();
+    }
+
+    private cdm.base.datetime.PeriodicDates buildPeriodicDates(Element el) {
+        if (el == null) return null;
+        cdm.base.datetime.PeriodicDates.PeriodicDatesBuilder b = cdm.base.datetime.PeriodicDates.builder();
+
+        Element startDate = XmlUtils.child(el, "calculationStartDate");
+        if (startDate != null) b.setStartDate(buildDateWithId(startDate));
+
+        Element endDate = XmlUtils.child(el, "calculationEndDate");
+        if (endDate != null) b.setEndDate(buildDateWithId(endDate));
+
+        Element freq = XmlUtils.child(el, "calculationPeriodFrequency");
+        if (freq != null) {
+            cdm.base.datetime.CalculationPeriodFrequency.CalculationPeriodFrequencyBuilder fb =
+                    cdm.base.datetime.CalculationPeriodFrequency.builder();
+            String pm = XmlUtils.childText(freq, "periodMultiplier");
+            if (pm != null) fb.setPeriodMultiplier(Integer.parseInt(pm));
+            String period = XmlUtils.childText(freq, "period");
+            if (period != null) {
+                try { fb.setPeriod(cdm.base.datetime.PeriodExtendedEnum.valueOf(period.toUpperCase())); }
+                catch (Exception ignored) {}
+            }
+            String rc = XmlUtils.childText(freq, "rollConvention");
+            if (rc != null) {
+                try {
+                    String norm = rc.matches("\\d+") ? "_" + rc : rc.toUpperCase();
+                    fb.setRollConvention(cdm.base.datetime.RollConventionEnum.valueOf(norm));
+                } catch (Exception ignored) {
+                    try { fb.setRollConvention(cdm.base.datetime.RollConventionEnum.fromDisplayName(rc)); }
+                    catch (Exception ignored2) {}
+                }
+            }
+            b.setPeriodFrequency(fb.build());
+        }
+
+        Element pda = XmlUtils.child(el, "calculationPeriodDatesAdjustments");
+        if (pda != null) {
+            BusinessDayAdjustments bda = DateMapper.businessDayAdjustments(pda);
+            if (bda != null) b.setPeriodDatesAdjustments(bda);
         }
 
         return b.build();
@@ -1078,11 +1128,14 @@ public class ReturnSwapMapper implements ProductMapper {
 
         Element notional = XmlUtils.child(returnLeg, "notional");
         Element notionalAmount = notional != null ? XmlUtils.child(notional, "notionalAmount") : null;
-        String notionalCcy = notionalAmount != null ? XmlUtils.childText(notionalAmount, "currency") : null;
+        Element notionalCcyEl = notionalAmount != null ? XmlUtils.child(notionalAmount, "currency") : null;
+        String notionalCcy = notionalCcyEl != null ? notionalCcyEl.getTextContent().trim() : null;
+        String notionalCcyScheme = notionalCcyEl != null ? notionalCcyEl.getAttribute("currencyScheme") : null;
         String notionalAmt = notionalAmount != null ? XmlUtils.childText(notionalAmount, "amount") : null;
 
         // Determine currency for openUnits: use notional currency (USD), not equity currency (EUR)
         String unitCcy = notionalCcy;
+        String unitCcyScheme = notionalCcyScheme;
 
         // openUnits label: quantity-3 if interest leg has separate notional, quantity-2 otherwise
         boolean interestHasNotional = false;
@@ -1099,7 +1152,7 @@ public class ReturnSwapMapper implements ProductMapper {
                     .setValue(NonNegativeQuantitySchedule.builder()
                             .setValue(new BigDecimal(openUnits))
                             .setUnit(unitCcy != null ? UnitType.builder()
-                                    .setCurrency(FieldWithMetaString.builder().setValue(unitCcy).build())
+                                    .setCurrency(buildCcyField(unitCcy, unitCcyScheme))
                                     .build() : null)
                             .build())
                     .setMeta(QuantityMapper.locationMeta(openUnitsLabel))
@@ -1111,7 +1164,7 @@ public class ReturnSwapMapper implements ProductMapper {
                     .setValue(NonNegativeQuantitySchedule.builder()
                             .setValue(new BigDecimal(notionalAmt))
                             .setUnit(notionalCcy != null ? UnitType.builder()
-                                    .setCurrency(FieldWithMetaString.builder().setValue(notionalCcy).build())
+                                    .setCurrency(buildCcyField(notionalCcy, notionalCcyScheme))
                                     .build() : null)
                             .build())
                     .setMeta(QuantityMapper.locationMeta("quantity-1"))
@@ -1133,11 +1186,16 @@ public class ReturnSwapMapper implements ProductMapper {
                     // Interest leg notional (may be in interestLeg or fall back to equity notional)
                     Element intNotional = XmlUtils.child(interestLeg, "notional");
                     Element intNotionalAmt = intNotional != null ? XmlUtils.child(intNotional, "notionalAmount") : null;
-                    String intCcy = intNotionalAmt != null ? XmlUtils.childText(intNotionalAmt, "currency") : null;
+                    Element intCcyEl = intNotionalAmt != null ? XmlUtils.child(intNotionalAmt, "currency") : null;
+                    String intCcy = intCcyEl != null ? intCcyEl.getTextContent().trim() : null;
+                    String intCcyScheme = intCcyEl != null ? intCcyEl.getAttribute("currencyScheme") : null;
                     String intAmt = intNotionalAmt != null ? XmlUtils.childText(intNotionalAmt, "amount") : null;
 
                     // Fall back to equity notional currency if interest leg has no notional
-                    if (intCcy == null) intCcy = notionalCcy;
+                    if (intCcy == null) {
+                        intCcy = notionalCcy;
+                        intCcyScheme = notionalCcyScheme;
+                    }
 
                     // Spread price
                     Element spreadSchedule = XmlUtils.child(frc, "spreadSchedule");
@@ -1150,7 +1208,7 @@ public class ReturnSwapMapper implements ProductMapper {
                                     .setArithmeticOperator(ArithmeticOperationEnum.ADD);
                             if (intCcy != null) {
                                 UnitType ccyUnit = UnitType.builder()
-                                        .setCurrency(FieldWithMetaString.builder().setValue(intCcy).build())
+                                        .setCurrency(buildCcyField(intCcy, intCcyScheme))
                                         .build();
                                 psb.setUnit(ccyUnit);
                                 psb.setPerUnitOf(ccyUnit);
@@ -1167,7 +1225,7 @@ public class ReturnSwapMapper implements ProductMapper {
                                 .setValue(NonNegativeQuantitySchedule.builder()
                                         .setValue(new BigDecimal(intAmt))
                                         .setUnit(intCcy != null ? UnitType.builder()
-                                                .setCurrency(FieldWithMetaString.builder().setValue(intCcy).build())
+                                                .setCurrency(buildCcyField(intCcy, intCcyScheme))
                                                 .build() : null)
                                         .build())
                                 .setMeta(QuantityMapper.locationMeta("quantity-2"))
@@ -1245,11 +1303,21 @@ public class ReturnSwapMapper implements ProductMapper {
         return out;
     }
 
+    private static FieldWithMetaString buildCcyField(String ccy, String scheme) {
+        FieldWithMetaString.FieldWithMetaStringBuilder b = FieldWithMetaString.builder().setValue(ccy);
+        if (scheme != null && !scheme.isEmpty()) {
+            b.setMeta(MetaFields.builder().setScheme(scheme).build());
+        }
+        return b.build();
+    }
+
     private String computeReturnSwapQualifier(Element product, Element returnLeg) {
-        // Determine return type
+        // Determine return type — TotalReturn taxonomy only when dividendConditions is present;
+        // <returnType>Total</returnType> alone (no dividend terms) yields PriceReturn taxonomy.
         Element returnEl = XmlUtils.child(returnLeg, "return");
         String returnType = returnEl != null ? XmlUtils.childText(returnEl, "returnType") : null;
-        boolean isTotal = "Total".equals(returnType);
+        boolean hasDivCond = returnEl != null && XmlUtils.child(returnEl, "dividendConditions") != null;
+        boolean isTotal = "Total".equals(returnType) && hasDivCond;
 
         // Determine underlyer type
         Element underlyer = XmlUtils.child(returnLeg, "underlyer");

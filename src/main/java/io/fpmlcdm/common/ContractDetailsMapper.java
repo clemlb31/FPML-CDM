@@ -18,8 +18,10 @@ import cdm.legaldocumentation.common.metafields.FieldWithMetaContractualSuppleme
 import cdm.legaldocumentation.common.metafields.FieldWithMetaMatrixTermEnum;
 import cdm.legaldocumentation.common.metafields.FieldWithMetaMatrixTypeEnum;
 import cdm.legaldocumentation.master.MasterAgreementTypeEnum;
+import cdm.legaldocumentation.master.MasterConfirmationAnnexTypeEnum;
 import cdm.legaldocumentation.master.MasterConfirmationTypeEnum;
 import cdm.legaldocumentation.master.metafields.FieldWithMetaMasterAgreementTypeEnum;
+import cdm.legaldocumentation.master.metafields.FieldWithMetaMasterConfirmationAnnexTypeEnum;
 import cdm.legaldocumentation.master.metafields.FieldWithMetaMasterConfirmationTypeEnum;
 import com.rosetta.model.metafields.MetaFields;
 import org.w3c.dom.Element;
@@ -114,6 +116,7 @@ public final class ContractDetailsMapper {
     private static LegalAgreement buildMasterConfirmation(Element mc, MappingContext ctx) {
         String typeText = XmlUtils.childText(mc, "masterConfirmationType");
         String dateText = XmlUtils.childText(mc, "masterConfirmationDate");
+        String annexTypeText = XmlUtils.childText(mc, "masterConfirmationAnnexType");
 
         AgreementName.AgreementNameBuilder name = AgreementName.builder()
                 .setAgreementType(LegalAgreementTypeEnum.MASTER_CONFIRMATION);
@@ -127,6 +130,13 @@ public final class ContractDetailsMapper {
             // When the FpML masterConfirmationType doesn't map to a CDM enum (e.g. "iBoxx"),
             // the reference ingester drops the field entirely.
         }
+        if (annexTypeText != null) {
+            MasterConfirmationAnnexTypeEnum at = mapMasterConfirmationAnnexType(annexTypeText);
+            if (at != null) {
+                name.setMasterConfirmationAnnexType(
+                        FieldWithMetaMasterConfirmationAnnexTypeEnum.builder().setValue(at).build());
+            }
+        }
 
         LegalAgreement.LegalAgreementBuilder la = LegalAgreement.builder()
                 .setLegalAgreementIdentification(LegalAgreementIdentification.builder()
@@ -134,6 +144,20 @@ public final class ContractDetailsMapper {
         if (dateText != null) la.setAgreementDate(DateMapper.parse(dateText));
         for (ReferenceWithMetaParty p : partyRefs(ctx)) la.addContractualParty(p);
         return la.build();
+    }
+
+    private static MasterConfirmationAnnexTypeEnum mapMasterConfirmationAnnexType(String text) {
+        if (text == null) return null;
+        try { return MasterConfirmationAnnexTypeEnum.fromDisplayName(text); }
+        catch (Exception ignored) {}
+        String normalized = text.replace(".", "_").replace(" ", "_")
+                .replaceAll("([a-z])([A-Z])", "$1_$2")
+                .replaceAll("([A-Za-z])([0-9])", "$1_$2")
+                .replaceAll("([0-9])([A-Za-z])", "$1_$2")
+                .toUpperCase();
+        try { return MasterConfirmationAnnexTypeEnum.valueOf(normalized); }
+        catch (Exception ignored) {}
+        return null;
     }
 
     private static MasterConfirmationTypeEnum mapMasterConfirmationType(String text) {

@@ -62,7 +62,13 @@ public final class DateMapper {
             String code = c.getTextContent().trim();
             try {
                 BusinessCenterEnum e = BusinessCenterEnum.valueOf(code);
-                b.addBusinessCenter(FieldWithMetaBusinessCenterEnum.builder().setValue(e).build());
+                FieldWithMetaBusinessCenterEnum.FieldWithMetaBusinessCenterEnumBuilder fb =
+                        FieldWithMetaBusinessCenterEnum.builder().setValue(e);
+                String scheme = c.getAttribute("businessCenterScheme");
+                if (scheme != null && !scheme.isEmpty()) {
+                    fb.setMeta(MetaFields.builder().setScheme(scheme).build());
+                }
+                b.addBusinessCenter(fb.build());
             } catch (IllegalArgumentException ignored) {
                 // Unknown business center — skip; rare in standard ISO codes.
             }
