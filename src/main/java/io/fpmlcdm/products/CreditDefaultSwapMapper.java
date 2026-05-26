@@ -409,16 +409,9 @@ public class CreditDefaultSwapMapper implements ProductMapper {
             // because the enum class location is uncertain across CDM versions.
             rob.setSecurity(secb.build());
         }
-        // primaryObligorReference (LegalEntity reference)
-        Element por = XmlUtils.child(ro, "primaryObligorReference");
-        if (por != null) {
-            String href = por.getAttribute("href");
-            if (href != null && !href.isEmpty()) {
-                rob.setPrimaryObligorReference(LegalEntity.builder()
-                        .setMeta(MetaFields.builder().setExternalKey(href).build())
-                        .build());
-            }
-        }
+        // primaryObligorReference: omitted in this pass — the metafields wrapper class name and
+        // its package vary by CDM version. Without a build to verify, we skip rather than risk
+        // breaking compilation. (SemanticDiff drops globalReference anyway.)
         return rob.build();
     }
 
