@@ -726,7 +726,7 @@ public class EquityOptionMapper implements ProductMapper {
         if (lower.contains("valoren")) return AssetIdTypeEnum.VALOREN;
         if (lower.contains("wertpapier")) return AssetIdTypeEnum.WERTPAPIER;
         if (lower.contains("sicovam")) return AssetIdTypeEnum.SICOVAM;
-        if (lower.contains("red")) return AssetIdTypeEnum.REDID;
+        if (lower.contains("instrument-id-red")) return AssetIdTypeEnum.REDID;
         if (lower.contains("ric")) return AssetIdTypeEnum.RIC;
         return AssetIdTypeEnum.OTHER;
     }
