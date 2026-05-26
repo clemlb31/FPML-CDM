@@ -311,7 +311,7 @@ public class CommoditySwapMapper implements ProductMapper {
         int fixedCount = XmlUtils.children(comSwap, "fixedLeg").size();
         int floatCount = XmlUtils.children(comSwap, "floatingLeg").size() + XmlUtils.children(comSwap, "coalPhysicalLeg").size() + XmlUtils.children(comSwap, "gasPhysicalLeg").size() + XmlUtils.children(comSwap, "oilPhysicalLeg").size() + XmlUtils.children(comSwap, "electricityPhysicalLeg").size();
         if (fixedCount > 0 && floatCount > 0) return "Commodity_Swap_FixedFloat";
-        if (floatCount >= 2) return "Commodity_Swap_FloatFloat";
+        if (floatCount >= 2) return "Commodity_Swap_Basis";
         return "Commodity_Swap_FixedFloat";
     }
     static FieldWithMetaCommodityBusinessCalendarEnum mapCommodityBusinessCalendar(String name) {
