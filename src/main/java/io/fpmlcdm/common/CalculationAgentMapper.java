@@ -35,11 +35,13 @@ public final class CalculationAgentMapper {
         AncillaryRoleEnum role = AncillaryRoleEnum.CALCULATION_AGENT_INDEPENDENT;
         CalculationAgent.CalculationAgentBuilder ca = CalculationAgent.builder();
         List<AncillaryParty> aps = new ArrayList<>();
+        boolean caHasData = false;
 
         if (calculationAgent != null) {
             List<Element> refs = XmlUtils.children(calculationAgent, "calculationAgentPartyReference");
             if (!refs.isEmpty()) {
                 ca.setCalculationAgentParty(role);
+                caHasData = true;
                 AncillaryParty.AncillaryPartyBuilder b = AncillaryParty.builder().setRole(role);
                 for (Element r : refs) {
                     String href = r.getAttribute("href");
@@ -62,7 +64,9 @@ public final class CalculationAgentMapper {
                 fb.setMeta(MetaFields.builder().setScheme(scheme).build());
             }
             ca.setCalculationAgentBusinessCenter(fb.build());
+            caHasData = true;
         }
-        return new Result(ca.build(), aps);
+        // Avoid emitting an empty CalculationAgent {} when only <calculationAgentParty> text is given.
+        return new Result(caHasData ? ca.build() : null, aps);
     }
 }

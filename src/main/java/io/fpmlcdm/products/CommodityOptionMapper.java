@@ -354,7 +354,10 @@ public class CommodityOptionMapper implements ProductMapper {
         }
 
         if (exerciseStyleEl != null) {
-            Element expirationDate = XmlUtils.child(exerciseStyleEl, "expirationDate");
+            // Multiple <expirationDate> entries: take only the LAST per reference dataset.
+            List<Element> expirationDates = XmlUtils.children(exerciseStyleEl, "expirationDate");
+            Element expirationDate = expirationDates.isEmpty()
+                    ? null : expirationDates.get(expirationDates.size() - 1);
             if (expirationDate != null) {
                 AdjustableOrRelativeDate aord = buildAdjustableOrRelativeDate(expirationDate);
                 if (aord != null) {
@@ -376,6 +379,14 @@ public class CommodityOptionMapper implements ProductMapper {
                         etb.setCommencementDate(DateMapper.adjustableOrRelative(adjDate));
                     }
                 }
+            }
+        }
+
+        // externalKey on exerciseTerms.meta comes from the *Exercise@id attribute
+        if (exerciseStyleEl != null) {
+            String exStyleId = exerciseStyleEl.getAttribute("id");
+            if (exStyleId != null && !exStyleId.isEmpty()) {
+                etb.setMeta(MetaFields.builder().setExternalKey(exStyleId).build());
             }
         }
 
@@ -666,7 +677,7 @@ public class CommodityOptionMapper implements ProductMapper {
                 fb.setPeriodMultiplier(1).setPeriod(PeriodExtendedEnum.D);
                 return fb.build();
             case "PerCalculationPeriod":
-                fb.setPeriodMultiplier(1).setPeriod(PeriodExtendedEnum.M);
+                fb.setPeriodMultiplier(1).setPeriod(PeriodExtendedEnum.C);
                 return fb.build();
             case "Term":
                 fb.setPeriod(PeriodExtendedEnum.T);

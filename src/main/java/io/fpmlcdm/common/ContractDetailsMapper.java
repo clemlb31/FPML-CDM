@@ -168,6 +168,11 @@ public final class ContractDetailsMapper {
 
         LegalAgreement.LegalAgreementBuilder b = LegalAgreement.builder()
                 .setLegalAgreementIdentification(idB.build());
+
+        // masterAgreementDate -> agreementDate (carried at LegalAgreement level)
+        String dateText = XmlUtils.childText(ma, "masterAgreementDate");
+        if (dateText != null) b.setAgreementDate(DateMapper.parse(dateText));
+
         for (ReferenceWithMetaParty p : partyRefs(ctx)) {
             b.addContractualParty(p);
         }
