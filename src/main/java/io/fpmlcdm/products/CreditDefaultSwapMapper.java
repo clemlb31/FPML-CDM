@@ -56,9 +56,11 @@ import java.util.List;
 
 public class CreditDefaultSwapMapper implements ProductMapper {
 
+    private MappingContext ctx;
+
     @Override
     public TradeState map(Document doc, Element trade) {
-        MappingContext ctx = new MappingContext();
+        ctx = new MappingContext();
         List<Party> parties = PartyMapper.map(doc, ctx);
 
         Element tradeHeader = XmlUtils.child(trade, "tradeHeader");
@@ -756,6 +758,15 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         if (listed != null) { b.setListed(Boolean.parseBoolean(listed)); any = true; }
         String ndi = XmlUtils.childText(el, "notDomesticIssuance");
         if (ndi != null) { b.setNotDomesticIssuance(Boolean.parseBoolean(ndi)); any = true; }
+        Element ndcEl = XmlUtils.child(el, "notDomesticCurrency");
+        if (ndcEl != null) {
+            String app = XmlUtils.childText(ndcEl, "applicable");
+            if (app != null) {
+                b.setNotDomesticCurrency(cdm.base.staticdata.asset.credit.NotDomesticCurrency.builder()
+                        .setApplicable(Boolean.parseBoolean(app)).build());
+                any = true;
+            }
+        }
         return any ? b.build() : null;
     }
 
@@ -809,12 +820,20 @@ public class CreditDefaultSwapMapper implements ProductMapper {
                     cdm.observable.event.CreditEventNotice.builder();
             Element np = XmlUtils.child(cen, "notifyingParty");
             if (np != null) {
-                // FpML 5.x: notifyingParty contains buyerPartyReference and/or sellerPartyReference.
-                // Reference output is [buyer-counterparty-role, seller-counterparty-role].
+                // FpML 5.x: notifyingParty contains buyerPartyReference and/or sellerPartyReference
+                // whose hrefs target ABSOLUTE party ids — we map each href to its counterparty
+                // role (PARTY_1/PARTY_2) using the party-order context. Emission order follows
+                // the FpML element order (buyer first, then seller).
                 Element buyer = XmlUtils.child(np, "buyerPartyReference");
                 Element seller = XmlUtils.child(np, "sellerPartyReference");
-                if (buyer != null) cenb.addNotifyingParty(buyerRole);
-                if (seller != null) cenb.addNotifyingParty(sellerRole);
+                if (buyer != null) {
+                    CounterpartyRoleEnum r = lookupCounterpartyRole(buyer.getAttribute("href"));
+                    if (r != null) cenb.addNotifyingParty(r);
+                }
+                if (seller != null) {
+                    CounterpartyRoleEnum r = lookupCounterpartyRole(seller.getAttribute("href"));
+                    if (r != null) cenb.addNotifyingParty(r);
+                }
             }
             Element pai = XmlUtils.child(cen, "publiclyAvailableInformation");
             if (pai != null) {
@@ -918,11 +937,13 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         if (period != null) {
             String bd = XmlUtils.childText(period, "businessDays");
             String maxBd = XmlUtils.childText(period, "maximumBusinessDays");
-            if (bd != null || maxBd != null) {
+            String bdNotSpec = XmlUtils.childText(period, "businessDaysNotSpecified");
+            if (bd != null || maxBd != null || bdNotSpec != null) {
                 cdm.product.common.settlement.PhysicalSettlementPeriod.PhysicalSettlementPeriodBuilder ppb =
                         cdm.product.common.settlement.PhysicalSettlementPeriod.builder();
                 if (bd != null) ppb.setBusinessDays(Integer.parseInt(bd));
                 if (maxBd != null) ppb.setMaximumBusinessDays(Integer.parseInt(maxBd));
+                if (bdNotSpec != null) ppb.setBusinessDaysNotSpecified(Boolean.parseBoolean(bdNotSpec));
                 b.setPhysicalSettlementPeriod(ppb.build());
                 any = true;
             }
@@ -1156,6 +1177,14 @@ public class CreditDefaultSwapMapper implements ProductMapper {
             ccyB.setMeta(MetaFields.builder().setScheme(scheme).build());
         }
         return UnitType.builder().setCurrency(ccyB.build()).build();
+    }
+
+    /** Resolve a party href to its CDM CounterpartyRoleEnum (PARTY_1 / PARTY_2). */
+    private CounterpartyRoleEnum lookupCounterpartyRole(String href) {
+        if (href == null || ctx == null) return null;
+        Integer order = ctx.partyOrder.get(href);
+        if (order == null) return null;
+        return order == 0 ? CounterpartyRoleEnum.PARTY_1 : CounterpartyRoleEnum.PARTY_2;
     }
 
     private void assignRoles(String sellerHref, MappingContext ctx) {

@@ -120,12 +120,12 @@ public final class ContractDetailsMapper {
 
         if (typeText != null) {
             MasterConfirmationTypeEnum mce = mapMasterConfirmationType(typeText);
-            FieldWithMetaMasterConfirmationTypeEnum.FieldWithMetaMasterConfirmationTypeEnumBuilder fb =
-                    FieldWithMetaMasterConfirmationTypeEnum.builder();
-            if (mce != null) fb.setValue(mce);
-            else fb.setValue(null).setMeta(MetaFields.builder().build());
-            name.setMasterConfirmationType(FieldWithMetaMasterConfirmationTypeEnum.builder()
-                    .setValue(mce).build());
+            if (mce != null) {
+                name.setMasterConfirmationType(FieldWithMetaMasterConfirmationTypeEnum.builder()
+                        .setValue(mce).build());
+            }
+            // When the FpML masterConfirmationType doesn't map to a CDM enum (e.g. "iBoxx"),
+            // the reference ingester drops the field entirely.
         }
 
         LegalAgreement.LegalAgreementBuilder la = LegalAgreement.builder()
