@@ -38,8 +38,10 @@ public final class SemanticDiff {
      *  - assetType: appears in the reference CDM JSONs but is not a field on
      *    {@code FloatingRateIndex}/{@code IndexBase}/{@code AssetBase} in CDM 6.19.0 — the CDM
      *    Java model has no setter for it, so it cannot be produced via the standard builders.
-     *  - securityType: same issue — {@code Security} in CDM 6.19.0 has no setSecurityType/getSecurityType. */
-    private static final Set<String> DROPPED_ANYWHERE = Set.of("globalReference", "assetType", "securityType");
+     *  - securityType: same issue — {@code Security} in CDM 6.19.0 has no setSecurityType/getSecurityType.
+     *  - priceSubType: appears on PriceSchedule in some reference JSONs ("Fee" on commodity fixed-leg prices),
+     *    but {@code PriceSchedule} in CDM 6.19.0 has no getPriceSubType/setPriceSubType. */
+    private static final Set<String> DROPPED_ANYWHERE = Set.of("globalReference", "assetType", "securityType", "priceSubType");
 
     /** Fields the reference dataset serialises as a single-element JSON array but the CDM 6.19.0
      *  Java model exposes as a singular scalar (no list accessor). We unwrap to enable equality. */

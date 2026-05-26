@@ -47,14 +47,28 @@ public class CommoditySwapMapper implements ProductMapper {
         Element firstLeg = !allFloatLike.isEmpty() ? allFloatLike.get(0) : (!fixedLegs.isEmpty() ? fixedLegs.get(0) : null);
         if (firstLeg != null) assignCounterpartyRoles(firstLeg, ctx);
         String settlementCurrency = XmlUtils.childText(comSwap, "settlementCurrency");
+        // Label layout (1-fixed-1-float case observed in commodity-5-10 references):
+        //   payout[0] CommodityPayout       -> quantity-1 (float total), observable-1
+        //   payout[1] FixedPricePayout      -> quantity-2 (fixed total), price-1
+        //   priceQuantity[0] (Fixed PQ)     -> price-1 + quantity-3 (per-day) + quantity-2 (total)
+        //   priceQuantity[1] (Float PQ)     -> price-2 (Asset/empty) + quantity-4 (per-day) + quantity-1 (total) + observable-1
+        // For N float legs and M fixed legs we generalise: float-i total = quantity-i, fixed-j total = quantity-(N+j);
+        // per-day labels are appended after totals. Prices: fixed-j -> price-j, float-i -> price-(M+i).
         List<Payout> payouts = new ArrayList<>();
         List<PriceQuantity> priceQuantities = new ArrayList<>();
-        int qtyIdx = 1; int priceIdx = 1; int obsIdx = 1;
-        for (Element fleg : allFloatLike) {
-            String qtyLabel = "quantity-" + qtyIdx; String obsLabel = "observable-" + obsIdx;
+        int nFloat = allFloatLike.size();
+        int nFixed = fixedLegs.size();
+        int floatPerDayBase = nFloat + nFixed; // first per-day quantity index for float legs starts at nFloat+nFixed+1
+        // Build CommodityPayouts first (these are the float legs)
+        for (int i = 0; i < nFloat; i++) {
+            Element fleg = allFloatLike.get(i);
+            String floatTotalLabel = "quantity-" + (i + 1); // float total -> quantity-(i+1)
+            String floatPerDayLabel = "quantity-" + (floatPerDayBase + nFixed + i + 1); // float per-day comes after fixed per-days
+            String obsLabel = "observable-" + (i + 1);
+            String floatPriceLabel = "price-" + (nFixed + i + 1);
             CommodityPayout.CommodityPayoutBuilder cpb = CommodityPayout.builder();
             cpb.setPayerReceiver(buildPayerReceiver(fleg, ctx));
-            cpb.setPriceQuantity(ResolvablePriceQuantity.builder().setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder().setReference(Reference.builder().setScope("DOCUMENT").setReference(qtyLabel).build()).build()).build());
+            cpb.setPriceQuantity(ResolvablePriceQuantity.builder().setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder().setReference(Reference.builder().setScope("DOCUMENT").setReference(floatTotalLabel).build()).build()).build());
             if (settlementCurrency != null) cpb.setSettlementTerms(SettlementTerms.builder().setSettlementType(SettlementTypeEnum.CASH).setSettlementCurrency(FieldWithMetaString.builder().setValue(settlementCurrency).build()).build());
             Element pricingDates = XmlUtils.child(fleg, "pricingDates");
             if (pricingDates == null) { Element calc = XmlUtils.child(fleg, "calculation"); if (calc != null) pricingDates = XmlUtils.child(calc, "pricingDates"); }
@@ -65,24 +79,40 @@ public class CommoditySwapMapper implements ProductMapper {
             if (relPayDates != null) cpb.setPaymentDates(buildPaymentDates(relPayDates));
             cpb.setUnderlier(Underlier.builder().setObservable(ReferenceWithMetaObservable.builder().setReference(Reference.builder().setScope("DOCUMENT").setReference(obsLabel).build()).build()).build());
             payouts.add(Payout.builder().setCommodityPayout(cpb.build()).build());
-            PriceQuantity.PriceQuantityBuilder pqb = PriceQuantity.builder();
-            addFloatingQuantities(pqb, fleg, qtyIdx); addFloatingObservable(pqb, fleg, obsLabel); addFloatingPrice(pqb, fleg, priceIdx);
-            priceQuantities.add(pqb.build());
-            qtyIdx += 2; obsIdx++; priceIdx++;
         }
-        for (Element fxleg : fixedLegs) {
-            String qtyLabel = "quantity-" + qtyIdx; String pLabel = "price-" + priceIdx;
+        // Build FixedPricePayouts (and store them; their PQ will be added to priceQuantities first)
+        List<Payout> fixedPayouts = new ArrayList<>();
+        List<PriceQuantity> fixedPQs = new ArrayList<>();
+        for (int j = 0; j < nFixed; j++) {
+            Element fxleg = fixedLegs.get(j);
+            String fixedTotalLabel = "quantity-" + (nFloat + j + 1); // fixed total -> quantity-(nFloat+j+1)
+            String fixedPerDayLabel = "quantity-" + (floatPerDayBase + j + 1); // fixed per-day
+            String fixedPriceLabel = "price-" + (j + 1);
             FixedPricePayout.FixedPricePayoutBuilder fpb = FixedPricePayout.builder();
             fpb.setPayerReceiver(buildPayerReceiver(fxleg, ctx));
-            fpb.setPriceQuantity(ResolvablePriceQuantity.builder().setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder().setReference(Reference.builder().setScope("DOCUMENT").setReference(qtyLabel).build()).build()).build());
+            fpb.setPriceQuantity(ResolvablePriceQuantity.builder().setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder().setReference(Reference.builder().setScope("DOCUMENT").setReference(fixedTotalLabel).build()).build()).build());
             Element relPayDates = XmlUtils.child(fxleg, "relativePaymentDates");
             if (relPayDates != null) fpb.setPaymentDates(buildPaymentDates(relPayDates));
-            fpb.setFixedPrice(FixedPrice.builder().setPrice(ReferenceWithMetaPriceSchedule.builder().setReference(Reference.builder().setScope("DOCUMENT").setReference(pLabel).build()).build()).build());
-            payouts.add(Payout.builder().setFixedPricePayout(fpb.build()).build());
+            fpb.setFixedPrice(FixedPrice.builder().setPrice(ReferenceWithMetaPriceSchedule.builder().setReference(Reference.builder().setScope("DOCUMENT").setReference(fixedPriceLabel).build()).build()).build());
+            fixedPayouts.add(Payout.builder().setFixedPricePayout(fpb.build()).build());
             PriceQuantity.PriceQuantityBuilder pqb = PriceQuantity.builder();
-            addFixedLegQuantitiesAndPrice(pqb, fxleg, qtyIdx, priceIdx); priceQuantities.add(pqb.build());
-            qtyIdx += 2; priceIdx++;
+            addFixedLegPQ(pqb, fxleg, fixedTotalLabel, fixedPerDayLabel, fixedPriceLabel);
+            fixedPQs.add(pqb.build());
         }
+        // tradeLot.priceQuantity ordering observed: [fixed..., float...]
+        priceQuantities.addAll(fixedPQs);
+        for (int i = 0; i < nFloat; i++) {
+            Element fleg = allFloatLike.get(i);
+            String floatTotalLabel = "quantity-" + (i + 1);
+            String floatPerDayLabel = "quantity-" + (floatPerDayBase + nFixed + i + 1);
+            String obsLabel = "observable-" + (i + 1);
+            String floatPriceLabel = "price-" + (nFixed + i + 1);
+            PriceQuantity.PriceQuantityBuilder pqb = PriceQuantity.builder();
+            addFloatingPQ(pqb, fleg, floatTotalLabel, floatPerDayLabel, obsLabel, floatPriceLabel);
+            priceQuantities.add(pqb.build());
+        }
+        // Payout order: [CommodityPayout(s), FixedPricePayout(s)]
+        payouts.addAll(fixedPayouts);
         EconomicTerms.EconomicTermsBuilder econ = EconomicTerms.builder();
         for (Payout p : payouts) econ.addPayout(p);
         Element effectiveDateEl = XmlUtils.child(comSwap, "effectiveDate");
@@ -156,10 +186,36 @@ public class CommoditySwapMapper implements ProductMapper {
         if (bdcText != null || centersEl != null) { BusinessDayAdjustments.BusinessDayAdjustmentsBuilder bdab = BusinessDayAdjustments.builder(); if (bdcText != null) bdab.setBusinessDayConvention(EnumMappers.bdc(bdcText)); if (centersEl != null) bdab.setBusinessCenters(DateMapper.buildBusinessCenters(centersEl)); pd.setPaymentDatesAdjustments(bdab.build()); }
         return pd.build();
     }
-    private void addFloatingQuantities(PriceQuantity.PriceQuantityBuilder pqb, Element fleg, int qtyBaseIdx) {
-        Element notionalQty = XmlUtils.child(fleg, "notionalQuantity"); String totalNotionalQty = XmlUtils.childText(fleg, "totalNotionalQuantity");
-        if (notionalQty != null) { String unit = XmlUtils.childText(notionalQty, "quantityUnit"); String freq = XmlUtils.childText(notionalQty, "quantityFrequency"); String qty = XmlUtils.childText(notionalQty, "quantity"); if (qty != null) { NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qb = NonNegativeQuantitySchedule.builder().setValue(new BigDecimal(qty)); if (unit != null) qb.setUnit(UnitType.builder().setCapacityUnit(mapCapacityUnit(unit)).build()); if (freq != null) qb.setFrequency(mapFrequency(freq)); pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder().setValue(qb.build()).setMeta(QuantityMapper.locationMeta("quantity-" + (qtyBaseIdx + 1))).build()); } }
-        if (totalNotionalQty != null) { String unit = notionalQty != null ? XmlUtils.childText(notionalQty, "quantityUnit") : null; NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qb = NonNegativeQuantitySchedule.builder().setValue(new BigDecimal(totalNotionalQty)); if (unit != null) qb.setUnit(UnitType.builder().setCapacityUnit(mapCapacityUnit(unit)).build()); pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder().setValue(qb.build()).setMeta(QuantityMapper.locationMeta("quantity-" + qtyBaseIdx)).build()); }
+    // Build the Float-leg PriceQuantity. Order observed in references: [price, quantity(per-day), quantity(total), observable].
+    private void addFloatingPQ(PriceQuantity.PriceQuantityBuilder pqb, Element fleg, String totalLabel, String perDayLabel, String obsLabel, String priceLabel) {
+        // 1. AssetPrice (no value, just unit + arithmeticOperator=Add)
+        Element notionalQty = XmlUtils.child(fleg, "notionalQuantity");
+        String unitText = notionalQty != null ? XmlUtils.childText(notionalQty, "quantityUnit") : null;
+        PriceSchedule.PriceScheduleBuilder psb = PriceSchedule.builder().setPriceType(PriceTypeEnum.ASSET_PRICE).setArithmeticOperator(cdm.base.math.ArithmeticOperationEnum.ADD);
+        if (unitText != null) psb.setPerUnitOf(UnitType.builder().setCapacityUnit(mapCapacityUnit(unitText)).build());
+        pqb.addPrice(FieldWithMetaPriceSchedule.builder().setValue(psb.build()).setMeta(QuantityMapper.locationMeta(priceLabel)).build());
+
+        // 2. Per-day notionalQuantity
+        if (notionalQty != null) {
+            String unit = XmlUtils.childText(notionalQty, "quantityUnit");
+            String freq = XmlUtils.childText(notionalQty, "quantityFrequency");
+            String qty = XmlUtils.childText(notionalQty, "quantity");
+            if (qty != null) {
+                NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qb = NonNegativeQuantitySchedule.builder().setValue(new BigDecimal(qty));
+                if (unit != null) qb.setUnit(UnitType.builder().setCapacityUnit(mapCapacityUnit(unit)).build());
+                if (freq != null) qb.setFrequency(mapFrequency(freq));
+                pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder().setValue(qb.build()).setMeta(QuantityMapper.locationMeta(perDayLabel)).build());
+            }
+        }
+        // 3. Total notional
+        String totalNotionalQty = XmlUtils.childText(fleg, "totalNotionalQuantity");
+        if (totalNotionalQty != null) {
+            NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qb = NonNegativeQuantitySchedule.builder().setValue(new BigDecimal(totalNotionalQty));
+            if (unitText != null) qb.setUnit(UnitType.builder().setCapacityUnit(mapCapacityUnit(unitText)).build());
+            pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder().setValue(qb.build()).setMeta(QuantityMapper.locationMeta(totalLabel)).build());
+        }
+        // 4. Observable
+        addFloatingObservable(pqb, fleg, obsLabel);
     }
     private void addFloatingObservable(PriceQuantity.PriceQuantityBuilder pqb, Element fleg, String obsLabel) {
         Element commodity = XmlUtils.child(fleg, "commodity"); if (commodity == null) return;
@@ -173,18 +229,38 @@ public class CommoditySwapMapper implements ProductMapper {
         Observable obs = Observable.builder().setAsset(Asset.builder().setCommodity(cb.build()).build()).build();
         pqb.setObservable(FieldWithMetaObservable.builder().setValue(obs).setMeta(QuantityMapper.locationMeta(obsLabel)).build());
     }
-    private void addFloatingPrice(PriceQuantity.PriceQuantityBuilder pqb, Element fleg, int priceIdx) {
-        Element notionalQty = XmlUtils.child(fleg, "notionalQuantity"); String unit = notionalQty != null ? XmlUtils.childText(notionalQty, "quantityUnit") : null;
-        PriceSchedule.PriceScheduleBuilder psb = PriceSchedule.builder().setPriceType(PriceTypeEnum.ASSET_PRICE).setArithmeticOperator(cdm.base.math.ArithmeticOperationEnum.ADD);
-        if (unit != null) psb.setPerUnitOf(UnitType.builder().setCapacityUnit(mapCapacityUnit(unit)).build());
-        pqb.addPrice(FieldWithMetaPriceSchedule.builder().setValue(psb.build()).setMeta(QuantityMapper.locationMeta("price-" + priceIdx)).build());
-    }
-    private void addFixedLegQuantitiesAndPrice(PriceQuantity.PriceQuantityBuilder pqb, Element fxleg, int qtyBaseIdx, int priceIdx) {
+    // Build the Fixed-leg PriceQuantity. Order observed: [price (CashPrice with value+unit), quantity(per-day), quantity(total)].
+    private void addFixedLegPQ(PriceQuantity.PriceQuantityBuilder pqb, Element fxleg, String totalLabel, String perDayLabel, String priceLabel) {
         Element fixedPrice = XmlUtils.child(fxleg, "fixedPrice");
-        if (fixedPrice != null) { String price = XmlUtils.childText(fixedPrice, "price"); String priceCcy = XmlUtils.childText(fixedPrice, "priceCurrency"); String priceUnit = XmlUtils.childText(fixedPrice, "priceUnit"); if (price != null) { PriceSchedule.PriceScheduleBuilder psb = PriceSchedule.builder().setValue(new BigDecimal(price)).setPriceType(PriceTypeEnum.CASH_PRICE); if (priceCcy != null) psb.setUnit(UnitType.builder().setCurrency(FieldWithMetaString.builder().setValue(priceCcy).build()).build()); if (priceUnit != null) psb.setPerUnitOf(UnitType.builder().setCapacityUnit(mapCapacityUnit(priceUnit)).build()); pqb.addPrice(FieldWithMetaPriceSchedule.builder().setValue(psb.build()).setMeta(QuantityMapper.locationMeta("price-" + priceIdx)).build()); } }
-        Element notionalQty = XmlUtils.child(fxleg, "notionalQuantity"); String totalNotionalQty = XmlUtils.childText(fxleg, "totalNotionalQuantity");
-        if (notionalQty != null) { String unit = XmlUtils.childText(notionalQty, "quantityUnit"); String freq = XmlUtils.childText(notionalQty, "quantityFrequency"); String qty = XmlUtils.childText(notionalQty, "quantity"); if (qty != null) { NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qb = NonNegativeQuantitySchedule.builder().setValue(new BigDecimal(qty)); if (unit != null) qb.setUnit(UnitType.builder().setCapacityUnit(mapCapacityUnit(unit)).build()); if (freq != null) qb.setFrequency(mapFrequency(freq)); pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder().setValue(qb.build()).setMeta(QuantityMapper.locationMeta("quantity-" + (qtyBaseIdx + 2))).build()); } }
-        if (totalNotionalQty != null) { String unit = notionalQty != null ? XmlUtils.childText(notionalQty, "quantityUnit") : null; NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qb = NonNegativeQuantitySchedule.builder().setValue(new BigDecimal(totalNotionalQty)); if (unit != null) qb.setUnit(UnitType.builder().setCapacityUnit(mapCapacityUnit(unit)).build()); pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder().setValue(qb.build()).setMeta(QuantityMapper.locationMeta("quantity-" + (qtyBaseIdx + 1))).build()); }
+        if (fixedPrice != null) {
+            String price = XmlUtils.childText(fixedPrice, "price");
+            String priceCcy = XmlUtils.childText(fixedPrice, "priceCurrency");
+            String priceUnit = XmlUtils.childText(fixedPrice, "priceUnit");
+            if (price != null) {
+                PriceSchedule.PriceScheduleBuilder psb = PriceSchedule.builder().setValue(new BigDecimal(price)).setPriceType(PriceTypeEnum.CASH_PRICE);
+                if (priceCcy != null) psb.setUnit(UnitType.builder().setCurrency(FieldWithMetaString.builder().setValue(priceCcy).build()).build());
+                if (priceUnit != null) psb.setPerUnitOf(UnitType.builder().setCapacityUnit(mapCapacityUnit(priceUnit)).build());
+                pqb.addPrice(FieldWithMetaPriceSchedule.builder().setValue(psb.build()).setMeta(QuantityMapper.locationMeta(priceLabel)).build());
+            }
+        }
+        Element notionalQty = XmlUtils.child(fxleg, "notionalQuantity");
+        String totalNotionalQty = XmlUtils.childText(fxleg, "totalNotionalQuantity");
+        String unitText = notionalQty != null ? XmlUtils.childText(notionalQty, "quantityUnit") : null;
+        if (notionalQty != null) {
+            String freq = XmlUtils.childText(notionalQty, "quantityFrequency");
+            String qty = XmlUtils.childText(notionalQty, "quantity");
+            if (qty != null) {
+                NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qb = NonNegativeQuantitySchedule.builder().setValue(new BigDecimal(qty));
+                if (unitText != null) qb.setUnit(UnitType.builder().setCapacityUnit(mapCapacityUnit(unitText)).build());
+                if (freq != null) qb.setFrequency(mapFrequency(freq));
+                pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder().setValue(qb.build()).setMeta(QuantityMapper.locationMeta(perDayLabel)).build());
+            }
+        }
+        if (totalNotionalQty != null) {
+            NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qb = NonNegativeQuantitySchedule.builder().setValue(new BigDecimal(totalNotionalQty));
+            if (unitText != null) qb.setUnit(UnitType.builder().setCapacityUnit(mapCapacityUnit(unitText)).build());
+            pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder().setValue(qb.build()).setMeta(QuantityMapper.locationMeta(totalLabel)).build());
+        }
     }
     static FieldWithMetaDate buildTradeDate(Element tradeHeader) {
         if (tradeHeader == null) return null; Element tradeDateEl = XmlUtils.child(tradeHeader, "tradeDate"); if (tradeDateEl == null) return null;
