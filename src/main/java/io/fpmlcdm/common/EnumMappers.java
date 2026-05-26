@@ -7,7 +7,9 @@ import cdm.base.datetime.daycount.DayCountFractionEnum;
 import cdm.base.datetime.daycount.metafields.FieldWithMetaDayCountFractionEnum;
 import cdm.base.staticdata.party.PartyIdentifierTypeEnum;
 import cdm.base.staticdata.asset.rates.FloatingRateIndexEnum;
+import cdm.base.staticdata.asset.rates.InflationRateIndexEnum;
 import cdm.base.staticdata.asset.rates.metafields.FieldWithMetaFloatingRateIndexEnum;
+import cdm.base.staticdata.asset.rates.metafields.FieldWithMetaInflationRateIndexEnum;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,6 +30,7 @@ public final class EnumMappers {
         DAY_COUNT.put("30E/360", DayCountFractionEnum._30E_360);
         DAY_COUNT.put("30E/360.ISDA", DayCountFractionEnum._30E_360_ISDA);
         DAY_COUNT.put("BUS/252", DayCountFractionEnum.CAL_252);
+        DAY_COUNT.put("1/1", DayCountFractionEnum._1_1);
     }
 
     private EnumMappers() {}
@@ -97,5 +100,23 @@ public final class EnumMappers {
         }
         if (e == null) return null;
         return FieldWithMetaFloatingRateIndexEnum.builder().setValue(e).build();
+    }
+
+    public static FieldWithMetaInflationRateIndexEnum inflationRateIndex(String text) {
+        if (text == null) return null;
+        InflationRateIndexEnum e = null;
+        try { e = InflationRateIndexEnum.fromDisplayName(text); }
+        catch (Exception ignored) {}
+        if (e == null) {
+            String normalized = text.replace('-', '_').replace('.', '_').toUpperCase();
+            for (InflationRateIndexEnum candidate : InflationRateIndexEnum.values()) {
+                if (candidate.name().equalsIgnoreCase(normalized)) {
+                    e = candidate;
+                    break;
+                }
+            }
+        }
+        if (e == null) return null;
+        return FieldWithMetaInflationRateIndexEnum.builder().setValue(e).build();
     }
 }

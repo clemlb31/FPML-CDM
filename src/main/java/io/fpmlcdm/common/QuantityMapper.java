@@ -52,7 +52,9 @@ public final class QuantityMapper {
             if (calc == null) continue;
             StreamLabels.Labels lbl = labels.get(stream);
             if (XmlUtils.child(calc, "floatingRateCalculation") != null) {
-                out.add(buildFloating(stream, lbl));
+                out.add(buildFloating(stream, lbl, false));
+            } else if (XmlUtils.child(calc, "inflationRateCalculation") != null) {
+                out.add(buildFloating(stream, lbl, true));
             } else {
                 out.add(buildFixed(stream, lbl));
             }
@@ -60,7 +62,7 @@ public final class QuantityMapper {
         return out;
     }
 
-    private static PriceQuantity buildFloating(Element stream, StreamLabels.Labels lbl) {
+    private static PriceQuantity buildFloating(Element stream, StreamLabels.Labels lbl, boolean inflation) {
         PriceQuantity.PriceQuantityBuilder b = PriceQuantity.builder();
 
         // Quantity
@@ -78,8 +80,9 @@ public final class QuantityMapper {
                 .build();
         b.addQuantity(qty);
 
-        // Observable
-        Element frc = XmlUtils.path(stream, "calculationPeriodAmount", "calculation", "floatingRateCalculation");
+        // Observable (frc may actually be inflationRateCalculation)
+        Element frc = XmlUtils.path(stream, "calculationPeriodAmount", "calculation",
+                inflation ? "inflationRateCalculation" : "floatingRateCalculation");
         String idxName = XmlUtils.childText(frc, "floatingRateIndex");
 
         // Spread (optional, separate price entry — carries arithmeticOperator=Add per dataset)
@@ -133,14 +136,8 @@ public final class QuantityMapper {
                     .build());
         }
 
-        FloatingRateIndex.FloatingRateIndexBuilder friBld = FloatingRateIndex.builder()
-                .setAssetClass(AssetClassEnum.INTEREST_RATE)
-                .setFloatingRateIndex(EnumMappers.floatingRateIndex(idxName))
-                .addIdentifier(AssetIdentifier.builder()
-                        .setIdentifier(FieldWithMetaString.builder().setValue(idxName).build())
-                        .setIdentifierType(AssetIdTypeEnum.OTHER)
-                        .build());
-
+        InterestRateIndex.InterestRateIndexBuilder iriBld = InterestRateIndex.builder();
+        Period indexTenor = null;
         Element tenor = XmlUtils.child(frc, "indexTenor");
         if (tenor != null) {
             String pm = XmlUtils.childText(tenor, "periodMultiplier");
@@ -148,12 +145,29 @@ public final class QuantityMapper {
             Period.PeriodBuilder periodB = Period.builder();
             if (pm != null) periodB.setPeriodMultiplier(Integer.parseInt(pm));
             if (pUnit != null) periodB.setPeriod(EnumMappers.period(pUnit));
-            friBld.setIndexTenor(periodB.build());
+            indexTenor = periodB.build();
         }
 
-        InterestRateIndex iri = InterestRateIndex.builder()
-                .setFloatingRateIndex(friBld.build())
-                .build();
+        if (inflation) {
+            cdm.observable.asset.InflationIndex.InflationIndexBuilder infl =
+                    cdm.observable.asset.InflationIndex.builder()
+                            .setAssetClass(AssetClassEnum.INTEREST_RATE)
+                            .setInflationRateIndex(EnumMappers.inflationRateIndex(idxName));
+            if (indexTenor != null) infl.setIndexTenor(indexTenor);
+            iriBld.setInflationIndex(infl.build());
+        } else {
+            FloatingRateIndex.FloatingRateIndexBuilder friBld = FloatingRateIndex.builder()
+                    .setAssetClass(AssetClassEnum.INTEREST_RATE)
+                    .setFloatingRateIndex(EnumMappers.floatingRateIndex(idxName))
+                    .addIdentifier(AssetIdentifier.builder()
+                            .setIdentifier(FieldWithMetaString.builder().setValue(idxName).build())
+                            .setIdentifierType(AssetIdTypeEnum.OTHER)
+                            .build());
+            if (indexTenor != null) friBld.setIndexTenor(indexTenor);
+            iriBld.setFloatingRateIndex(friBld.build());
+        }
+
+        InterestRateIndex iri = iriBld.build();
 
         FieldWithMetaInterestRateIndex iriField = FieldWithMetaInterestRateIndex.builder()
                 .setValue(iri)

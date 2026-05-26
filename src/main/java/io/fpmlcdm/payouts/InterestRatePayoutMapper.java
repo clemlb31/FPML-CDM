@@ -62,13 +62,20 @@ public final class InterestRatePayoutMapper {
 
     private InterestRatePayoutMapper() {}
 
+    /** Back-compat 4-arg overload (no inflation). */
+    public static Payout map(Element swapStream, boolean isFloating, StreamLabels.Labels labels, MappingContext ctx) {
+        return map(swapStream, isFloating, false, labels, ctx);
+    }
+
     /**
      * @param swapStream  one of the FpML swapStream elements
      * @param isFloating  true if this is the floating leg, false if fixed
+     * @param isInflation true if this is an inflation leg (overrides isFloating routing)
      * @param labels      pre-computed address-ref labels for this stream
      * @param ctx         party order context
      */
-    public static Payout map(Element swapStream, boolean isFloating, StreamLabels.Labels labels, MappingContext ctx) {
+    public static Payout map(Element swapStream, boolean isFloating, boolean isInflation,
+                              StreamLabels.Labels labels, MappingContext ctx) {
         InterestRatePayout.InterestRatePayoutBuilder irp = InterestRatePayout.builder();
 
         // Payer / Receiver via party order
@@ -87,7 +94,16 @@ public final class InterestRatePayoutMapper {
                 .build());
 
         // rateSpecification (address ref)
-        if (isFloating) {
+        if (isInflation) {
+            cdm.product.asset.InflationRateSpecification.InflationRateSpecificationBuilder ib =
+                    cdm.product.asset.InflationRateSpecification.builder()
+                            .setRateOption(ReferenceWithMetaInterestRateIndex.builder()
+                                    .setReference(addressRef(labels.indexLabel))
+                                    .build());
+            irp.setRateSpecification(RateSpecification.builder()
+                    .setInflationRateSpecification(ib.build())
+                    .build());
+        } else if (isFloating) {
             FloatingRateSpecification.FloatingRateSpecificationBuilder floating =
                     FloatingRateSpecification.builder()
                             .setRateOption(ReferenceWithMetaInterestRateIndex.builder()

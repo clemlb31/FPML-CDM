@@ -59,7 +59,10 @@ public final class StreamLabels {
             int oneBased = i + 1;
             Element calc = XmlUtils.path(s, "calculationPeriodAmount", "calculation");
             Element frc = calc == null ? null : XmlUtils.child(calc, "floatingRateCalculation");
-            boolean floating = frc != null;
+            Element irc = calc == null ? null : XmlUtils.child(calc, "inflationRateCalculation");
+            // Treat inflation rate calculation as a flavour of floating for labelling purposes.
+            Element rateCalc = frc != null ? frc : irc;
+            boolean floating = rateCalc != null;
             boolean fixed = calc != null && XmlUtils.child(calc, "fixedRateSchedule") != null;
 
             String quantityLabel = "quantity-" + oneBased;
@@ -73,15 +76,15 @@ public final class StreamLabels {
                 observableCounter++;
                 observableLabel = "observable-" + observableCounter;
                 indexLabel = "InterestRateIndex-" + observableCounter;
-                if (XmlUtils.child(frc, "spreadSchedule") != null) {
+                if (XmlUtils.child(rateCalc, "spreadSchedule") != null) {
                     priceCounter++;
                     spreadPriceLabel = "price-" + priceCounter;
                 }
-                if (XmlUtils.child(frc, "capRateSchedule") != null) {
+                if (XmlUtils.child(rateCalc, "capRateSchedule") != null) {
                     priceCounter++;
                     capPriceLabel = "price-" + priceCounter;
                 }
-                if (XmlUtils.child(frc, "floorRateSchedule") != null) {
+                if (XmlUtils.child(rateCalc, "floorRateSchedule") != null) {
                     priceCounter++;
                     floorPriceLabel = "price-" + priceCounter;
                 }

@@ -68,14 +68,37 @@ public final class TaxonomyMapper {
             out.add(b.build());
         }
 
-        String qualifier = computeQualifier(swap);
-        if (qualifier != null) {
-            out.add(ProductTaxonomy.builder()
-                    .setSource(TaxonomySourceEnum.ISDA)
-                    .setProductQualifier(qualifier)
-                    .build());
+        // For inflation swaps, when XML already carries a structured productType (e.g.
+        // "InterestRate:IRSwap:Inflation" colon-separated, or a scheme attr), we don't synthesise
+        // an additional ISDA productQualifier — the productType already serves the same purpose.
+        boolean hasInflationLeg = hasInflationLeg(swap);
+        boolean skipQualifier = false;
+        if (hasInflationLeg && productType != null) {
+            String ptText = productType.getTextContent() == null ? "" : productType.getTextContent();
+            String ptScheme = productType.getAttribute("productTypeScheme");
+            if (ptText.contains(":") || (ptScheme != null && !ptScheme.isEmpty())) {
+                skipQualifier = true;
+            }
+        }
+
+        if (!skipQualifier) {
+            String qualifier = computeQualifier(swap);
+            if (qualifier != null) {
+                out.add(ProductTaxonomy.builder()
+                        .setSource(TaxonomySourceEnum.ISDA)
+                        .setProductQualifier(qualifier)
+                        .build());
+            }
         }
         return out;
+    }
+
+    private static boolean hasInflationLeg(Element swap) {
+        for (Element s : XmlUtils.children(swap, "swapStream")) {
+            Element calc = XmlUtils.path(s, "calculationPeriodAmount", "calculation");
+            if (calc != null && XmlUtils.child(calc, "inflationRateCalculation") != null) return true;
+        }
+        return false;
     }
 
     private static AssetClassEnum mapAssetClass(String value) {
@@ -91,12 +114,17 @@ public final class TaxonomyMapper {
         List<Element> streams = XmlUtils.children(swap, "swapStream");
         boolean hasFixed = false;
         boolean hasFloating = false;
+        boolean hasInflation = false;
         boolean hasOis = false;
         int floatingCount = 0;
         for (Element s : streams) {
             Element calc = XmlUtils.path(s, "calculationPeriodAmount", "calculation");
             if (calc == null) continue;
             if (XmlUtils.child(calc, "fixedRateSchedule") != null) hasFixed = true;
+            if (XmlUtils.child(calc, "inflationRateCalculation") != null) {
+                hasInflation = true;
+                floatingCount++;  // inflation legs count as floating for qualifier purposes
+            }
             Element frc = XmlUtils.child(calc, "floatingRateCalculation");
             if (frc != null) {
                 hasFloating = true;
@@ -114,9 +142,26 @@ public final class TaxonomyMapper {
         }
         boolean isZeroCoupon = isZeroCouponSwap(streams);
         boolean crossCurrency = isCrossCurrency(streams);
+
+        boolean isInflationZc = hasInflation && isInflationZeroCoupon(streams);
+
+        // Inflation handling (only when NOT cross-currency — cross-currency falls back below).
+        if (hasInflation && !crossCurrency) {
+            if (hasFixed) {
+                // fixed vs inflation: ZC has no qualifier, YoY/recurring uses YearOn_Year
+                if (isInflationZc) return null;
+                return "InterestRate_InflationSwap_FixedFloat_YearOn_Year";
+            }
+            // float-vs-float-inflation basis
+            if (floatingCount >= 2) {
+                if (isInflationZc) return "InterestRate_InflationSwap_Basis_ZeroCoupon";
+                return "InterestRate_InflationSwap_Basis_YearOn_Year";
+            }
+        }
+
         String family = crossCurrency ? "InterestRate_CrossCurrency" : "InterestRate_IRSwap";
 
-        if (hasFixed && hasFloating) {
+        if (hasFixed && (hasFloating || hasInflation)) {
             // OIS takes precedence (its payment frequency is also a single period).
             if (hasOis && !crossCurrency) return family + "_FixedFloat_OIS";
             if (isZeroCoupon && !crossCurrency) return family + "_FixedFloat_ZeroCoupon";
@@ -125,7 +170,7 @@ public final class TaxonomyMapper {
         if (floatingCount >= 2 && !hasFixed) {
             return crossCurrency ? "InterestRate_CrossCurrency_FloatFloat" : "InterestRate_IRSwap_Basis";
         }
-        if (hasFixed && !hasFloating) {
+        if (hasFixed && !hasFloating && !hasInflation) {
             return crossCurrency ? "InterestRate_CrossCurrency_FixedFixed" : "InterestRate_IRSwap_FixedFixed";
         }
         return family + "_FixedFloat";
@@ -153,6 +198,23 @@ public final class TaxonomyMapper {
         for (Element s : streams) {
             String period = XmlUtils.pathText(s, "paymentDates", "paymentFrequency", "period");
             if (!"T".equals(period)) return false;
+        }
+        return true;
+    }
+
+    /** For inflation swaps: ZC iff none of the legs has a sub-annual payment frequency. */
+    private static boolean isInflationZeroCoupon(List<Element> streams) {
+        if (streams.isEmpty()) return false;
+        for (Element s : streams) {
+            String period = XmlUtils.pathText(s, "paymentDates", "paymentFrequency", "period");
+            String mult = XmlUtils.pathText(s, "paymentDates", "paymentFrequency", "periodMultiplier");
+            if ("T".equals(period)) continue;
+            if (period == null || mult == null) return false;
+            int m;
+            try { m = Integer.parseInt(mult); } catch (NumberFormatException e) { return false; }
+            // YoY: yearly (1Y) or sub-annual (M, W, D). ZC: multi-year payments.
+            if ("Y".equals(period) && m <= 1) return false;
+            if ("M".equals(period) || "W".equals(period) || "D".equals(period)) return false;
         }
         return true;
     }

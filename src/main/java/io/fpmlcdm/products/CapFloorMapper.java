@@ -58,7 +58,7 @@ public class CapFloorMapper implements ProductMapper {
 
         List<Payout> payouts = new ArrayList<>();
         for (Element s : streams) {
-            payouts.add(InterestRatePayoutMapper.map(s, true, labels.get(s), ctx));
+            payouts.add(InterestRatePayoutMapper.map(s, true, false, labels.get(s), ctx));
         }
 
         EconomicTerms econ = EconomicTerms.builder()

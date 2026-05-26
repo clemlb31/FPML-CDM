@@ -157,7 +157,8 @@ public class SwapMapper implements ProductMapper {
         List<Payout> payouts = new ArrayList<>();
         for (Element s : streams) {
             boolean isFloating = isFloating(s);
-            payouts.add(InterestRatePayoutMapper.map(s, isFloating, labels.get(s), ctx));
+            boolean isInflation = isInflation(s);
+            payouts.add(InterestRatePayoutMapper.map(s, isFloating, isInflation, labels.get(s), ctx));
         }
 
         EconomicTerms.EconomicTermsBuilder econ = EconomicTerms.builder();
@@ -206,6 +207,12 @@ public class SwapMapper implements ProductMapper {
         Element calc = XmlUtils.path(swapStream, "calculationPeriodAmount", "calculation");
         if (calc == null) return false;
         return XmlUtils.child(calc, "floatingRateCalculation") != null;
+    }
+
+    public static boolean isInflation(Element swapStream) {
+        Element calc = XmlUtils.path(swapStream, "calculationPeriodAmount", "calculation");
+        if (calc == null) return false;
+        return XmlUtils.child(calc, "inflationRateCalculation") != null;
     }
 
     /**
