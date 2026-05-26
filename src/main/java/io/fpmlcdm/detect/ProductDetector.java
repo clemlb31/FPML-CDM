@@ -27,6 +27,7 @@ public class ProductDetector {
         if (XmlUtils.child(trade, "volatilitySwap") != null) return new VarianceSwapMapper();
         if (XmlUtils.child(trade, "volatilitySwapTransactionSupplement") != null) return new VarianceSwapMapper();
         if (XmlUtils.child(trade, "securityLending") != null) return new SecurityLendingMapper();
+        if (XmlUtils.child(trade, "bulletPayment") != null) return new BulletPaymentMapper();
         return null;
     }
 }

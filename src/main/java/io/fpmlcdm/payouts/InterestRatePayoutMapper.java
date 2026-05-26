@@ -212,16 +212,20 @@ public final class InterestRatePayoutMapper {
             String init = XmlUtils.childText(pe, "initialExchange");
             String fin = XmlUtils.childText(pe, "finalExchange");
             String inter = XmlUtils.childText(pe, "intermediateExchange");
-            if (init != null) pp.setInitialPayment(Boolean.parseBoolean(init));
-            if (fin != null) pp.setFinalPayment(Boolean.parseBoolean(fin));
+            boolean hasInitial = init != null && Boolean.parseBoolean(init);
+            boolean hasFinal = fin != null && Boolean.parseBoolean(fin);
+            if (init != null) pp.setInitialPayment(hasInitial);
+            if (fin != null) pp.setFinalPayment(hasFinal);
             if (inter != null) pp.setIntermediatePayment(Boolean.parseBoolean(inter));
 
             // principalPaymentSchedule from <cashflows><principalExchange> entries
             if (cashflows != null) {
                 cdm.product.common.settlement.PrincipalPaymentSchedule sched =
-                        buildPrincipalPaymentSchedule(cashflows, payer, receiver, ctx, swapStream);
+                        buildPrincipalPaymentSchedule(cashflows, payer, receiver, ctx, swapStream,
+                                hasInitial, hasFinal);
                 if (sched != null) pp.setPrincipalPaymentSchedule(sched);
             }
+
             irp.setPrincipalPayment(pp.build());
         }
 
@@ -236,26 +240,41 @@ public final class InterestRatePayoutMapper {
      */
     private static cdm.product.common.settlement.PrincipalPaymentSchedule buildPrincipalPaymentSchedule(
             Element cashflows, String interestPayer, String interestReceiver,
-            MappingContext ctx, Element swapStream) {
+            MappingContext ctx, Element swapStream, boolean hasInitial, boolean hasFinal) {
         List<Element> exchanges = XmlUtils.children(cashflows, "principalExchange");
         if (exchanges.isEmpty()) return null;
 
-        // Sort: initial = earliest date, final = latest date
         cdm.product.common.settlement.PrincipalPaymentSchedule.PrincipalPaymentScheduleBuilder b =
                 cdm.product.common.settlement.PrincipalPaymentSchedule.builder();
-        cdm.observable.asset.Money.MoneyBuilder amountB;
 
         // Currency from the swapStream's notional
         Element notional = XmlUtils.path(swapStream, "calculationPeriodAmount", "calculation",
                 "notionalSchedule", "notionalStepSchedule");
         String ccy = XmlUtils.childText(notional, "currency");
 
-        Element initialEx = exchanges.get(0);
-        Element finalEx = exchanges.size() > 1 ? exchanges.get(exchanges.size() - 1) : null;
+        // Assign each principalExchange to initial / final based on the principalExchanges
+        // flags and exchange count. When only one of initial/final flags is true (e.g. NDS),
+        // the single entry routes to that slot. With two entries and both flags true, the
+        // earliest goes to initial and the latest to final (FpML doc order).
+        Element initialEx = null;
+        Element finalEx = null;
+        if (exchanges.size() == 1) {
+            // Decide slot from the boolean flags (NDS-style trades have only finalExchange=true).
+            if (hasFinal && !hasInitial) {
+                finalEx = exchanges.get(0);
+            } else {
+                initialEx = exchanges.get(0);
+            }
+        } else {
+            initialEx = exchanges.get(0);
+            finalEx = exchanges.get(exchanges.size() - 1);
+        }
 
-        cdm.product.common.settlement.PrincipalPayment initial =
-                buildOnePrincipalPayment(initialEx, interestPayer, interestReceiver, ctx, ccy);
-        if (initial != null) b.setInitialPrincipalPayment(initial);
+        if (initialEx != null) {
+            cdm.product.common.settlement.PrincipalPayment initial =
+                    buildOnePrincipalPayment(initialEx, interestPayer, interestReceiver, ctx, ccy);
+            if (initial != null) b.setInitialPrincipalPayment(initial);
+        }
         if (finalEx != null) {
             cdm.product.common.settlement.PrincipalPayment fin =
                     buildOnePrincipalPayment(finalEx, interestPayer, interestReceiver, ctx, ccy);
