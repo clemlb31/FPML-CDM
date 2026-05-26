@@ -110,38 +110,6 @@ public class DividendSwapMapper implements ProductMapper {
         return TradeState.builder().setTrade(t.build()).build();
     }
 
-    /**
-     * Build just the inner economic terms (payouts) for a dividendSwapTransactionSupplement element.
-     * Used by {@link DividendSwapOptionMapper} to embed the dividend swap as the underlier
-     * of an option.
-     */
-    static EconomicTerms buildInnerEconomicTerms(Element supplement, MappingContext ctx) {
-        Element dividendLeg = XmlUtils.child(supplement, "dividendLeg");
-        Element fixedLeg = XmlUtils.child(supplement, "fixedLeg");
-        EconomicTerms.EconomicTermsBuilder econ = EconomicTerms.builder();
-        DividendSwapMapper m = new DividendSwapMapper();
-        econ.addPayout(m.buildPerformancePayout(dividendLeg, ctx));
-        if (fixedLeg != null) {
-            econ.addPayout(m.buildFixedPricePayout(fixedLeg, ctx));
-        }
-        return econ.build();
-    }
-
-    /** Inner-product taxonomy (no productType, just the qualifier) for embedding under an option. */
-    static List<ProductTaxonomy> buildInnerTaxonomy(Element supplement) {
-        Element dividendLeg = XmlUtils.child(supplement, "dividendLeg");
-        DividendSwapMapper m = new DividendSwapMapper();
-        return m.buildTaxonomy(dividendLeg);
-    }
-
-    /** Inner-product priceQuantities for embedding under an option. */
-    static List<PriceQuantity> buildInnerTradeLotPriceQuantities(Element supplement) {
-        Element dividendLeg = XmlUtils.child(supplement, "dividendLeg");
-        Element fixedLeg = XmlUtils.child(supplement, "fixedLeg");
-        DividendSwapMapper m = new DividendSwapMapper();
-        return m.buildTradeLotPriceQuantities(dividendLeg, fixedLeg);
-    }
-
     private Payout buildPerformancePayout(Element dividendLeg, MappingContext ctx) {
         PerformancePayout.PerformancePayoutBuilder ppb = PerformancePayout.builder();
 
