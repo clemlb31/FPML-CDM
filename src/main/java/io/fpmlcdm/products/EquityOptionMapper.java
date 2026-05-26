@@ -501,21 +501,50 @@ public class EquityOptionMapper implements ProductMapper {
     static Observable buildEquityObservable(Element underlyer) {
         if (underlyer == null) return null;
         Element singleUnderlyer = XmlUtils.child(underlyer, "singleUnderlyer");
-        if (singleUnderlyer == null) return null;
-
-        // Try equity (single stock)
-        Element equity = XmlUtils.child(singleUnderlyer, "equity");
-        if (equity != null) {
-            return buildStockObservable(equity);
+        if (singleUnderlyer != null) {
+            // Try equity (single stock)
+            Element equity = XmlUtils.child(singleUnderlyer, "equity");
+            if (equity != null) {
+                return buildStockObservable(equity);
+            }
+            // Try index
+            Element index = XmlUtils.child(singleUnderlyer, "index");
+            if (index != null) {
+                return buildIndexObservable(index);
+            }
         }
-
-        // Try index
-        Element index = XmlUtils.child(singleUnderlyer, "index");
-        if (index != null) {
-            return buildIndexObservable(index);
+        // Basket underlyer
+        Element basket = XmlUtils.child(underlyer, "basket");
+        if (basket != null) {
+            return buildBasketObservable(basket);
         }
-
         return null;
+    }
+
+    static Observable buildBasketObservable(Element basket) {
+        cdm.observable.asset.Basket.BasketBuilder bb = cdm.observable.asset.Basket.builder();
+        int idx = 0;
+        for (Element bcEl : XmlUtils.children(basket, "basketConstituent")) {
+            idx++;
+            cdm.observable.asset.BasketConstituent.BasketConstituentBuilder cb =
+                    cdm.observable.asset.BasketConstituent.builder();
+            Element eq = XmlUtils.child(bcEl, "equity");
+            Element ix = XmlUtils.child(bcEl, "index");
+            if (eq != null) {
+                Observable inner = buildStockObservable(eq);
+                if (inner != null && inner.getAsset() != null) cb.setAsset(inner.getAsset());
+            } else if (ix != null) {
+                Observable inner = buildIndexObservable(ix);
+                if (inner != null && inner.getIndex() != null) cb.setIndex(inner.getIndex());
+            }
+            cdm.observable.asset.metafields.FieldWithMetaBasketConstituent fwm =
+                    cdm.observable.asset.metafields.FieldWithMetaBasketConstituent.builder()
+                            .setValue(cb.build())
+                            .setMeta(QuantityMapper.locationMeta("basketConstituent-" + idx))
+                            .build();
+            bb.addBasketConstituent(fwm);
+        }
+        return Observable.builder().setBasket(bb.build()).build();
     }
 
     static Observable buildStockObservable(Element equity) {
@@ -663,6 +692,7 @@ public class EquityOptionMapper implements ProductMapper {
         if (lower.contains("valoren")) return AssetIdTypeEnum.VALOREN;
         if (lower.contains("wertpapier")) return AssetIdTypeEnum.WERTPAPIER;
         if (lower.contains("sicovam")) return AssetIdTypeEnum.SICOVAM;
+        if (lower.contains("red")) return AssetIdTypeEnum.REDID;
         if (lower.contains("ric")) return AssetIdTypeEnum.RIC;
         return AssetIdTypeEnum.OTHER;
     }
