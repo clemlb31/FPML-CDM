@@ -467,15 +467,7 @@ public class CreditDefaultSwapMapper implements ProductMapper {
             }
             b.setBasketName(fb.build());
         }
-        for (Element basketIdEl : XmlUtils.children(el, "basketId")) {
-            String idVal = basketIdEl.getTextContent().trim();
-            String scheme = basketIdEl.getAttribute("basketIdScheme");
-            FieldWithMetaString.FieldWithMetaStringBuilder fb = FieldWithMetaString.builder().setValue(idVal);
-            if (scheme != null && !scheme.isEmpty()) {
-                fb.setMeta(MetaFields.builder().setScheme(scheme).build());
-            }
-            b.addBasketId(fb.build());
-        }
+        // basketId from FpML is intentionally NOT carried into CDM (reference behaviour).
         Element pool = XmlUtils.child(el, "referencePool");
         if (pool != null) {
             cdm.product.asset.ReferencePool.ReferencePoolBuilder rpb = cdm.product.asset.ReferencePool.builder();

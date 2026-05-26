@@ -150,6 +150,13 @@ public final class TransferMapper {
                 .setPriceTransfer(cdm.observable.asset.FeeTypeEnum.UPFRONT)
                 .build());
 
-        return TransferState.builder().setTransfer(tb.build()).build();
+        TransferState.TransferStateBuilder tsb = TransferState.builder().setTransfer(tb.build());
+        // CDS feeLeg/singlePayment carries an FpML id (e.g. "iey785"); surface it as the
+        // TransferState.meta.externalKey to match the reference ingester.
+        String fpmlId = fpml.getAttribute("id");
+        if (fpmlId != null && !fpmlId.isEmpty()) {
+            tsb.setMeta(com.rosetta.model.metafields.MetaFields.builder().setExternalKey(fpmlId).build());
+        }
+        return tsb.build();
     }
 }
