@@ -324,11 +324,15 @@ public class CommoditySwapMapper implements ProductMapper {
         if (unit == null) return null;
         try { return cdm.base.math.CapacityUnitEnum.valueOf(unit); } catch (IllegalArgumentException ignored) {}
         try { return cdm.base.math.CapacityUnitEnum.fromDisplayName(unit); } catch (Exception ignored) {}
+        // Try upper-cased (FpML often differs in casing, e.g. "MWh" -> CDM "MWH")
+        String upper = unit.toUpperCase();
+        try { return cdm.base.math.CapacityUnitEnum.valueOf(upper); } catch (IllegalArgumentException ignored) {}
+        try { return cdm.base.math.CapacityUnitEnum.fromDisplayName(upper); } catch (Exception ignored) {}
         return null;
     }
     static Frequency mapFrequency(String freq) {
         if (freq == null) return null; Frequency.FrequencyBuilder fb = Frequency.builder();
-        switch (freq) { case "PerCalendarDay": fb.setPeriodMultiplier(1).setPeriod(PeriodExtendedEnum.D); break; case "PerCalculationPeriod": fb.setPeriodMultiplier(1).setPeriod(PeriodExtendedEnum.C); break; case "Term": fb.setPeriod(PeriodExtendedEnum.T); break; default: return null; }
+        switch (freq) { case "PerCalendarDay": fb.setPeriodMultiplier(1).setPeriod(PeriodExtendedEnum.D); break; case "PerCalculationPeriod": case "PerSettlementPeriod": fb.setPeriodMultiplier(1).setPeriod(PeriodExtendedEnum.C); break; case "Term": fb.setPeriod(PeriodExtendedEnum.T); break; default: return null; }
         return fb.build();
     }
 }
