@@ -62,14 +62,17 @@ public final class TransferMapper {
         String ccyScheme = ccyEl == null ? null : ccyEl.getAttribute("currencyScheme");
         String amount = XmlUtils.childText(amtEl, "amount");
         if (amount != null && ccy != null) {
-            FieldWithMetaString.FieldWithMetaStringBuilder qccyB = FieldWithMetaString.builder().setValue(ccy);
+            FieldWithMetaString.FieldWithMetaStringBuilder ccyB = FieldWithMetaString.builder().setValue(ccy);
             if (ccyScheme != null && !ccyScheme.isEmpty()) {
-                qccyB.setMeta(com.rosetta.model.metafields.MetaFields.builder().setScheme(ccyScheme).build());
+                ccyB.setMeta(com.rosetta.model.metafields.MetaFields.builder().setScheme(ccyScheme).build());
             }
             tb.setQuantity(NonNegativeQuantity.builder()
                     .setValue(new BigDecimal(amount))
-                    .setUnit(UnitType.builder().setCurrency(qccyB.build()).build())
+                    .setUnit(UnitType.builder()
+                            .setCurrency(ccyB.build()).build())
                     .build());
+            // The reference ingester drops the currency scheme on Cash.identifier
+            // (it survives only on quantity.unit.currency.meta).
             tb.setAsset(cdm.base.staticdata.asset.common.Asset.builder()
                     .setCash(Cash.builder()
                             .addIdentifier(AssetIdentifier.builder()
@@ -78,6 +81,21 @@ public final class TransferMapper {
                                     .build())
                             .build())
                     .build());
+        }
+
+        // CDS feeLeg/initialPayment uses sibling <adjustablePaymentDate> (unadjusted) +
+        // <adjustedPaymentDate> (adjusted) instead of a nested <paymentDate>.
+        String adjustablePaymentDate = XmlUtils.childText(fpml, "adjustablePaymentDate");
+        String adjustedPaymentDate = XmlUtils.childText(fpml, "adjustedPaymentDate");
+        if (adjustablePaymentDate != null || adjustedPaymentDate != null) {
+            AdjustableOrAdjustedOrRelativeDate.AdjustableOrAdjustedOrRelativeDateBuilder sdb =
+                    AdjustableOrAdjustedOrRelativeDate.builder();
+            if (adjustablePaymentDate != null) sdb.setUnadjustedDate(DateMapper.parse(adjustablePaymentDate));
+            if (adjustedPaymentDate != null) {
+                sdb.setAdjustedDate(com.rosetta.model.metafields.FieldWithMetaDate.builder()
+                        .setValue(DateMapper.parse(adjustedPaymentDate)).build());
+            }
+            tb.setSettlementDate(sdb.build());
         }
 
         Element payDate = XmlUtils.child(fpml, "paymentDate");

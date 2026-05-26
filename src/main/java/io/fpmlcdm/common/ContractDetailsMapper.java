@@ -264,20 +264,29 @@ public final class ContractDetailsMapper {
     }
 
     private static ContractualTermsSupplement buildContractualTermsSupplement(Element ct) {
-        String typeText = XmlUtils.childText(ct, "type");
+        Element typeEl = XmlUtils.child(ct, "type");
         ContractualTermsSupplement.ContractualTermsSupplementBuilder b =
                 ContractualTermsSupplement.builder();
         boolean any = false;
-        if (typeText != null) {
+        if (typeEl != null) {
+            String typeText = typeEl.getTextContent().trim();
+            String scheme = typeEl.getAttribute("contractualSupplementScheme");
             ContractualSupplementTypeEnum cte = null;
             try { cte = ContractualSupplementTypeEnum.fromDisplayName(typeText); }
             catch (Exception ignored) {
                 try { cte = ContractualSupplementTypeEnum.valueOf(typeText.toUpperCase()); }
                 catch (Exception ignored2) {}
             }
+            // Reference behaviour: emit the typed field only when the enum maps. When the
+            // FpML "type" value is non-canonical (e.g. "SP", "iTraxxEuropeDealer-Other"),
+            // drop both value and scheme.
             if (cte != null) {
-                b.setContractualTermsSupplementType(
-                        FieldWithMetaContractualSupplementTypeEnum.builder().setValue(cte).build());
+                FieldWithMetaContractualSupplementTypeEnum.FieldWithMetaContractualSupplementTypeEnumBuilder fb =
+                        FieldWithMetaContractualSupplementTypeEnum.builder().setValue(cte);
+                if (scheme != null && !scheme.isEmpty()) {
+                    fb.setMeta(MetaFields.builder().setScheme(scheme).build());
+                }
+                b.setContractualTermsSupplementType(fb.build());
                 any = true;
             }
         }

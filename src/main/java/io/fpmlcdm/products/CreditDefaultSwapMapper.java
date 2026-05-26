@@ -143,6 +143,15 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         cdm.product.common.settlement.SettlementTerms st = buildSettlementTerms(cds);
         if (st != null) cdpBuilder.setSettlementTerms(st);
 
+        // transactedPrice from feeLeg/marketFixedRate
+        Element feeLegEarly = XmlUtils.child(cds, "feeLeg");
+        String marketFixedRate = feeLegEarly == null ? null : XmlUtils.childText(feeLegEarly, "marketFixedRate");
+        if (marketFixedRate != null) {
+            cdpBuilder.setTransactedPrice(cdm.observable.asset.TransactedPrice.builder()
+                    .setMarketFixedRate(new BigDecimal(marketFixedRate))
+                    .build());
+        }
+
         Payout payout = Payout.builder().setCreditDefaultPayout(cdpBuilder.build()).build();
         econ.addPayout(payout);
 
@@ -579,22 +588,33 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         // calculationPeriodFrequency/rollConvention from periodicPayment
         if (periodicPayment != null) {
             String roll = XmlUtils.childText(periodicPayment, "rollConvention");
-            if (roll != null) {
-                CalculationPeriodFrequency.CalculationPeriodFrequencyBuilder cpf =
-                        CalculationPeriodFrequency.builder();
-                RollConventionEnum rc = parseRollConvention(roll);
-                if (rc != null) cpf.setRollConvention(rc);
-                // Try to inherit period/periodMultiplier from paymentFrequency (the FpML convention)
-                Element pf = XmlUtils.child(periodicPayment, "paymentFrequency");
-                if (pf != null) {
-                    String pm = XmlUtils.childText(pf, "periodMultiplier");
-                    String p = XmlUtils.childText(pf, "period");
-                    if (pm != null) cpf.setPeriodMultiplier(Integer.parseInt(pm));
-                    if (p != null) cpf.setPeriod(EnumMappers.periodExtended(p));
+            String firstPeriodStartDate = XmlUtils.childText(periodicPayment, "firstPeriodStartDate");
+            if (roll != null || firstPeriodStartDate != null) {
+                cdm.product.common.schedule.CalculationPeriodDates.CalculationPeriodDatesBuilder cpdb =
+                        cdm.product.common.schedule.CalculationPeriodDates.builder();
+                if (roll != null) {
+                    CalculationPeriodFrequency.CalculationPeriodFrequencyBuilder cpf =
+                            CalculationPeriodFrequency.builder();
+                    RollConventionEnum rc = parseRollConvention(roll);
+                    if (rc != null) cpf.setRollConvention(rc);
+                    // Try to inherit period/periodMultiplier from paymentFrequency (the FpML convention)
+                    Element pf = XmlUtils.child(periodicPayment, "paymentFrequency");
+                    if (pf != null) {
+                        String pm = XmlUtils.childText(pf, "periodMultiplier");
+                        String p = XmlUtils.childText(pf, "period");
+                        if (pm != null) cpf.setPeriodMultiplier(Integer.parseInt(pm));
+                        if (p != null) cpf.setPeriod(EnumMappers.periodExtended(p));
+                    }
+                    cpdb.setCalculationPeriodFrequency(cpf.build());
                 }
-                irp.setCalculationPeriodDates(
-                        cdm.product.common.schedule.CalculationPeriodDates.builder()
-                                .setCalculationPeriodFrequency(cpf.build()).build());
+                if (firstPeriodStartDate != null) {
+                    cpdb.setFirstPeriodStartDate(cdm.base.datetime.AdjustableOrRelativeDate.builder()
+                            .setAdjustableDate(cdm.base.datetime.AdjustableDate.builder()
+                                    .setUnadjustedDate(DateMapper.parse(firstPeriodStartDate))
+                                    .build())
+                            .build());
+                }
+                irp.setCalculationPeriodDates(cpdb.build());
             }
         }
 
