@@ -71,8 +71,18 @@ public class CommoditySwapMapper implements ProductMapper {
             cpb.setPriceQuantity(ResolvablePriceQuantity.builder().setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder().setReference(Reference.builder().setScope("DOCUMENT").setReference(floatTotalLabel).build()).build()).build());
             if (settlementCurrency != null) cpb.setSettlementTerms(SettlementTerms.builder().setSettlementType(SettlementTypeEnum.CASH).setSettlementCurrency(FieldWithMetaString.builder().setValue(settlementCurrency).build()).build());
             Element pricingDates = XmlUtils.child(fleg, "pricingDates");
-            if (pricingDates == null) { Element calc = XmlUtils.child(fleg, "calculation"); if (calc != null) pricingDates = XmlUtils.child(calc, "pricingDates"); }
+            Element calcEl = XmlUtils.child(fleg, "calculation");
+            if (pricingDates == null && calcEl != null) pricingDates = XmlUtils.child(calcEl, "pricingDates");
             if (pricingDates != null) cpb.setPricingDates(buildPricingDates(pricingDates));
+            // averagingFeature (from FpML calculation/averagingMethod)
+            String averagingMethod = calcEl != null ? XmlUtils.childText(calcEl, "averagingMethod") : null;
+            if (averagingMethod != null) {
+                cdm.base.math.AveragingCalculationMethod.AveragingCalculationMethodBuilder amb =
+                        cdm.base.math.AveragingCalculationMethod.builder()
+                                .setIsWeighted("Weighted".equalsIgnoreCase(averagingMethod))
+                                .setCalculationMethod(cdm.base.math.AveragingCalculationMethodEnum.ARITHMETIC);
+                cpb.setAveragingFeature(cdm.product.template.AveragingCalculation.builder().setAveragingMethod(amb.build()).build());
+            }
             Element calcSchedule = XmlUtils.child(fleg, "calculationPeriodsSchedule");
             if (calcSchedule != null) cpb.setCalculationPeriodDates(buildCalcPeriodDates(calcSchedule));
             Element relPayDates = XmlUtils.child(fleg, "relativePaymentDates");
@@ -123,6 +133,19 @@ public class CommoditySwapMapper implements ProductMapper {
         if (ca.calculationAgent() != null) econ.setCalculationAgent(ca.calculationAgent());
         String qualifier = determineCommoditySwapQualifier(comSwap);
         NonTransferableProduct.NonTransferableProductBuilder ntp = NonTransferableProduct.builder().setEconomicTerms(econ.build());
+        // Optional productType taxonomy (source=Other for commodity)
+        Element productType = XmlUtils.child(comSwap, "productType");
+        if (productType != null) {
+            String ptScheme = productType.getAttribute("productTypeScheme");
+            String ptValue = productType.getTextContent().trim();
+            FieldWithMetaString.FieldWithMetaStringBuilder name = FieldWithMetaString.builder().setValue(ptValue);
+            if (ptScheme != null && !ptScheme.isEmpty()) {
+                name.setMeta(MetaFields.builder().setScheme(ptScheme).build());
+            }
+            cdm.base.staticdata.asset.common.TaxonomyValue tv =
+                    cdm.base.staticdata.asset.common.TaxonomyValue.builder().setName(name.build()).build();
+            ntp.addTaxonomy(ProductTaxonomy.builder().setSource(TaxonomySourceEnum.OTHER).setValue(tv).build());
+        }
         ntp.addTaxonomy(ProductTaxonomy.builder().setSource(TaxonomySourceEnum.ISDA).setProductQualifier(qualifier).build());
         TradeLot tradeLot = TradeLot.builder().setPriceQuantity(priceQuantities).build();
         List<Counterparty> counterparties = SwapMapper.buildCounterparties(ctx);
@@ -192,7 +215,8 @@ public class CommoditySwapMapper implements ProductMapper {
         Element notionalQty = XmlUtils.child(fleg, "notionalQuantity");
         String unitText = notionalQty != null ? XmlUtils.childText(notionalQty, "quantityUnit") : null;
         PriceSchedule.PriceScheduleBuilder psb = PriceSchedule.builder().setPriceType(PriceTypeEnum.ASSET_PRICE).setArithmeticOperator(cdm.base.math.ArithmeticOperationEnum.ADD);
-        if (unitText != null) psb.setPerUnitOf(UnitType.builder().setCapacityUnit(mapCapacityUnit(unitText)).build());
+        cdm.base.math.CapacityUnitEnum capUnit = mapCapacityUnit(unitText);
+        if (capUnit != null) psb.setPerUnitOf(UnitType.builder().setCapacityUnit(capUnit).build());
         pqb.addPrice(FieldWithMetaPriceSchedule.builder().setValue(psb.build()).setMeta(QuantityMapper.locationMeta(priceLabel)).build());
 
         // 2. Per-day notionalQuantity
@@ -202,7 +226,10 @@ public class CommoditySwapMapper implements ProductMapper {
             String qty = XmlUtils.childText(notionalQty, "quantity");
             if (qty != null) {
                 NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qb = NonNegativeQuantitySchedule.builder().setValue(new BigDecimal(qty));
-                if (unit != null) qb.setUnit(UnitType.builder().setCapacityUnit(mapCapacityUnit(unit)).build());
+                if (unit != null) {
+                    cdm.base.math.CapacityUnitEnum cu = mapCapacityUnit(unit);
+                    if (cu != null) qb.setUnit(UnitType.builder().setCapacityUnit(cu).build());
+                }
                 if (freq != null) qb.setFrequency(mapFrequency(freq));
                 pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder().setValue(qb.build()).setMeta(QuantityMapper.locationMeta(perDayLabel)).build());
             }
@@ -211,7 +238,10 @@ public class CommoditySwapMapper implements ProductMapper {
         String totalNotionalQty = XmlUtils.childText(fleg, "totalNotionalQuantity");
         if (totalNotionalQty != null) {
             NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qb = NonNegativeQuantitySchedule.builder().setValue(new BigDecimal(totalNotionalQty));
-            if (unitText != null) qb.setUnit(UnitType.builder().setCapacityUnit(mapCapacityUnit(unitText)).build());
+            if (unitText != null) {
+                cdm.base.math.CapacityUnitEnum cu = mapCapacityUnit(unitText);
+                if (cu != null) qb.setUnit(UnitType.builder().setCapacityUnit(cu).build());
+            }
             pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder().setValue(qb.build()).setMeta(QuantityMapper.locationMeta(totalLabel)).build());
         }
         // 4. Observable
@@ -239,7 +269,10 @@ public class CommoditySwapMapper implements ProductMapper {
             if (price != null) {
                 PriceSchedule.PriceScheduleBuilder psb = PriceSchedule.builder().setValue(new BigDecimal(price)).setPriceType(PriceTypeEnum.CASH_PRICE);
                 if (priceCcy != null) psb.setUnit(UnitType.builder().setCurrency(FieldWithMetaString.builder().setValue(priceCcy).build()).build());
-                if (priceUnit != null) psb.setPerUnitOf(UnitType.builder().setCapacityUnit(mapCapacityUnit(priceUnit)).build());
+                if (priceUnit != null) {
+                    cdm.base.math.CapacityUnitEnum pu = mapCapacityUnit(priceUnit);
+                    if (pu != null) psb.setPerUnitOf(UnitType.builder().setCapacityUnit(pu).build());
+                }
                 pqb.addPrice(FieldWithMetaPriceSchedule.builder().setValue(psb.build()).setMeta(QuantityMapper.locationMeta(priceLabel)).build());
             }
         }
@@ -251,14 +284,20 @@ public class CommoditySwapMapper implements ProductMapper {
             String qty = XmlUtils.childText(notionalQty, "quantity");
             if (qty != null) {
                 NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qb = NonNegativeQuantitySchedule.builder().setValue(new BigDecimal(qty));
-                if (unitText != null) qb.setUnit(UnitType.builder().setCapacityUnit(mapCapacityUnit(unitText)).build());
+                if (unitText != null) {
+                    cdm.base.math.CapacityUnitEnum cu = mapCapacityUnit(unitText);
+                    if (cu != null) qb.setUnit(UnitType.builder().setCapacityUnit(cu).build());
+                }
                 if (freq != null) qb.setFrequency(mapFrequency(freq));
                 pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder().setValue(qb.build()).setMeta(QuantityMapper.locationMeta(perDayLabel)).build());
             }
         }
         if (totalNotionalQty != null) {
             NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qb = NonNegativeQuantitySchedule.builder().setValue(new BigDecimal(totalNotionalQty));
-            if (unitText != null) qb.setUnit(UnitType.builder().setCapacityUnit(mapCapacityUnit(unitText)).build());
+            if (unitText != null) {
+                cdm.base.math.CapacityUnitEnum cu = mapCapacityUnit(unitText);
+                if (cu != null) qb.setUnit(UnitType.builder().setCapacityUnit(cu).build());
+            }
             pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder().setValue(qb.build()).setMeta(QuantityMapper.locationMeta(totalLabel)).build());
         }
     }
@@ -289,7 +328,7 @@ public class CommoditySwapMapper implements ProductMapper {
     }
     static Frequency mapFrequency(String freq) {
         if (freq == null) return null; Frequency.FrequencyBuilder fb = Frequency.builder();
-        switch (freq) { case "PerCalendarDay": fb.setPeriodMultiplier(1).setPeriod(PeriodExtendedEnum.D); break; case "PerCalculationPeriod": fb.setPeriodMultiplier(1).setPeriod(PeriodExtendedEnum.M); break; case "Term": fb.setPeriod(PeriodExtendedEnum.T); break; default: return null; }
+        switch (freq) { case "PerCalendarDay": fb.setPeriodMultiplier(1).setPeriod(PeriodExtendedEnum.D); break; case "PerCalculationPeriod": fb.setPeriodMultiplier(1).setPeriod(PeriodExtendedEnum.C); break; case "Term": fb.setPeriod(PeriodExtendedEnum.T); break; default: return null; }
         return fb.build();
     }
 }
