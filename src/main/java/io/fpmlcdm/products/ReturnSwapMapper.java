@@ -259,10 +259,16 @@ public class ReturnSwapMapper implements ProductMapper {
         // PriceQuantity reference
         Element notional = XmlUtils.child(returnLeg, "notional");
         String notionalId = null;
-        if (notional != null) notionalId = notional.getAttribute("id");
+        if (notional != null) {
+            String v = notional.getAttribute("id");
+            if (v != null && !v.isEmpty()) notionalId = v;
+        }
         String notionalAmtId = null;
         Element notionalAmount = notional != null ? XmlUtils.child(notional, "notionalAmount") : null;
-        if (notionalAmount != null) notionalAmtId = notionalAmount.getAttribute("id");
+        if (notionalAmount != null) {
+            String v = notionalAmount.getAttribute("id");
+            if (v != null && !v.isEmpty()) notionalAmtId = v;
+        }
 
         // notionalReset
         Element rateOfReturn = XmlUtils.child(returnLeg, "rateOfReturn");
@@ -273,8 +279,7 @@ public class ReturnSwapMapper implements ProductMapper {
         }
 
         // Check if we should use quantityReference or quantitySchedule address
-        String effectiveNotionalId = notionalAmtId != null ? notionalAmtId :
-                (notionalId != null ? notionalId : null);
+        String effectiveNotionalId = notionalAmtId != null ? notionalAmtId : notionalId;
 
         ResolvablePriceQuantity.ResolvablePriceQuantityBuilder rpq = ResolvablePriceQuantity.builder();
         rpq.setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder()
@@ -282,8 +287,10 @@ public class ReturnSwapMapper implements ProductMapper {
                 .build());
         // Emit reset whenever notionalReset is explicitly specified (true OR false)
         if (notionalReset != null) rpq.setReset(notionalReset);
-        if (effectiveNotionalId != null) {
-            rpq.setMeta(MetaFields.builder().setExternalKey(effectiveNotionalId).build());
+        // Emit externalKey only when notionalAmount (the inner element) carries the id.
+        // The outer <notional id="..."> is used for cross-references, not the priceQuantity meta.
+        if (notionalAmtId != null) {
+            rpq.setMeta(MetaFields.builder().setExternalKey(notionalAmtId).build());
         }
         ppb.setPriceQuantity(rpq.build());
 
@@ -362,10 +369,10 @@ public class ReturnSwapMapper implements ProductMapper {
     /**
      * Heuristic to decide whether to emit settlementTerms from a returnLeg/amount/cashSettlement block.
      * Reference CDM output only includes settlementTerms when the interest leg uses relativeNotionalAmount
-     * AND dividendConditions is present on the return.
+     * AND either dividendConditions is present on the return OR the amount block uses a currencyReference
+     * (rather than a literal currency).
      */
     private boolean shouldEmitSettlementTermsFromAmount(Element returnLeg) {
-        // Find the sibling interestLeg via parent
         Element product = (Element) returnLeg.getParentNode();
         Element interestLeg = product != null ? XmlUtils.child(product, "interestLeg") : null;
         if (interestLeg == null) return false;
@@ -373,9 +380,11 @@ public class ReturnSwapMapper implements ProductMapper {
         if (intNotional == null) return false;
         Element rel = XmlUtils.child(intNotional, "relativeNotionalAmount");
         if (rel == null) return false;
-        // Must have dividendConditions on the return
         Element ret = XmlUtils.child(returnLeg, "return");
-        return ret != null && XmlUtils.child(ret, "dividendConditions") != null;
+        if (ret != null && XmlUtils.child(ret, "dividendConditions") != null) return true;
+        // currencyReference inside the amount block also triggers emission
+        Element amt = XmlUtils.child(returnLeg, "amount");
+        return amt != null && XmlUtils.child(amt, "currencyReference") != null;
     }
 
     private FxFeature buildFxFeature(Element fxFeatureEl) {
@@ -497,25 +506,27 @@ public class ReturnSwapMapper implements ProductMapper {
             else if ("RecordDate".equals(entitlement)) drt.setDividendEntitlement(DividendEntitlementEnum.RECORD_DATE);
         }
 
-        // dividendAmount → excessDividendAmount
-        String divAmount = XmlUtils.childText(divCond, "dividendAmount");
-        if (divAmount != null) {
-            drt.setExcessDividendAmount(mapDividendAmountType(divAmount));
-        }
-
-        // excessDividendAmount
+        // excessDividendAmount (only the FpML <excessDividendAmount>; <dividendAmount> is informational
+        // and not represented in the CDM dividendReturnTerms model).
         String excessDiv = XmlUtils.childText(divCond, "excessDividendAmount");
         if (excessDiv != null) {
             drt.setExcessDividendAmount(mapDividendAmountType(excessDiv));
         }
 
-        // dividendCurrency: either determinationMethod, currency value, or currency reference (href)
+        // dividendCurrency: determinationMethod, currency value, or currency/currencyReference href
         String detMethod = XmlUtils.childText(divCond, "determinationMethod");
         Element divCcyEl = XmlUtils.child(divCond, "currency");
-        if (detMethod != null || divCcyEl != null) {
+        Element divCcyRefEl = XmlUtils.child(divCond, "currencyReference");
+        if (detMethod != null || divCcyEl != null || divCcyRefEl != null) {
             DividendCurrency.DividendCurrencyBuilder dcb = DividendCurrency.builder();
             if (detMethod != null) dcb.setDeterminationMethod(mapDeterminationMethod(detMethod));
-            if (divCcyEl != null) {
+            if (divCcyRefEl != null) {
+                String href = divCcyRefEl.getAttribute("href");
+                if (href != null && !href.isEmpty()) {
+                    dcb.setCurrencyReference(com.rosetta.model.metafields.ReferenceWithMetaString.builder()
+                            .setExternalReference(href).build());
+                }
+            } else if (divCcyEl != null) {
                 String href = divCcyEl.getAttribute("href");
                 if (href != null && !href.isEmpty()) {
                     dcb.setCurrencyReference(com.rosetta.model.metafields.ReferenceWithMetaString.builder()
@@ -816,19 +827,34 @@ public class ReturnSwapMapper implements ProductMapper {
         // PriceQuantity - reference to equity notional
         Element notional = XmlUtils.child(returnLeg, "notional");
         String notionalId = null;
-        if (notional != null) notionalId = notional.getAttribute("id");
+        if (notional != null) {
+            String v = notional.getAttribute("id");
+            if (v != null && !v.isEmpty()) notionalId = v;
+        }
         String notionalAmtId = null;
         Element notionalAmount = notional != null ? XmlUtils.child(notional, "notionalAmount") : null;
-        if (notionalAmount != null) notionalAmtId = notionalAmount.getAttribute("id");
-        String effectiveNotionalId = notionalAmtId != null ? notionalAmtId :
-                (notionalId != null ? notionalId : null);
+        if (notionalAmount != null) {
+            String v = notionalAmount.getAttribute("id");
+            if (v != null && !v.isEmpty()) notionalAmtId = v;
+        }
+        String effectiveNotionalId = notionalAmtId != null ? notionalAmtId : notionalId;
 
-        if (useQuantityReference && effectiveNotionalId != null) {
+        // Prefer the explicit relativeNotionalAmount href from the interest leg (more reliable)
+        String refTarget = effectiveNotionalId;
+        Element intNotionalOpt = XmlUtils.child(interestLeg, "notional");
+        if (intNotionalOpt != null) {
+            Element relRef = XmlUtils.child(intNotionalOpt, "relativeNotionalAmount");
+            if (relRef != null) {
+                String href = relRef.getAttribute("href");
+                if (href != null && !href.isEmpty()) refTarget = href;
+            }
+        }
+        if (useQuantityReference && refTarget != null) {
             // quantityReference to the equity notional (equitySwapTransactionSupplement pattern)
             ResolvablePriceQuantity rpq = ResolvablePriceQuantity.builder()
                     .setQuantityReference(
                             cdm.product.common.settlement.metafields.ReferenceWithMetaResolvablePriceQuantity.builder()
-                                    .setExternalReference(effectiveNotionalId)
+                                    .setExternalReference(refTarget)
                                     .build())
                     .build();
             irpb.setPriceQuantity(rpq);

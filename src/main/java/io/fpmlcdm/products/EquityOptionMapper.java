@@ -657,7 +657,7 @@ public class EquityOptionMapper implements ProductMapper {
         if (lower.contains("cusip")) return AssetIdTypeEnum.CUSIP;
         if (lower.contains("isin")) return AssetIdTypeEnum.ISIN;
         if (lower.contains("sedol")) return AssetIdTypeEnum.SEDOL;
-        if (lower.contains("bloomberg-ticker") || lower.contains("bloombergticker")) return AssetIdTypeEnum.BBGTICKER;
+        if (lower.contains("ticker")) return AssetIdTypeEnum.BBGTICKER;
         if (lower.contains("bloomberg")) return AssetIdTypeEnum.BBGID;
         if (lower.contains("figi")) return AssetIdTypeEnum.FIGI;
         if (lower.contains("valoren")) return AssetIdTypeEnum.VALOREN;
