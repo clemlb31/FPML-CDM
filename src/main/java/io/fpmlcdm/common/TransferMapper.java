@@ -34,12 +34,17 @@ public final class TransferMapper {
                 TransferState ts = buildTransferState(p);
                 if (ts != null) out.add(ts);
             }
-            // CDS feeLeg/initialPayment
+            // CDS feeLeg/initialPayment and feeLeg/singlePayment (the latter uses <fixedAmount>)
             Element feeLeg = XmlUtils.child(productElement, "feeLeg");
             if (feeLeg != null) {
                 Element initPay = XmlUtils.child(feeLeg, "initialPayment");
                 if (initPay != null) {
                     TransferState ts = buildTransferState(initPay);
+                    if (ts != null) out.add(ts);
+                }
+                Element singlePay = XmlUtils.child(feeLeg, "singlePayment");
+                if (singlePay != null) {
+                    TransferState ts = buildTransferState(singlePay);
                     if (ts != null) out.add(ts);
                 }
             }
@@ -56,7 +61,9 @@ public final class TransferMapper {
     private static TransferState buildTransferState(Element fpml) {
         Transfer.TransferBuilder tb = Transfer.builder();
 
+        // <paymentAmount> for initialPayment / additionalPayment; <fixedAmount> for CDS feeLeg/singlePayment
         Element amtEl = XmlUtils.child(fpml, "paymentAmount");
+        if (amtEl == null) amtEl = XmlUtils.child(fpml, "fixedAmount");
         Element ccyEl = amtEl == null ? null : XmlUtils.child(amtEl, "currency");
         String ccy = ccyEl == null ? null : ccyEl.getTextContent().trim();
         String ccyScheme = ccyEl == null ? null : ccyEl.getAttribute("currencyScheme");

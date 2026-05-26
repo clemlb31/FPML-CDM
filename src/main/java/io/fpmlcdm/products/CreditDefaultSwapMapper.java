@@ -457,6 +457,25 @@ public class CreditDefaultSwapMapper implements ProductMapper {
     private cdm.product.asset.BasketReferenceInformation buildBasketReferenceInformation(Element el) {
         cdm.product.asset.BasketReferenceInformation.BasketReferenceInformationBuilder b =
                 cdm.product.asset.BasketReferenceInformation.builder();
+        Element basketNameEl = XmlUtils.child(el, "basketName");
+        if (basketNameEl != null) {
+            String name = basketNameEl.getTextContent().trim();
+            String scheme = basketNameEl.getAttribute("basketNameScheme");
+            FieldWithMetaString.FieldWithMetaStringBuilder fb = FieldWithMetaString.builder().setValue(name);
+            if (scheme != null && !scheme.isEmpty()) {
+                fb.setMeta(MetaFields.builder().setScheme(scheme).build());
+            }
+            b.setBasketName(fb.build());
+        }
+        for (Element basketIdEl : XmlUtils.children(el, "basketId")) {
+            String idVal = basketIdEl.getTextContent().trim();
+            String scheme = basketIdEl.getAttribute("basketIdScheme");
+            FieldWithMetaString.FieldWithMetaStringBuilder fb = FieldWithMetaString.builder().setValue(idVal);
+            if (scheme != null && !scheme.isEmpty()) {
+                fb.setMeta(MetaFields.builder().setScheme(scheme).build());
+            }
+            b.addBasketId(fb.build());
+        }
         Element pool = XmlUtils.child(el, "referencePool");
         if (pool != null) {
             cdm.product.asset.ReferencePool.ReferencePoolBuilder rpb = cdm.product.asset.ReferencePool.builder();
@@ -645,14 +664,13 @@ public class CreditDefaultSwapMapper implements ProductMapper {
             if (refOblig != null) b.addReferenceObligation(refOblig);
         }
 
-        String noRefObl = XmlUtils.childText(el, "noReferenceObligation");
-        if ("true".equals(noRefObl)) b.setNoReferenceObligation(true);
+        // allGuarantees: emit as-is (the reference preserves explicit false).
         String allG = XmlUtils.childText(el, "allGuarantees");
         if (allG != null) b.setAllGuarantees(Boolean.parseBoolean(allG));
-        String urObl = XmlUtils.childText(el, "unknownReferenceObligation");
-        if (urObl != null) b.setUnknownReferenceObligation(Boolean.parseBoolean(urObl));
-        String securedList = XmlUtils.childText(el, "securedList");
-        if (securedList != null) b.setSecuredList(Boolean.parseBoolean(securedList));
+        // noReferenceObligation / unknownReferenceObligation / securedList: emit only when true.
+        if ("true".equals(XmlUtils.childText(el, "noReferenceObligation"))) b.setNoReferenceObligation(true);
+        if ("true".equals(XmlUtils.childText(el, "unknownReferenceObligation"))) b.setUnknownReferenceObligation(true);
+        if ("true".equals(XmlUtils.childText(el, "securedList"))) b.setSecuredList(true);
 
         // referencePrice (cdm.observable.asset.Price: assetPrice with currency unit/perUnitOf)
         String refPrice = XmlUtils.childText(el, "referencePrice");
@@ -907,9 +925,13 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         Element period = XmlUtils.child(pst, "physicalSettlementPeriod");
         if (period != null) {
             String bd = XmlUtils.childText(period, "businessDays");
-            if (bd != null) {
-                b.setPhysicalSettlementPeriod(cdm.product.common.settlement.PhysicalSettlementPeriod.builder()
-                        .setBusinessDays(Integer.parseInt(bd)).build());
+            String maxBd = XmlUtils.childText(period, "maximumBusinessDays");
+            if (bd != null || maxBd != null) {
+                cdm.product.common.settlement.PhysicalSettlementPeriod.PhysicalSettlementPeriodBuilder ppb =
+                        cdm.product.common.settlement.PhysicalSettlementPeriod.builder();
+                if (bd != null) ppb.setBusinessDays(Integer.parseInt(bd));
+                if (maxBd != null) ppb.setMaximumBusinessDays(Integer.parseInt(maxBd));
+                b.setPhysicalSettlementPeriod(ppb.build());
                 any = true;
             }
         }
