@@ -66,8 +66,9 @@ public final class ContractDetailsMapper {
 
             // Contractual definitions → one Confirmation entry with all contractualDefinitionsType[]
             List<Element> cds = XmlUtils.children(documentation, "contractualDefinitions");
-            if (!cds.isEmpty()) {
-                LegalAgreement la = buildConfirmation(cds, ctx);
+            List<Element> matrices = XmlUtils.children(documentation, "contractualMatrix");
+            if (!cds.isEmpty() || !matrices.isEmpty()) {
+                LegalAgreement la = buildConfirmation(cds, matrices, ctx);
                 if (la != null) entries.add(la);
             }
         }
@@ -172,7 +173,7 @@ public final class ContractDetailsMapper {
         LegalAgreement.LegalAgreementBuilder b = LegalAgreement.builder()
                 .setLegalAgreementIdentification(idB.build());
 
-        // masterAgreementDate -> agreementDate (carried at LegalAgreement level)
+        // masterAgreementDate -> agreementDate
         String dateText = XmlUtils.childText(ma, "masterAgreementDate");
         if (dateText != null) b.setAgreementDate(DateMapper.parse(dateText));
 
@@ -182,14 +183,13 @@ public final class ContractDetailsMapper {
         return b.build();
     }
 
-    private static LegalAgreement buildConfirmation(List<Element> cds, MappingContext ctx) {
+    private static LegalAgreement buildConfirmation(List<Element> cds, List<Element> matrices, MappingContext ctx) {
         AgreementName.AgreementNameBuilder nameB = AgreementName.builder()
                 .setAgreementType(LegalAgreementTypeEnum.CONFIRMATION);
         for (Element cd : cds) {
             String value = cd.getTextContent().trim();
             String scheme = cd.getAttribute("contractualDefinitionsScheme");
             ContractualDefinitionsEnum cde = mapContractualDefinitions(value);
-            // Skip entries where neither enum value nor scheme can be set (reference drops them).
             if (cde == null && (scheme == null || scheme.isEmpty())) continue;
             FieldWithMetaContractualDefinitionsEnum.FieldWithMetaContractualDefinitionsEnumBuilder b =
                     FieldWithMetaContractualDefinitionsEnum.builder();
@@ -198,6 +198,56 @@ public final class ContractDetailsMapper {
                 b.setMeta(MetaFields.builder().setScheme(scheme).build());
             }
             nameB.addContractualDefinitionsType(b.build());
+        }
+
+        // contractualMatrix entries
+        for (Element matrix : matrices) {
+            cdm.legaldocumentation.common.ContractualMatrix.ContractualMatrixBuilder cmb =
+                    cdm.legaldocumentation.common.ContractualMatrix.builder();
+
+            Element matrixType = XmlUtils.child(matrix, "matrixType");
+            if (matrixType != null) {
+                String value = matrixType.getTextContent().trim();
+                String scheme = matrixType.getAttribute("matrixTypeScheme");
+                cdm.legaldocumentation.common.MatrixTypeEnum mte = null;
+                try { mte = cdm.legaldocumentation.common.MatrixTypeEnum.fromDisplayName(value); }
+                catch (Exception ignored) {}
+                if (mte == null) {
+                    try { mte = cdm.legaldocumentation.common.MatrixTypeEnum.valueOf(
+                            value.replaceAll("([a-z])([A-Z])", "$1_$2").toUpperCase()); }
+                    catch (Exception ignored) {}
+                }
+                cdm.legaldocumentation.common.metafields.FieldWithMetaMatrixTypeEnum.FieldWithMetaMatrixTypeEnumBuilder mtb =
+                        cdm.legaldocumentation.common.metafields.FieldWithMetaMatrixTypeEnum.builder();
+                if (mte != null) mtb.setValue(mte);
+                if (scheme != null && !scheme.isEmpty()) {
+                    mtb.setMeta(MetaFields.builder().setScheme(scheme).build());
+                }
+                cmb.setMatrixType(mtb.build());
+            }
+
+            Element matrixTerm = XmlUtils.child(matrix, "matrixTerm");
+            if (matrixTerm != null) {
+                String value = matrixTerm.getTextContent().trim();
+                String scheme = matrixTerm.getAttribute("matrixTermScheme");
+                cdm.legaldocumentation.common.MatrixTermEnum mte = null;
+                try { mte = cdm.legaldocumentation.common.MatrixTermEnum.fromDisplayName(value); }
+                catch (Exception ignored) {}
+                if (mte == null) {
+                    try { mte = cdm.legaldocumentation.common.MatrixTermEnum.valueOf(
+                            value.replaceAll("([a-z])([A-Z])", "$1_$2").toUpperCase()); }
+                    catch (Exception ignored) {}
+                }
+                cdm.legaldocumentation.common.metafields.FieldWithMetaMatrixTermEnum.FieldWithMetaMatrixTermEnumBuilder mtb =
+                        cdm.legaldocumentation.common.metafields.FieldWithMetaMatrixTermEnum.builder();
+                if (mte != null) mtb.setValue(mte);
+                if (scheme != null && !scheme.isEmpty()) {
+                    mtb.setMeta(MetaFields.builder().setScheme(scheme).build());
+                }
+                cmb.setMatrixTerm(mtb.build());
+            }
+
+            nameB.addContractualMatrix(cmb.build());
         }
 
         LegalAgreementIdentification id = LegalAgreementIdentification.builder()

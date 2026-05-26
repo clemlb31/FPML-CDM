@@ -42,10 +42,10 @@ public class VarianceSwapMapper implements ProductMapper {
         Element tradeHeader = XmlUtils.child(trade, "tradeHeader");
         parties = SwapMapper.applyPartyTradeInformation(parties, tradeHeader);
 
-        // Identify product + leg
+        // Identify product + leg(s)
         Kind kind;
         Element product;
-        Element leg;
+        List<Element> legs;
 
         Element variance = XmlUtils.child(trade, "varianceSwap");
         Element varianceTx = XmlUtils.child(trade, "varianceSwapTransactionSupplement");
@@ -57,27 +57,28 @@ public class VarianceSwapMapper implements ProductMapper {
         if (variance != null || varianceTx != null || varianceOptTx != null) {
             kind = Kind.VARIANCE;
             product = variance != null ? variance : (varianceTx != null ? varianceTx : varianceOptTx);
-            // varianceOptionTransactionSupplement contains a varianceSwapTransactionSupplement inside
             if (varianceOptTx != null && variance == null && varianceTx == null) {
                 Element inner = XmlUtils.child(varianceOptTx, "varianceSwapTransactionSupplement");
                 if (inner != null) product = inner;
             }
-            leg = XmlUtils.child(product, "varianceLeg");
+            legs = XmlUtils.children(product, "varianceLeg");
         } else if (volatility != null || volatilityTx != null) {
             kind = Kind.VOLATILITY;
             product = volatility != null ? volatility : volatilityTx;
-            leg = XmlUtils.child(product, "volatilityLeg");
+            legs = XmlUtils.children(product, "volatilityLeg");
         } else if (correlation != null) {
             kind = Kind.CORRELATION;
             product = correlation;
-            leg = XmlUtils.child(product, "correlationLeg");
+            legs = XmlUtils.children(product, "correlationLeg");
         } else {
             return null;
         }
 
-        if (leg == null) return null;
+        if (legs.isEmpty()) return null;
+        Element leg = legs.get(0);
+        boolean isDispersion = (kind == Kind.VARIANCE) && legs.size() > 1;
 
-        // PARTY_1 = payer of leg
+        // PARTY_1 = payer of (first) leg
         Element payerRef = XmlUtils.child(leg, "payerPartyReference");
         if (payerRef != null) {
             assignRoles(payerRef.getAttribute("href"), ctx);
@@ -86,7 +87,7 @@ public class VarianceSwapMapper implements ProductMapper {
         // Build economic terms
         EconomicTerms.EconomicTermsBuilder econ = EconomicTerms.builder();
 
-        // Effective/termination date — only emit when both present (matches CDM reference behavior)
+        // Effective/termination date — only emit when both present
         Element effectiveDate = XmlUtils.child(leg, "effectiveDate");
         Element terminationDate = XmlUtils.child(leg, "terminationDate");
         if (effectiveDate != null && terminationDate != null) {
@@ -96,8 +97,10 @@ public class VarianceSwapMapper implements ProductMapper {
             if (aordTerm != null) econ.setTerminationDate(aordTerm);
         }
 
-        // Performance payout
-        econ.addPayout(buildPerformancePayout(leg, kind, ctx));
+        // Performance payouts (one per leg)
+        for (int i = 0; i < legs.size(); i++) {
+            econ.addPayout(buildPerformancePayout(legs.get(i), kind, ctx, i, isDispersion));
+        }
 
         // Calculation agent
         CalculationAgentMapper.Result ca = CalculationAgentMapper.map(trade);
@@ -106,11 +109,15 @@ public class VarianceSwapMapper implements ProductMapper {
         // Taxonomy
         NonTransferableProduct.NonTransferableProductBuilder ntp = NonTransferableProduct.builder()
                 .setEconomicTerms(econ.build());
-        buildTaxonomy(leg, kind).forEach(ntp::addTaxonomy);
+        buildTaxonomy(leg, kind, isDispersion).forEach(ntp::addTaxonomy);
 
         // TradeLot
+        List<PriceQuantity> allPq = new ArrayList<>();
+        for (int i = 0; i < legs.size(); i++) {
+            allPq.addAll(buildTradeLotPriceQuantities(legs.get(i), kind, i));
+        }
         TradeLot tradeLot = TradeLot.builder()
-                .setPriceQuantity(buildTradeLotPriceQuantities(leg, kind))
+                .setPriceQuantity(allPq)
                 .build();
 
         // Counterparties
@@ -157,8 +164,9 @@ public class VarianceSwapMapper implements ProductMapper {
         return TradeState.builder().setTrade(t.build()).build();
     }
 
-    private Payout buildPerformancePayout(Element leg, Kind kind, MappingContext ctx) {
+    private Payout buildPerformancePayout(Element leg, Kind kind, MappingContext ctx, int legIdx, boolean isDispersion) {
         PerformancePayout.PerformancePayoutBuilder ppb = PerformancePayout.builder();
+        int oneBased = legIdx + 1;
 
         // Payer/receiver
         Element payerRef = XmlUtils.child(leg, "payerPartyReference");
@@ -168,46 +176,50 @@ public class VarianceSwapMapper implements ProductMapper {
         // PriceQuantity ref
         ppb.setPriceQuantity(ResolvablePriceQuantity.builder()
                 .setQuantitySchedule(cdm.base.math.metafields.ReferenceWithMetaNonNegativeQuantitySchedule.builder()
-                        .setReference(Reference.builder().setScope("DOCUMENT").setReference("quantity-1").build())
+                        .setReference(Reference.builder().setScope("DOCUMENT").setReference("quantity-" + oneBased).build())
                         .build())
                 .build());
 
-        // Settlement terms
-        SettlementTerms settlementTerms = buildSettlementTerms(leg);
-        if (settlementTerms != null) ppb.setSettlementTerms(settlementTerms);
+        // Settlement terms (only on first leg)
+        if (legIdx == 0) {
+            SettlementTerms settlementTerms = buildSettlementTerms(leg);
+            if (settlementTerms != null) ppb.setSettlementTerms(settlementTerms);
+        }
 
-        // observationStartDate → observationTerms.observationDates.periodicSchedule.startDate
+        // observationStartDate (only on first leg) → observationTerms.observationDates.periodicSchedule.startDate
         Element amount = XmlUtils.child(leg, "amount");
-        Element observationStartDate = amount != null ? XmlUtils.child(amount, "observationStartDate") : null;
-        if (observationStartDate != null) {
-            AdjustableOrRelativeDate aord = buildDateWithId(observationStartDate);
-            if (aord != null) {
-                ObservationTerms.ObservationTermsBuilder otb = ObservationTerms.builder()
-                        .setObservationDates(ObservationDates.builder()
-                                .setPeriodicSchedule(PeriodicDates.builder()
-                                        .setStartDate(aord)
-                                        .build())
-                                .build());
-                ppb.setObservationTerms(otb.build());
+        if (legIdx == 0) {
+            Element observationStartDate = amount != null ? XmlUtils.child(amount, "observationStartDate") : null;
+            if (observationStartDate != null) {
+                AdjustableOrRelativeDate aord = buildDateWithId(observationStartDate);
+                if (aord != null) {
+                    ObservationTerms.ObservationTermsBuilder otb = ObservationTerms.builder()
+                            .setObservationDates(ObservationDates.builder()
+                                    .setPeriodicSchedule(PeriodicDates.builder()
+                                            .setStartDate(aord)
+                                            .build())
+                                    .build());
+                    ppb.setObservationTerms(otb.build());
+                }
             }
         }
 
-        // valuation → valuationDates.finalValuationDate
+        // valuation → valuationDates.finalValuationDate (only on first leg)
         Element valuation = XmlUtils.child(leg, "valuation");
-        if (valuation != null) {
+        if (legIdx == 0 && valuation != null) {
             ValuationDates vd = buildFinalValuationDates(valuation);
             if (vd != null) ppb.setValuationDates(vd);
         }
 
-        // Underlier - reference to observable-1
+        // Underlier - reference to observable-N
         ppb.setUnderlier(Underlier.builder()
                 .setObservable(ReferenceWithMetaObservable.builder()
-                        .setReference(Reference.builder().setScope("DOCUMENT").setReference("observable-1").build())
+                        .setReference(Reference.builder().setScope("DOCUMENT").setReference("observable-" + oneBased).build())
                         .build())
                 .build());
 
-        // Return terms
-        ReturnTerms returnTerms = buildReturnTerms(leg, kind, valuation);
+        // Return terms (subsequent dispersion legs skip valuationTerms)
+        ReturnTerms returnTerms = buildReturnTerms(leg, kind, legIdx == 0 ? valuation : null);
         if (returnTerms != null) ppb.setReturnTerms(returnTerms);
 
         return Payout.builder().setPerformancePayout(ppb.build()).build();
@@ -296,13 +308,17 @@ public class VarianceSwapMapper implements ProductMapper {
     private VarianceReturnTerms buildVarianceReturnTerms(Element variance, Element amount, Element valuation) {
         VarianceReturnTerms.VarianceReturnTermsBuilder vrtb = VarianceReturnTerms.builder();
 
-        // valuationTerms (futuresPriceValuation / optionsPriceValuation)
+        // valuationTerms (only when valuation passed in, ie. first leg)
         ValuationTerms valTerms = buildValuationTerms(valuation);
         if (valTerms != null) vrtb.setValuationTerms(valTerms);
 
         // dividendApplicability from amount-level fields
         DividendApplicability divApp = buildDividendApplicability(amount);
         if (divApp != null) vrtb.setDividendApplicability(divApp);
+
+        // initialLevel
+        String initialLevel = XmlUtils.childText(variance, "initialLevel");
+        if (initialLevel != null) vrtb.setInitialLevel(new BigDecimal(initialLevel));
 
         // varianceStrikePrice
         String strikePrice = XmlUtils.childText(variance, "varianceStrikePrice");
@@ -492,9 +508,10 @@ public class VarianceSwapMapper implements ProductMapper {
         return LegalEntity.builder().setName(nameB.build()).build();
     }
 
-    private List<PriceQuantity> buildTradeLotPriceQuantities(Element leg, Kind kind) {
+    private List<PriceQuantity> buildTradeLotPriceQuantities(Element leg, Kind kind, int legIdx) {
         List<PriceQuantity> out = new ArrayList<>();
         PriceQuantity.PriceQuantityBuilder pq = PriceQuantity.builder();
+        int oneBased = legIdx + 1;
 
         // Quantity (varianceAmount / vegaNotionalAmount / notionalAmount)
         Element amount = XmlUtils.child(leg, "amount");
@@ -509,7 +526,7 @@ public class VarianceSwapMapper implements ProductMapper {
             }
             pq.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder()
                     .setValue(nqs.build())
-                    .setMeta(QuantityMapper.locationMeta("quantity-1"))
+                    .setMeta(QuantityMapper.locationMeta("quantity-" + oneBased))
                     .build());
         }
 
@@ -525,7 +542,7 @@ public class VarianceSwapMapper implements ProductMapper {
             if (obs != null) {
                 pq.setObservable(FieldWithMetaObservable.builder()
                         .setValue(obs)
-                        .setMeta(QuantityMapper.locationMeta("observable-1"))
+                        .setMeta(QuantityMapper.locationMeta("observable-" + oneBased))
                         .build());
             }
         }
@@ -693,32 +710,36 @@ public class VarianceSwapMapper implements ProductMapper {
         return null;
     }
 
-    private List<ProductTaxonomy> buildTaxonomy(Element leg, Kind kind) {
+    private List<ProductTaxonomy> buildTaxonomy(Element leg, Kind kind, boolean isDispersion) {
         List<ProductTaxonomy> out = new ArrayList<>();
 
-        String suffix;
-        if (kind == Kind.CORRELATION) {
-            suffix = "Basket";
+        String qualifier;
+        if (isDispersion) {
+            qualifier = "EquitySwap_ParameterReturnDispersion";
         } else {
-            // VARIANCE / VOLATILITY: determine underlier
-            Element underlyer = XmlUtils.child(leg, "underlyer");
-            boolean isIndex = false;
-            if (underlyer != null) {
-                Element su = XmlUtils.child(underlyer, "singleUnderlyer");
-                if (su != null) isIndex = XmlUtils.child(su, "index") != null;
+            String suffix;
+            if (kind == Kind.CORRELATION) {
+                suffix = "Basket";
+            } else {
+                Element underlyer = XmlUtils.child(leg, "underlyer");
+                boolean isIndex = false;
+                if (underlyer != null) {
+                    Element su = XmlUtils.child(underlyer, "singleUnderlyer");
+                    if (su != null) isIndex = XmlUtils.child(su, "index") != null;
+                }
+                suffix = isIndex ? "Index" : "SingleName";
             }
-            suffix = isIndex ? "Index" : "SingleName";
+            String paramType = switch (kind) {
+                case VARIANCE -> "Variance";
+                case VOLATILITY -> "Volatility";
+                case CORRELATION -> "Correlation";
+            };
+            qualifier = "EquitySwap_ParameterReturn" + paramType + "_" + suffix;
         }
-
-        String paramType = switch (kind) {
-            case VARIANCE -> "Variance";
-            case VOLATILITY -> "Volatility";
-            case CORRELATION -> "Correlation";
-        };
 
         out.add(ProductTaxonomy.builder()
                 .setSource(TaxonomySourceEnum.ISDA)
-                .setProductQualifier("EquitySwap_ParameterReturn" + paramType + "_" + suffix)
+                .setProductQualifier(qualifier)
                 .build());
 
         return out;
