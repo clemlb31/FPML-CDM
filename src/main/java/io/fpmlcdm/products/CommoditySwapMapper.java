@@ -88,6 +88,23 @@ public class CommoditySwapMapper implements ProductMapper {
             Element relPayDates = XmlUtils.child(fleg, "relativePaymentDates");
             if (relPayDates != null) cpb.setPaymentDates(buildPaymentDates(relPayDates));
             cpb.setUnderlier(Underlier.builder().setObservable(ReferenceWithMetaObservable.builder().setReference(Reference.builder().setScope("DOCUMENT").setReference(obsLabel).build()).build()).build());
+            // commodityPriceReturnTerms: spread (reference to the float price address) or conversionFactor
+            Element spread = calcEl != null ? XmlUtils.child(calcEl, "spread") : null;
+            String conversionFactor = calcEl != null ? XmlUtils.childText(calcEl, "conversionFactor") : null;
+            if (spread != null || conversionFactor != null) {
+                cdm.product.common.settlement.CommodityPriceReturnTerms.CommodityPriceReturnTermsBuilder cprt =
+                        cdm.product.common.settlement.CommodityPriceReturnTerms.builder();
+                if (spread != null) {
+                    cprt.setSpread(cdm.product.asset.SpreadSchedule.builder()
+                            .setPrice(ReferenceWithMetaPriceSchedule.builder()
+                                    .setReference(Reference.builder().setScope("DOCUMENT").setReference(floatPriceLabel).build()).build())
+                            .build());
+                }
+                if (conversionFactor != null) {
+                    cprt.setConversionFactor(new BigDecimal(conversionFactor));
+                }
+                cpb.setCommodityPriceReturnTerms(cprt.build());
+            }
             payouts.add(Payout.builder().setCommodityPayout(cpb.build()).build());
         }
         // Build FixedPricePayouts (and store them; their PQ will be added to priceQuantities first)
@@ -211,12 +228,21 @@ public class CommoditySwapMapper implements ProductMapper {
     }
     // Build the Float-leg PriceQuantity. Order observed in references: [price, quantity(per-day), quantity(total), observable].
     private void addFloatingPQ(PriceQuantity.PriceQuantityBuilder pqb, Element fleg, String totalLabel, String perDayLabel, String obsLabel, String priceLabel) {
-        // 1. AssetPrice (no value, just unit + arithmeticOperator=Add)
+        // 1. AssetPrice (per-unit). When the FpML <calculation><spread> exists, the AssetPrice
+        //    also carries the spread's value + currency (e.g. -1.45 USD on a basis swap).
         Element notionalQty = XmlUtils.child(fleg, "notionalQuantity");
         String unitText = notionalQty != null ? XmlUtils.childText(notionalQty, "quantityUnit") : null;
         PriceSchedule.PriceScheduleBuilder psb = PriceSchedule.builder().setPriceType(PriceTypeEnum.ASSET_PRICE).setArithmeticOperator(cdm.base.math.ArithmeticOperationEnum.ADD);
         cdm.base.math.CapacityUnitEnum capUnit = mapCapacityUnit(unitText);
         if (capUnit != null) psb.setPerUnitOf(UnitType.builder().setCapacityUnit(capUnit).build());
+        Element calcEl = XmlUtils.child(fleg, "calculation");
+        Element spreadEl = calcEl != null ? XmlUtils.child(calcEl, "spread") : null;
+        if (spreadEl != null) {
+            String amount = XmlUtils.childText(spreadEl, "amount");
+            String currency = XmlUtils.childText(spreadEl, "currency");
+            if (amount != null) psb.setValue(new BigDecimal(amount));
+            if (currency != null) psb.setUnit(UnitType.builder().setCurrency(FieldWithMetaString.builder().setValue(currency).build()).build());
+        }
         pqb.addPrice(FieldWithMetaPriceSchedule.builder().setValue(psb.build()).setMeta(QuantityMapper.locationMeta(priceLabel)).build());
 
         // 2. Per-day notionalQuantity
