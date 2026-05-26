@@ -378,13 +378,20 @@ public class CreditDefaultSwapMapper implements ProductMapper {
             if (eName != null) le.setName(FieldWithMetaString.builder().setValue(eName).build());
             for (Element entityId : XmlUtils.children(refEntity, "entityId")) {
                 String scheme = entityId.getAttribute("entityIdScheme");
+                cdm.base.staticdata.party.EntityIdentifierTypeEnum entityIdType =
+                        cdm.base.staticdata.party.EntityIdentifierTypeEnum.OTHER;
+                // FpML uses the explicit RED scheme path only on older versioned trades
+                // (e.g. /spec/2003/entity-id-RED-1-0). The generic external scheme stays OTHER.
+                if (scheme != null && scheme.contains("/spec/") && scheme.contains("entity-id-RED")) {
+                    entityIdType = cdm.base.staticdata.party.EntityIdentifierTypeEnum.REDID;
+                }
                 cdm.base.staticdata.party.EntityIdentifier.EntityIdentifierBuilder ei =
                         cdm.base.staticdata.party.EntityIdentifier.builder()
                                 .setIdentifier(FieldWithMetaString.builder()
                                         .setValue(entityId.getTextContent().trim())
                                         .setMeta(MetaFields.builder().setScheme(scheme).build())
                                         .build())
-                                .setIdentifierType(cdm.base.staticdata.party.EntityIdentifierTypeEnum.OTHER);
+                                .setIdentifierType(entityIdType);
                 le.addEntityIdentifier(ei.build());
             }
             String entityIdAttr = refEntity.getAttribute("id");
@@ -415,6 +422,8 @@ public class CreditDefaultSwapMapper implements ProductMapper {
                         idType = cdm.base.staticdata.asset.common.AssetIdTypeEnum.ISIN;
                     } else if (scheme != null && scheme.contains("instrument-id-CUSIP")) {
                         idType = cdm.base.staticdata.asset.common.AssetIdTypeEnum.CUSIP;
+                    } else if (scheme != null && scheme.contains("instrument-id-RED")) {
+                        idType = cdm.base.staticdata.asset.common.AssetIdTypeEnum.REDID;
                     }
                     sec.addIdentifier(cdm.base.staticdata.asset.common.AssetIdentifier.builder()
                             .setIdentifier(FieldWithMetaString.builder()

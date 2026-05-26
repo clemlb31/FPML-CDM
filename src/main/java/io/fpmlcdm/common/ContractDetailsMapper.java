@@ -5,10 +5,18 @@ import cdm.base.staticdata.party.metafields.ReferenceWithMetaParty;
 import cdm.event.common.ContractDetails;
 import cdm.legaldocumentation.common.AgreementName;
 import cdm.legaldocumentation.common.ContractualDefinitionsEnum;
+import cdm.legaldocumentation.common.ContractualMatrix;
+import cdm.legaldocumentation.common.ContractualSupplementTypeEnum;
+import cdm.legaldocumentation.common.ContractualTermsSupplement;
 import cdm.legaldocumentation.common.LegalAgreement;
 import cdm.legaldocumentation.common.LegalAgreementIdentification;
 import cdm.legaldocumentation.common.LegalAgreementTypeEnum;
+import cdm.legaldocumentation.common.MatrixTermEnum;
+import cdm.legaldocumentation.common.MatrixTypeEnum;
 import cdm.legaldocumentation.common.metafields.FieldWithMetaContractualDefinitionsEnum;
+import cdm.legaldocumentation.common.metafields.FieldWithMetaContractualSupplementTypeEnum;
+import cdm.legaldocumentation.common.metafields.FieldWithMetaMatrixTermEnum;
+import cdm.legaldocumentation.common.metafields.FieldWithMetaMatrixTypeEnum;
 import cdm.legaldocumentation.master.MasterAgreementTypeEnum;
 import cdm.legaldocumentation.master.MasterConfirmationTypeEnum;
 import cdm.legaldocumentation.master.metafields.FieldWithMetaMasterAgreementTypeEnum;
@@ -64,11 +72,13 @@ public final class ContractDetailsMapper {
                 if (la != null) entries.add(la);
             }
 
-            // Contractual definitions → one Confirmation entry with all contractualDefinitionsType[]
+            // Confirmation entry combining contractualDefinitions, contractualMatrix,
+            // contractualTermsSupplement (all three become a single CDM Confirmation entry).
             List<Element> cds = XmlUtils.children(documentation, "contractualDefinitions");
-            List<Element> matrices = XmlUtils.children(documentation, "contractualMatrix");
-            if (!cds.isEmpty() || !matrices.isEmpty()) {
-                LegalAgreement la = buildConfirmation(cds, matrices, ctx);
+            List<Element> cms = XmlUtils.children(documentation, "contractualMatrix");
+            List<Element> cts = XmlUtils.children(documentation, "contractualTermsSupplement");
+            if (!cds.isEmpty() || !cms.isEmpty() || !cts.isEmpty()) {
+                LegalAgreement la = buildConfirmation(cds, cms, cts, ctx);
                 if (la != null) entries.add(la);
             }
         }
@@ -102,9 +112,7 @@ public final class ContractDetailsMapper {
     }
 
     private static LegalAgreement buildMasterConfirmation(Element mc, MappingContext ctx) {
-        Element typeEl = XmlUtils.child(mc, "masterConfirmationType");
-        String typeText = typeEl != null ? typeEl.getTextContent().trim() : null;
-        String typeScheme = typeEl != null ? typeEl.getAttribute("masterConfirmationTypeScheme") : null;
+        String typeText = XmlUtils.childText(mc, "masterConfirmationType");
         String dateText = XmlUtils.childText(mc, "masterConfirmationDate");
 
         AgreementName.AgreementNameBuilder name = AgreementName.builder()
@@ -115,10 +123,9 @@ public final class ContractDetailsMapper {
             FieldWithMetaMasterConfirmationTypeEnum.FieldWithMetaMasterConfirmationTypeEnumBuilder fb =
                     FieldWithMetaMasterConfirmationTypeEnum.builder();
             if (mce != null) fb.setValue(mce);
-            if (typeScheme != null && !typeScheme.isEmpty()) {
-                fb.setMeta(MetaFields.builder().setScheme(typeScheme).build());
-            }
-            name.setMasterConfirmationType(fb.build());
+            else fb.setValue(null).setMeta(MetaFields.builder().build());
+            name.setMasterConfirmationType(FieldWithMetaMasterConfirmationTypeEnum.builder()
+                    .setValue(mce).build());
         }
 
         LegalAgreement.LegalAgreementBuilder la = LegalAgreement.builder()
@@ -172,24 +179,25 @@ public final class ContractDetailsMapper {
 
         LegalAgreement.LegalAgreementBuilder b = LegalAgreement.builder()
                 .setLegalAgreementIdentification(idB.build());
-
-        // masterAgreementDate -> agreementDate
-        String dateText = XmlUtils.childText(ma, "masterAgreementDate");
-        if (dateText != null) b.setAgreementDate(DateMapper.parse(dateText));
-
+        // masterAgreementDate → agreementDate
+        String mad = XmlUtils.childText(ma, "masterAgreementDate");
+        if (mad != null) b.setAgreementDate(DateMapper.parse(mad));
         for (ReferenceWithMetaParty p : partyRefs(ctx)) {
             b.addContractualParty(p);
         }
         return b.build();
     }
 
-    private static LegalAgreement buildConfirmation(List<Element> cds, List<Element> matrices, MappingContext ctx) {
+    private static LegalAgreement buildConfirmation(List<Element> cds, List<Element> cms,
+                                                    List<Element> cts, MappingContext ctx) {
         AgreementName.AgreementNameBuilder nameB = AgreementName.builder()
                 .setAgreementType(LegalAgreementTypeEnum.CONFIRMATION);
+        boolean any = false;
         for (Element cd : cds) {
             String value = cd.getTextContent().trim();
             String scheme = cd.getAttribute("contractualDefinitionsScheme");
             ContractualDefinitionsEnum cde = mapContractualDefinitions(value);
+            // Skip entries where neither enum value nor scheme can be set (reference drops them).
             if (cde == null && (scheme == null || scheme.isEmpty())) continue;
             FieldWithMetaContractualDefinitionsEnum.FieldWithMetaContractualDefinitionsEnumBuilder b =
                     FieldWithMetaContractualDefinitionsEnum.builder();
@@ -198,57 +206,23 @@ public final class ContractDetailsMapper {
                 b.setMeta(MetaFields.builder().setScheme(scheme).build());
             }
             nameB.addContractualDefinitionsType(b.build());
+            any = true;
         }
-
-        // contractualMatrix entries
-        for (Element matrix : matrices) {
-            cdm.legaldocumentation.common.ContractualMatrix.ContractualMatrixBuilder cmb =
-                    cdm.legaldocumentation.common.ContractualMatrix.builder();
-
-            Element matrixType = XmlUtils.child(matrix, "matrixType");
-            if (matrixType != null) {
-                String value = matrixType.getTextContent().trim();
-                String scheme = matrixType.getAttribute("matrixTypeScheme");
-                cdm.legaldocumentation.common.MatrixTypeEnum mte = null;
-                try { mte = cdm.legaldocumentation.common.MatrixTypeEnum.fromDisplayName(value); }
-                catch (Exception ignored) {}
-                if (mte == null) {
-                    try { mte = cdm.legaldocumentation.common.MatrixTypeEnum.valueOf(
-                            value.replaceAll("([a-z])([A-Z])", "$1_$2").toUpperCase()); }
-                    catch (Exception ignored) {}
-                }
-                cdm.legaldocumentation.common.metafields.FieldWithMetaMatrixTypeEnum.FieldWithMetaMatrixTypeEnumBuilder mtb =
-                        cdm.legaldocumentation.common.metafields.FieldWithMetaMatrixTypeEnum.builder();
-                if (mte != null) mtb.setValue(mte);
-                if (scheme != null && !scheme.isEmpty()) {
-                    mtb.setMeta(MetaFields.builder().setScheme(scheme).build());
-                }
-                cmb.setMatrixType(mtb.build());
+        for (Element cm : cms) {
+            ContractualMatrix matrix = buildContractualMatrix(cm);
+            if (matrix != null) {
+                nameB.addContractualMatrix(matrix);
+                any = true;
             }
-
-            Element matrixTerm = XmlUtils.child(matrix, "matrixTerm");
-            if (matrixTerm != null) {
-                String value = matrixTerm.getTextContent().trim();
-                String scheme = matrixTerm.getAttribute("matrixTermScheme");
-                cdm.legaldocumentation.common.MatrixTermEnum mte = null;
-                try { mte = cdm.legaldocumentation.common.MatrixTermEnum.fromDisplayName(value); }
-                catch (Exception ignored) {}
-                if (mte == null) {
-                    try { mte = cdm.legaldocumentation.common.MatrixTermEnum.valueOf(
-                            value.replaceAll("([a-z])([A-Z])", "$1_$2").toUpperCase()); }
-                    catch (Exception ignored) {}
-                }
-                cdm.legaldocumentation.common.metafields.FieldWithMetaMatrixTermEnum.FieldWithMetaMatrixTermEnumBuilder mtb =
-                        cdm.legaldocumentation.common.metafields.FieldWithMetaMatrixTermEnum.builder();
-                if (mte != null) mtb.setValue(mte);
-                if (scheme != null && !scheme.isEmpty()) {
-                    mtb.setMeta(MetaFields.builder().setScheme(scheme).build());
-                }
-                cmb.setMatrixTerm(mtb.build());
-            }
-
-            nameB.addContractualMatrix(cmb.build());
         }
+        for (Element ct : cts) {
+            ContractualTermsSupplement supp = buildContractualTermsSupplement(ct);
+            if (supp != null) {
+                nameB.addContractualTermsSupplement(supp);
+                any = true;
+            }
+        }
+        if (!any) return null;
 
         LegalAgreementIdentification id = LegalAgreementIdentification.builder()
                 .setAgreementName(nameB.build())
@@ -259,6 +233,60 @@ public final class ContractDetailsMapper {
             b.addContractualParty(p);
         }
         return b.build();
+    }
+
+    private static ContractualMatrix buildContractualMatrix(Element cm) {
+        String typeText = XmlUtils.childText(cm, "matrixType");
+        if (typeText == null) return null;
+        MatrixTypeEnum mte = null;
+        try { mte = MatrixTypeEnum.fromDisplayName(typeText); }
+        catch (Exception ignored) {
+            try { mte = MatrixTypeEnum.valueOf(typeText.toUpperCase()); }
+            catch (Exception ignored2) {}
+        }
+        ContractualMatrix.ContractualMatrixBuilder b = ContractualMatrix.builder();
+        if (mte != null) {
+            b.setMatrixType(FieldWithMetaMatrixTypeEnum.builder().setValue(mte).build());
+        }
+        String termText = XmlUtils.childText(cm, "matrixTerm");
+        if (termText != null) {
+            MatrixTermEnum term = null;
+            try { term = MatrixTermEnum.fromDisplayName(termText); }
+            catch (Exception ignored) {
+                try { term = MatrixTermEnum.valueOf(termText.toUpperCase()); }
+                catch (Exception ignored2) {}
+            }
+            if (term != null) {
+                b.setMatrixTerm(FieldWithMetaMatrixTermEnum.builder().setValue(term).build());
+            }
+        }
+        return b.build();
+    }
+
+    private static ContractualTermsSupplement buildContractualTermsSupplement(Element ct) {
+        String typeText = XmlUtils.childText(ct, "type");
+        ContractualTermsSupplement.ContractualTermsSupplementBuilder b =
+                ContractualTermsSupplement.builder();
+        boolean any = false;
+        if (typeText != null) {
+            ContractualSupplementTypeEnum cte = null;
+            try { cte = ContractualSupplementTypeEnum.fromDisplayName(typeText); }
+            catch (Exception ignored) {
+                try { cte = ContractualSupplementTypeEnum.valueOf(typeText.toUpperCase()); }
+                catch (Exception ignored2) {}
+            }
+            if (cte != null) {
+                b.setContractualTermsSupplementType(
+                        FieldWithMetaContractualSupplementTypeEnum.builder().setValue(cte).build());
+                any = true;
+            }
+        }
+        String pubDate = XmlUtils.childText(ct, "publicationDate");
+        if (pubDate != null) {
+            b.setPublicationDate(DateMapper.parse(pubDate));
+            any = true;
+        }
+        return any ? b.build() : null;
     }
 
     /** PARTY_1 and PARTY_2 (in role order) — additional parties are excluded. */
