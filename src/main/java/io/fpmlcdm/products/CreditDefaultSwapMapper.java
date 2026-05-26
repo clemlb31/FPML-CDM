@@ -86,6 +86,13 @@ public class CreditDefaultSwapMapper implements ProductMapper {
             econ.setEffectiveDate(DateMapper.adjustableOrRelative(effectiveDate));
         }
 
+        // dateAdjustments: from generalTerms/dateAdjustments
+        Element gtDateAdj = XmlUtils.child(generalTerms, "dateAdjustments");
+        if (gtDateAdj != null) {
+            cdm.base.datetime.BusinessDayAdjustments bda = DateMapper.businessDayAdjustments(gtDateAdj);
+            if (bda != null) econ.setDateAdjustments(bda);
+        }
+
         // CreditDefaultPayout
         CreditDefaultPayout.CreditDefaultPayoutBuilder cdpBuilder = CreditDefaultPayout.builder();
 
@@ -155,49 +162,56 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         Payout payout = Payout.builder().setCreditDefaultPayout(cdpBuilder.build()).build();
         econ.addPayout(payout);
 
-        // calculationAgent (FpML <calculationAgentBusinessCenter> sibling of creditDefaultSwap)
+        // calculationAgent / ancillaryParty
+        // - FpML <calculationAgentBusinessCenter> goes on economicTerms.calculationAgent.calculationAgentBusinessCenter
+        // - FpML <calculationAgent><calculationAgentPartyReference href=".."/></calculationAgent> goes to
+        //   ancillaryParty list with role=CalculationAgentIndependent and the calculationAgentParty enum.
         String agentBc = XmlUtils.childText(trade, "calculationAgentBusinessCenter");
-        if (agentBc != null) {
-            try {
-                cdm.base.datetime.BusinessCenterEnum bce =
-                        cdm.base.datetime.BusinessCenterEnum.valueOf(agentBc);
-                econ.setCalculationAgent(cdm.observable.asset.CalculationAgent.builder()
-                        .setCalculationAgentBusinessCenter(
-                                cdm.base.datetime.metafields.FieldWithMetaBusinessCenterEnum.builder()
-                                        .setValue(bce).build())
-                        .build());
-            } catch (IllegalArgumentException ignored) {}
+        Element calcAgentEl = XmlUtils.child(trade, "calculationAgent");
+        Element capRef = calcAgentEl == null ? null : XmlUtils.child(calcAgentEl, "calculationAgentPartyReference");
+        cdm.observable.asset.CalculationAgent.CalculationAgentBuilder caBuilder = null;
+        if (agentBc != null || capRef != null) {
+            caBuilder = cdm.observable.asset.CalculationAgent.builder();
+            if (agentBc != null) {
+                try {
+                    cdm.base.datetime.BusinessCenterEnum bce =
+                            cdm.base.datetime.BusinessCenterEnum.valueOf(agentBc);
+                    caBuilder.setCalculationAgentBusinessCenter(
+                            cdm.base.datetime.metafields.FieldWithMetaBusinessCenterEnum.builder()
+                                    .setValue(bce).build());
+                } catch (IllegalArgumentException ignored) {}
+            }
+            if (capRef != null) {
+                caBuilder.setCalculationAgentParty(
+                        cdm.base.staticdata.party.AncillaryRoleEnum.CALCULATION_AGENT_INDEPENDENT);
+            }
+            econ.setCalculationAgent(caBuilder.build());
         }
 
-        // Fee leg → InterestRatePayout (payout[1]) - only when periodicPayment exists
+        // Fee leg → InterestRatePayout (payout[1]) - only when periodicPayment exists.
+        // We defer adding it until we know whether dual-quantity mode is needed (so that the
+        // priceQuantity reference is wired to quantity-1 vs quantity-2 correctly).
         Element feeLeg = XmlUtils.child(cds, "feeLeg");
         Element periodicPayment = feeLeg == null ? null : XmlUtils.child(feeLeg, "periodicPayment");
-        if (periodicPayment != null) {
-            Payout feePayout = buildFeeLegPayout(feeLeg, buyerRole, sellerRole);
-            if (feePayout != null) econ.addPayout(feePayout);
-        }
+        // (added later, see below)
 
-        // Product
-        NonTransferableProduct.NonTransferableProductBuilder ntp = NonTransferableProduct.builder()
-                .setEconomicTerms(econ.build());
-
-        // Taxonomy
-        String qualifier;
-        if (indexRefInfo != null) {
-            qualifier = hasTranche ? "CreditDefaultSwap_IndexTranche" : "CreditDefaultSwap_Index";
-        } else {
-            qualifier = "CreditDefaultSwap_SingleName";
-        }
-        ntp.addTaxonomy(cdm.base.staticdata.asset.common.ProductTaxonomy.builder()
-                .setSource(cdm.base.staticdata.asset.common.TaxonomySourceEnum.ISDA)
-                .setProductQualifier(qualifier)
-                .build());
-
-        // TradeLot — split into two PriceQuantity entries: [0]=price, [1]=quantity
+        // TradeLot structure:
+        //   When feeLeg/periodicPayment/fixedAmountCalculation has its OWN calculationAmount,
+        //   the reference splits into:
+        //     [0] price + quantity (the fee-leg calculationAmount), addressed by price-1 + quantity-2
+        //     [1] quantity only (the protectionTerms calculationAmount), addressed by quantity-1
+        //   The CDP priceQuantity refs quantity-1 (protection notional); the fee-leg IRP refs quantity-2.
+        //   When the feeLeg has NO calculationAmount of its own, the simpler split is used:
+        //     [0] price only (price-1), [1] quantity only (quantity-1, from protectionTerms)
         Element calcAmount = XmlUtils.path(protTerms, "calculationAmount");
+        Element feeLegCalcAmount = null;
+        if (periodicPayment != null) {
+            Element fac = XmlUtils.child(periodicPayment, "fixedAmountCalculation");
+            if (fac != null) feeLegCalcAmount = XmlUtils.child(fac, "calculationAmount");
+        }
+
         List<PriceQuantity> pqs = new ArrayList<>();
 
-        // [0] price (the periodic fixed rate from feeLeg) - only when there's a periodicPayment with a fixedRate
         Element ccyEl = calcAmount != null ? XmlUtils.child(calcAmount, "currency") : null;
         String ccy = ccyEl != null ? ccyEl.getTextContent().trim() : null;
         String ccyScheme = ccyEl != null ? ccyEl.getAttribute("currencyScheme") : null;
@@ -208,6 +222,17 @@ public class CreditDefaultSwapMapper implements ProductMapper {
                 fixedRate = new BigDecimal(fixedRateEl.getTextContent().trim());
             }
         }
+
+        boolean dualQuantity = feeLegCalcAmount != null;
+        String feeQuantityKey = dualQuantity ? "quantity-2" : "quantity-1";
+
+        // Now that we know dualQuantity, add the fee-leg payout with the correct quantity ref.
+        if (periodicPayment != null) {
+            Payout feePayout = buildFeeLegPayout(feeLeg, buyerRole, sellerRole, feeQuantityKey);
+            if (feePayout != null) econ.addPayout(feePayout);
+        }
+
+        // [0] price (+ quantity in dualQuantity mode)
         if (fixedRate != null && ccy != null) {
             UnitType ccyUnit = ccyUnit(ccy, ccyScheme);
             PriceSchedule ps = PriceSchedule.builder()
@@ -221,10 +246,27 @@ public class CreditDefaultSwapMapper implements ProductMapper {
                     .setMeta(MetaFields.builder().addKey(
                             Key.builder().setScope("DOCUMENT").setKeyValue("price-1").build()).build())
                     .build();
-            pqs.add(PriceQuantity.builder().addPrice(price).build());
+            PriceQuantity.PriceQuantityBuilder pqb = PriceQuantity.builder().addPrice(price);
+            if (dualQuantity) {
+                Element fccyEl = XmlUtils.child(feeLegCalcAmount, "currency");
+                String fccy = fccyEl != null ? fccyEl.getTextContent().trim() : ccy;
+                String fccyScheme = fccyEl != null ? fccyEl.getAttribute("currencyScheme") : ccyScheme;
+                String famt = XmlUtils.childText(feeLegCalcAmount, "amount");
+                UnitType fUnit = ccyUnit(fccy, fccyScheme);
+                NonNegativeQuantitySchedule fqty = NonNegativeQuantitySchedule.builder()
+                        .setValue(new BigDecimal(famt))
+                        .setUnit(fUnit)
+                        .build();
+                pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder()
+                        .setValue(fqty)
+                        .setMeta(MetaFields.builder().addKey(
+                                Key.builder().setScope("DOCUMENT").setKeyValue(feeQuantityKey).build()).build())
+                        .build());
+            }
+            pqs.add(pqb.build());
         }
 
-        // [1] quantity
+        // [1] quantity (from protectionTerms.calculationAmount)
         if (calcAmount != null) {
             String amt = XmlUtils.childText(calcAmount, "amount");
             UnitType qtyUnit = ccyUnit(ccy, ccyScheme);
@@ -241,6 +283,20 @@ public class CreditDefaultSwapMapper implements ProductMapper {
                     .build());
         }
         TradeLot tradeLot = TradeLot.builder().setPriceQuantity(pqs).build();
+
+        // Product (built after fee-leg payout has been added with correct quantity-N ref)
+        NonTransferableProduct.NonTransferableProductBuilder ntp = NonTransferableProduct.builder()
+                .setEconomicTerms(econ.build());
+        String qualifier;
+        if (indexRefInfo != null) {
+            qualifier = hasTranche ? "CreditDefaultSwap_IndexTranche" : "CreditDefaultSwap_Index";
+        } else {
+            qualifier = "CreditDefaultSwap_SingleName";
+        }
+        ntp.addTaxonomy(cdm.base.staticdata.asset.common.ProductTaxonomy.builder()
+                .setSource(cdm.base.staticdata.asset.common.TaxonomySourceEnum.ISDA)
+                .setProductQualifier(qualifier)
+                .build());
 
         // Counterparties
         List<Counterparty> counterparties = new ArrayList<>();
@@ -280,6 +336,18 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         parties.forEach(t::addParty);
         if (contractDetails != null) t.setContractDetails(contractDetails);
         for (Account a : AccountMapper.map(doc)) t.addAccount(a);
+
+        // AncillaryParty for calculationAgent (FpML <calculationAgent><calculationAgentPartyReference/>)
+        if (capRef != null) {
+            String href = capRef.getAttribute("href");
+            if (href != null && !href.isEmpty()) {
+                t.addAncillaryParty(cdm.base.staticdata.party.AncillaryParty.builder()
+                        .setRole(cdm.base.staticdata.party.AncillaryRoleEnum.CALCULATION_AGENT_INDEPENDENT)
+                        .addPartyReference(ReferenceWithMetaParty.builder()
+                                .setExternalReference(href).build())
+                        .build());
+            }
+        }
 
         // transferHistory from feeLeg/initialPayment
         TradeState.TradeStateBuilder tsb = TradeState.builder().setTrade(t.build());
@@ -538,6 +606,16 @@ public class CreditDefaultSwapMapper implements ProductMapper {
             }
             if (oce != null) { b.setCategory(oce); any = true; }
         }
+        String ns = XmlUtils.childText(el, "notSubordinated");
+        if (ns != null) { b.setNotSubordinated(Boolean.parseBoolean(ns)); any = true; }
+        String nsl = XmlUtils.childText(el, "notSovereignLender");
+        if (nsl != null) { b.setNotSovereignLender(Boolean.parseBoolean(nsl)); any = true; }
+        String ndl = XmlUtils.childText(el, "notDomesticLaw");
+        if (ndl != null) { b.setNotDomesticLaw(Boolean.parseBoolean(ndl)); any = true; }
+        String listed = XmlUtils.childText(el, "listed");
+        if (listed != null) { b.setListed(Boolean.parseBoolean(listed)); any = true; }
+        String ndi = XmlUtils.childText(el, "notDomesticIssuance");
+        if (ndi != null) { b.setNotDomesticIssuance(Boolean.parseBoolean(ndi)); any = true; }
         return any ? b.build() : null;
     }
 
@@ -788,8 +866,9 @@ public class CreditDefaultSwapMapper implements ProductMapper {
                 .build();
     }
 
-    /** Build the fee leg as an InterestRatePayout (FixedRateSpecification with rate=price-1, quantity=quantity-1). */
-    private Payout buildFeeLegPayout(Element feeLeg, CounterpartyRoleEnum buyerRole, CounterpartyRoleEnum sellerRole) {
+    /** Build the fee leg as an InterestRatePayout (FixedRateSpecification with rate=price-1, quantity={quantityKey}). */
+    private Payout buildFeeLegPayout(Element feeLeg, CounterpartyRoleEnum buyerRole,
+                                     CounterpartyRoleEnum sellerRole, String quantityKey) {
         InterestRatePayout.InterestRatePayoutBuilder irp = InterestRatePayout.builder();
 
         // The fee leg: the protection buyer PAYS the periodic fixed amount to the seller.
@@ -798,10 +877,10 @@ public class CreditDefaultSwapMapper implements ProductMapper {
                 .setReceiver(sellerRole)
                 .build());
 
-        // priceQuantity → quantity-1 address ref
+        // priceQuantity → quantity-N address ref (quantity-1 in single-quantity mode, quantity-2 in dual)
         irp.setPriceQuantity(ResolvablePriceQuantity.builder()
                 .setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder()
-                        .setReference(Reference.builder().setScope("DOCUMENT").setReference("quantity-1").build())
+                        .setReference(Reference.builder().setScope("DOCUMENT").setReference(quantityKey).build())
                         .build())
                 .build());
 
