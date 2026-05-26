@@ -127,6 +127,7 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         GeneralTerms.GeneralTermsBuilder gtBuilder = GeneralTerms.builder();
         Element indexRefInfo = XmlUtils.child(generalTerms, "indexReferenceInformation");
         Element refInfo = XmlUtils.child(generalTerms, "referenceInformation");
+        Element basketRefInfo = XmlUtils.child(generalTerms, "basketReferenceInformation");
 
         boolean hasTranche = false;
         if (indexRefInfo != null) {
@@ -136,6 +137,10 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         }
         if (refInfo != null) {
             gtBuilder.setReferenceInformation(buildReferenceInformation(refInfo));
+        }
+        if (basketRefInfo != null) {
+            cdm.product.asset.BasketReferenceInformation bri = buildBasketReferenceInformation(basketRefInfo);
+            if (bri != null) gtBuilder.setBasketReferenceInformation(bri);
         }
         cdpBuilder.setGeneralTerms(gtBuilder.build());
 
@@ -290,6 +295,8 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         String qualifier;
         if (indexRefInfo != null) {
             qualifier = hasTranche ? "CreditDefaultSwap_IndexTranche" : "CreditDefaultSwap_Index";
+        } else if (basketRefInfo != null) {
+            qualifier = "CreditDefaultSwap_Basket";
         } else {
             qualifier = "CreditDefaultSwap_SingleName";
         }
@@ -446,6 +453,154 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         return b.build();
     }
 
+    /** Build BasketReferenceInformation from FpML basketReferenceInformation/referencePool. */
+    private cdm.product.asset.BasketReferenceInformation buildBasketReferenceInformation(Element el) {
+        cdm.product.asset.BasketReferenceInformation.BasketReferenceInformationBuilder b =
+                cdm.product.asset.BasketReferenceInformation.builder();
+        Element pool = XmlUtils.child(el, "referencePool");
+        if (pool != null) {
+            cdm.product.asset.ReferencePool.ReferencePoolBuilder rpb = cdm.product.asset.ReferencePool.builder();
+            for (Element item : XmlUtils.children(pool, "referencePoolItem")) {
+                cdm.product.asset.ReferencePoolItem.ReferencePoolItemBuilder rib =
+                        cdm.product.asset.ReferencePoolItem.builder();
+                Element cw = XmlUtils.child(item, "constituentWeight");
+                if (cw != null) {
+                    String bp = XmlUtils.childText(cw, "basketPercentage");
+                    if (bp != null) {
+                        rib.setConstituentWeight(cdm.product.template.ConstituentWeight.builder()
+                                .setBasketPercentage(new BigDecimal(bp)).build());
+                    }
+                }
+                Element pair = XmlUtils.child(item, "referencePair");
+                if (pair != null) {
+                    cdm.product.asset.ReferencePair.ReferencePairBuilder pb =
+                            cdm.product.asset.ReferencePair.builder();
+                    // referenceEntity → LegalEntity
+                    Element refEnt = XmlUtils.child(pair, "referenceEntity");
+                    if (refEnt != null) {
+                        pb.setReferenceEntity(buildLegalEntity(refEnt));
+                    }
+                    // referenceObligation (only first one)
+                    Element ro = XmlUtils.child(pair, "referenceObligation");
+                    if (ro != null) {
+                        ReferenceObligation refOblig = buildReferenceObligation(ro);
+                        if (refOblig != null) pb.setReferenceObligation(refOblig);
+                    }
+                    String entityType = XmlUtils.childText(pair, "entityType");
+                    if (entityType != null) {
+                        cdm.base.staticdata.party.EntityTypeEnum ete = null;
+                        try { ete = cdm.base.staticdata.party.EntityTypeEnum.fromDisplayName(entityType); }
+                        catch (Exception ignored) {
+                            try { ete = cdm.base.staticdata.party.EntityTypeEnum.valueOf(entityType.toUpperCase()); }
+                            catch (Exception ignored2) {}
+                        }
+                        if (ete != null) {
+                            pb.setEntityType(cdm.base.staticdata.party.metafields.FieldWithMetaEntityTypeEnum.builder()
+                                    .setValue(ete).build());
+                        }
+                    }
+                    rib.setReferencePair(pb.build());
+                }
+                rpb.addReferencePoolItem(rib.build());
+            }
+            b.setReferencePool(rpb.build());
+        }
+        String ntd = XmlUtils.childText(el, "nthToDefault");
+        if (ntd != null) b.setNthToDefault(Integer.parseInt(ntd));
+        String mtd = XmlUtils.childText(el, "mthToDefault");
+        if (mtd != null) b.setMthToDefault(Integer.parseInt(mtd));
+        // tranche
+        Element tranche = XmlUtils.child(el, "tranche");
+        if (tranche != null) {
+            Tranche.TrancheBuilder tb = Tranche.builder();
+            String ap = XmlUtils.childText(tranche, "attachmentPoint");
+            if (ap != null) tb.setAttachmentPoint(new BigDecimal(ap));
+            String ep = XmlUtils.childText(tranche, "exhaustionPoint");
+            if (ep != null) tb.setExhaustionPoint(new BigDecimal(ep));
+            b.setTranche(tb.build());
+        }
+        return b.build();
+    }
+
+    /** Build a LegalEntity from FpML referenceEntity (entityName + entityId list). */
+    private static LegalEntity buildLegalEntity(Element refEntity) {
+        LegalEntity.LegalEntityBuilder le = LegalEntity.builder();
+        String eName = XmlUtils.childText(refEntity, "entityName");
+        if (eName != null) le.setName(FieldWithMetaString.builder().setValue(eName).build());
+        for (Element entityId : XmlUtils.children(refEntity, "entityId")) {
+            String scheme = entityId.getAttribute("entityIdScheme");
+            cdm.base.staticdata.party.EntityIdentifierTypeEnum entityIdType =
+                    cdm.base.staticdata.party.EntityIdentifierTypeEnum.OTHER;
+            if (scheme != null && scheme.contains("/spec/") && scheme.contains("entity-id-RED")) {
+                entityIdType = cdm.base.staticdata.party.EntityIdentifierTypeEnum.REDID;
+            }
+            cdm.base.staticdata.party.EntityIdentifier.EntityIdentifierBuilder ei =
+                    cdm.base.staticdata.party.EntityIdentifier.builder()
+                            .setIdentifier(FieldWithMetaString.builder()
+                                    .setValue(entityId.getTextContent().trim())
+                                    .setMeta(MetaFields.builder().setScheme(scheme).build())
+                                    .build())
+                            .setIdentifierType(entityIdType);
+            le.addEntityIdentifier(ei.build());
+        }
+        String entityIdAttr = refEntity.getAttribute("id");
+        if (entityIdAttr != null && !entityIdAttr.isEmpty()) {
+            le.setMeta(MetaFields.builder().setExternalKey(entityIdAttr).build());
+        }
+        return le.build();
+    }
+
+    /** Build a single ReferenceObligation from FpML referenceObligation. Supports bond / mortgage / loan / convertibleBond / other security carriers. */
+    private static ReferenceObligation buildReferenceObligation(Element ro) {
+        ReferenceObligation.ReferenceObligationBuilder rob = ReferenceObligation.builder();
+        // FpML 5.x: instrumentId lives under bond, mortgage, convertibleBond, loan, etc.
+        Element securityHost = null;
+        for (String tag : new String[]{"bond", "mortgage", "convertibleBond", "loan"}) {
+            Element c = XmlUtils.child(ro, tag);
+            if (c != null) { securityHost = c; break; }
+        }
+        if (securityHost != null) {
+            cdm.base.staticdata.asset.common.Security.SecurityBuilder sec =
+                    cdm.base.staticdata.asset.common.Security.builder();
+            for (Element instrId : XmlUtils.children(securityHost, "instrumentId")) {
+                String scheme = instrId.getAttribute("instrumentIdScheme");
+                cdm.base.staticdata.asset.common.AssetIdTypeEnum idType =
+                        cdm.base.staticdata.asset.common.AssetIdTypeEnum.OTHER;
+                if (scheme != null) {
+                    if (scheme.contains("instrument-id-ISIN")) {
+                        idType = cdm.base.staticdata.asset.common.AssetIdTypeEnum.ISIN;
+                    } else if (scheme.contains("instrument-id-CUSIP")) {
+                        idType = cdm.base.staticdata.asset.common.AssetIdTypeEnum.CUSIP;
+                    } else if (scheme.contains("instrument-id-RED")) {
+                        idType = cdm.base.staticdata.asset.common.AssetIdTypeEnum.REDID;
+                    } else if (scheme.contains("instrument-id-Bloomberg")) {
+                        idType = cdm.base.staticdata.asset.common.AssetIdTypeEnum.BBGID;
+                    } else if (scheme.contains("instrument-id-Reuters")) {
+                        idType = cdm.base.staticdata.asset.common.AssetIdTypeEnum.RIC;
+                    }
+                }
+                sec.addIdentifier(cdm.base.staticdata.asset.common.AssetIdentifier.builder()
+                        .setIdentifier(FieldWithMetaString.builder()
+                                .setValue(instrId.getTextContent().trim())
+                                .setMeta(MetaFields.builder().setScheme(scheme).build())
+                                .build())
+                        .setIdentifierType(idType)
+                        .build());
+            }
+            rob.setSecurity(sec.build());
+        }
+        Element por = XmlUtils.child(ro, "primaryObligorReference");
+        if (por != null) {
+            String href = por.getAttribute("href");
+            if (href != null && !href.isEmpty()) {
+                rob.setPrimaryObligorReference(cdm.base.staticdata.party.metafields.ReferenceWithMetaLegalEntity.builder()
+                        .setExternalReference(href)
+                        .build());
+            }
+        }
+        return rob.build();
+    }
+
     private ReferenceInformation buildReferenceInformation(Element el) {
         ReferenceInformation.ReferenceInformationBuilder b = ReferenceInformation.builder();
         Element refEntity = XmlUtils.child(el, "referenceEntity");
@@ -472,8 +627,9 @@ public class CreditDefaultSwapMapper implements ProductMapper {
                 le.addEntityIdentifier(ei.build());
             }
             String entityIdAttr = refEntity.getAttribute("id");
-            String externalKey = (entityIdAttr != null && !entityIdAttr.isEmpty()) ? entityIdAttr : "referenceEntity";
-            le.setMeta(MetaFields.builder().setExternalKey(externalKey).build());
+            if (entityIdAttr != null && !entityIdAttr.isEmpty()) {
+                le.setMeta(MetaFields.builder().setExternalKey(entityIdAttr).build());
+            }
             b.setReferenceEntity(le.build());
         }
         // simple referenceEntity without nesting (e.g. excludedReferenceEntity has entityName directly)
@@ -485,47 +641,18 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         }
 
         for (Element ro : XmlUtils.children(el, "referenceObligation")) {
-            ReferenceObligation.ReferenceObligationBuilder rob = ReferenceObligation.builder();
-            Element bond = XmlUtils.child(ro, "bond");
-            if (bond != null) {
-                cdm.base.staticdata.asset.common.Security.SecurityBuilder sec =
-                        cdm.base.staticdata.asset.common.Security.builder();
-                Element instrId = XmlUtils.child(bond, "instrumentId");
-                if (instrId != null) {
-                    String scheme = instrId.getAttribute("instrumentIdScheme");
-                    cdm.base.staticdata.asset.common.AssetIdTypeEnum idType =
-                            cdm.base.staticdata.asset.common.AssetIdTypeEnum.OTHER;
-                    if (scheme != null && scheme.contains("instrument-id-ISIN")) {
-                        idType = cdm.base.staticdata.asset.common.AssetIdTypeEnum.ISIN;
-                    } else if (scheme != null && scheme.contains("instrument-id-CUSIP")) {
-                        idType = cdm.base.staticdata.asset.common.AssetIdTypeEnum.CUSIP;
-                    } else if (scheme != null && scheme.contains("instrument-id-RED")) {
-                        idType = cdm.base.staticdata.asset.common.AssetIdTypeEnum.REDID;
-                    }
-                    sec.addIdentifier(cdm.base.staticdata.asset.common.AssetIdentifier.builder()
-                            .setIdentifier(FieldWithMetaString.builder()
-                                    .setValue(instrId.getTextContent().trim())
-                                    .setMeta(MetaFields.builder().setScheme(scheme).build())
-                                    .build())
-                            .setIdentifierType(idType)
-                            .build());
-                }
-                rob.setSecurity(sec.build());
-            }
-            Element por = XmlUtils.child(ro, "primaryObligorReference");
-            if (por != null) {
-                String href = por.getAttribute("href");
-                if (href != null && !href.isEmpty()) {
-                    rob.setPrimaryObligorReference(cdm.base.staticdata.party.metafields.ReferenceWithMetaLegalEntity.builder()
-                            .setExternalReference(href)
-                            .build());
-                }
-            }
-            b.addReferenceObligation(rob.build());
+            ReferenceObligation refOblig = buildReferenceObligation(ro);
+            if (refOblig != null) b.addReferenceObligation(refOblig);
         }
 
         String noRefObl = XmlUtils.childText(el, "noReferenceObligation");
         if ("true".equals(noRefObl)) b.setNoReferenceObligation(true);
+        String allG = XmlUtils.childText(el, "allGuarantees");
+        if (allG != null) b.setAllGuarantees(Boolean.parseBoolean(allG));
+        String urObl = XmlUtils.childText(el, "unknownReferenceObligation");
+        if (urObl != null) b.setUnknownReferenceObligation(Boolean.parseBoolean(urObl));
+        String securedList = XmlUtils.childText(el, "securedList");
+        if (securedList != null) b.setSecuredList(Boolean.parseBoolean(securedList));
 
         // referencePrice (cdm.observable.asset.Price: assetPrice with currency unit/perUnitOf)
         String refPrice = XmlUtils.childText(el, "referencePrice");
@@ -577,6 +704,9 @@ public class CreditDefaultSwapMapper implements ProductMapper {
     /** Build ProtectionTerms.creditEvents from FpML protectionTerms/creditEvents (and other ProtectionTerms fields). */
     private ProtectionTerms buildProtectionTerms(Element protTermsEl,
                                                  CounterpartyRoleEnum buyerRole, CounterpartyRoleEnum sellerRole) {
+        // Mortgage / MBS / CMBS trades carry a <floatingAmountEvents> sub-tree that we don't
+        // model; the reference ingester drops the entire protectionTerms list in that case.
+        if (XmlUtils.child(protTermsEl, "floatingAmountEvents") != null) return null;
         ProtectionTerms.ProtectionTermsBuilder ptb = ProtectionTerms.builder();
         boolean any = false;
         Element ceEl = XmlUtils.child(protTermsEl, "creditEvents");
@@ -722,9 +852,26 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         if (cst == null && pst == null) return null;
         cdm.product.common.settlement.SettlementTerms.SettlementTermsBuilder b =
                 cdm.product.common.settlement.SettlementTerms.builder();
-        // settlementCurrency lives on one of the *settlementTerms wrappers in FpML
-        Element ccyHost = cst != null ? cst : pst;
-        Element ccyEl = ccyHost == null ? null : XmlUtils.child(ccyHost, "settlementCurrency");
+        // settlementCurrency: emit from physicalSettlementTerms (always) or cashSettlementTerms
+        // only when the latter carries other content too (otherwise the reference ingester
+        // drops it, e.g. cds-basket has cashSettlementTerms with just settlementCurrency).
+        Element ccyEl = null;
+        if (pst != null) ccyEl = XmlUtils.child(pst, "settlementCurrency");
+        if (ccyEl == null && cst != null) {
+            Element cstCcy = XmlUtils.child(cst, "settlementCurrency");
+            // Determine if cashSettlementTerms has any other child besides settlementCurrency.
+            boolean cstHasOther = false;
+            org.w3c.dom.NodeList cn = cst.getChildNodes();
+            for (int i = 0; i < cn.getLength(); i++) {
+                org.w3c.dom.Node nd = cn.item(i);
+                if (nd.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE
+                        && !"settlementCurrency".equals(nd.getLocalName())) {
+                    cstHasOther = true;
+                    break;
+                }
+            }
+            if (cstHasOther) ccyEl = cstCcy;
+        }
         if (ccyEl != null) {
             String ccy = ccyEl.getTextContent().trim();
             String scheme = ccyEl.getAttribute("currencyScheme");
@@ -773,6 +920,8 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         }
         String esc = XmlUtils.childText(pst, "escrow");
         if (esc != null) { b.setEscrow(Boolean.parseBoolean(esc)); any = true; }
+        String sixty = XmlUtils.childText(pst, "sixtyBusinessDaySettlementCap");
+        if (sixty != null) { b.setSixtyBusinessDaySettlementCap(Boolean.parseBoolean(sixty)); any = true; }
         return any ? b.build() : null;
     }
 
@@ -801,6 +950,16 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         if (tr != null) { b.setTransferable(Boolean.parseBoolean(tr)); any = true; }
         String nb = XmlUtils.childText(el, "notBearer");
         if (nb != null) { b.setNotBearer(Boolean.parseBoolean(nb)); any = true; }
+        String nsl = XmlUtils.childText(el, "notSovereignLender");
+        if (nsl != null) { b.setNotSovereignLender(Boolean.parseBoolean(nsl)); any = true; }
+        String ndl = XmlUtils.childText(el, "notDomesticLaw");
+        if (ndl != null) { b.setNotDomesticLaw(Boolean.parseBoolean(ndl)); any = true; }
+        String listed = XmlUtils.childText(el, "listed");
+        if (listed != null) { b.setListed(Boolean.parseBoolean(listed)); any = true; }
+        String ndi = XmlUtils.childText(el, "notDomesticIssuance");
+        if (ndi != null) { b.setNotDomesticIssuance(Boolean.parseBoolean(ndi)); any = true; }
+        String aom = XmlUtils.childText(el, "acceleratedOrMatured");
+        if (aom != null) { b.setAcceleratedOrMatured(Boolean.parseBoolean(aom)); any = true; }
 
         // specifiedCurrency (FpML: applicable + currency list); we emit just applicable.
         Element scEl = XmlUtils.child(el, "specifiedCurrency");
