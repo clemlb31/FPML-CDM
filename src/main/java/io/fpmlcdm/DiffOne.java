@@ -11,37 +11,37 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-/**
- * Prints the diff between expected CDM JSON and our actual output for a single sample.
- * Usage: mvn -q exec:java -Dexec.mainClass=io.fpmlcdm.DiffOne -Dexec.args="<category> <base>"
- */
+/** Diff one FpML test case against its reference. Usage: <category> <basename> */
 public final class DiffOne {
     public static void main(String[] args) throws Exception {
         if (args.length < 2) {
-            System.err.println("Usage: DiffOne <category> <baseName>");
+            System.err.println("Usage: DiffOne <category> <basename>");
             System.exit(2);
         }
+        String cat = args[0];
+        String base = args[1];
+        Path xml = Paths.get("data/train").resolve(cat).resolve("fpml").resolve(base + ".xml");
+        Path ref = Paths.get("data/train").resolve(cat).resolve("cdm").resolve(base + ".json");
         ObjectMapper json = RosettaObjectMapper.getNewRosettaObjectMapper();
         FpmlToCdmConverter converter = new FpmlToCdmConverter();
-        Path train = Paths.get("data/train");
-        Path xml = train.resolve(args[0]).resolve("fpml").resolve(args[1] + ".xml");
-        Path ref = train.resolve(args[0]).resolve("cdm").resolve(args[1] + ".json");
         try (InputStream in = Files.newInputStream(xml)) {
-            List<TradeState> states = converter.convert(in);
-            if (states.size() != 1) {
-                System.out.println("tradeStates=" + states.size());
+            List<TradeState> tradeStates = converter.convert(in);
+            if (tradeStates.size() != 1) {
+                System.out.println("trade count = " + tradeStates.size());
                 return;
             }
             String expected = Files.readString(ref);
-            String actual = json.writerWithDefaultPrettyPrinter().writeValueAsString(states.get(0));
+            String actual = json.writerWithDefaultPrettyPrinter().writeValueAsString(tradeStates.get(0));
             SemanticDiff.Result diff = SemanticDiff.compare(expected, actual);
-            System.out.println("DIFFS=" + diff.size());
-            System.out.println(diff);
-            if (System.getProperty("printActual") != null) {
-                System.out.println("\n=== ACTUAL ===\n" + actual);
+            System.out.println("DIFF COUNT: " + diff.size());
+            System.out.println(diff.toString());
+            if (args.length > 2 && args[2].equals("--actual")) {
+                System.out.println("\n===== ACTUAL =====");
+                System.out.println(actual);
             }
-            if (System.getProperty("printExpected") != null) {
-                System.out.println("\n=== EXPECTED ===\n" + expected);
+            if (args.length > 2 && args[2].equals("--expected")) {
+                System.out.println("\n===== EXPECTED =====");
+                System.out.println(expected);
             }
         }
     }

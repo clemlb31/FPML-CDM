@@ -57,13 +57,18 @@ public final class TransferMapper {
         Transfer.TransferBuilder tb = Transfer.builder();
 
         Element amtEl = XmlUtils.child(fpml, "paymentAmount");
-        String ccy = XmlUtils.childText(amtEl, "currency");
+        Element ccyEl = amtEl == null ? null : XmlUtils.child(amtEl, "currency");
+        String ccy = ccyEl == null ? null : ccyEl.getTextContent().trim();
+        String ccyScheme = ccyEl == null ? null : ccyEl.getAttribute("currencyScheme");
         String amount = XmlUtils.childText(amtEl, "amount");
         if (amount != null && ccy != null) {
+            FieldWithMetaString.FieldWithMetaStringBuilder qccyB = FieldWithMetaString.builder().setValue(ccy);
+            if (ccyScheme != null && !ccyScheme.isEmpty()) {
+                qccyB.setMeta(com.rosetta.model.metafields.MetaFields.builder().setScheme(ccyScheme).build());
+            }
             tb.setQuantity(NonNegativeQuantity.builder()
                     .setValue(new BigDecimal(amount))
-                    .setUnit(UnitType.builder()
-                            .setCurrency(FieldWithMetaString.builder().setValue(ccy).build()).build())
+                    .setUnit(UnitType.builder().setCurrency(qccyB.build()).build())
                     .build());
             tb.setAsset(cdm.base.staticdata.asset.common.Asset.builder()
                     .setCash(Cash.builder()
