@@ -519,8 +519,11 @@ public class EquityOptionMapper implements ProductMapper {
     }
 
     static Observable buildStockObservable(Element equity) {
-        Security.SecurityBuilder secb = Security.builder()
-                .setIsExchangeListed(true);
+        Security.SecurityBuilder secb = Security.builder();
+        // Only mark as exchange-listed when the FpML provides an exchangeId
+        if (XmlUtils.child(equity, "exchangeId") != null) {
+            secb.setIsExchangeListed(true);
+        }
 
         // Identifiers
         for (Element instId : XmlUtils.children(equity, "instrumentId")) {
@@ -584,8 +587,10 @@ public class EquityOptionMapper implements ProductMapper {
 
     static Observable buildIndexObservable(Element index) {
         EquityIndex.EquityIndexBuilder eib = EquityIndex.builder()
-                .setIsExchangeListed(true)
                 .setAssetClass(AssetClassEnum.EQUITY);
+        if (XmlUtils.child(index, "exchangeId") != null) {
+            eib.setIsExchangeListed(true);
+        }
 
         // Identifiers
         for (Element instId : XmlUtils.children(index, "instrumentId")) {
@@ -652,8 +657,13 @@ public class EquityOptionMapper implements ProductMapper {
         if (lower.contains("cusip")) return AssetIdTypeEnum.CUSIP;
         if (lower.contains("isin")) return AssetIdTypeEnum.ISIN;
         if (lower.contains("sedol")) return AssetIdTypeEnum.SEDOL;
-        if (lower.contains("ric")) return AssetIdTypeEnum.RIC;
         if (lower.contains("ticker")) return AssetIdTypeEnum.BBGTICKER;
+        if (lower.contains("bloomberg")) return AssetIdTypeEnum.BBGID;
+        if (lower.contains("figi")) return AssetIdTypeEnum.FIGI;
+        if (lower.contains("valoren")) return AssetIdTypeEnum.VALOREN;
+        if (lower.contains("wertpapier")) return AssetIdTypeEnum.WERTPAPIER;
+        if (lower.contains("sicovam")) return AssetIdTypeEnum.SICOVAM;
+        if (lower.contains("ric")) return AssetIdTypeEnum.RIC;
         return AssetIdTypeEnum.OTHER;
     }
 

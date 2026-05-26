@@ -86,16 +86,14 @@ public class VarianceSwapMapper implements ProductMapper {
         // Build economic terms
         EconomicTerms.EconomicTermsBuilder econ = EconomicTerms.builder();
 
-        // Effective/termination date
+        // Effective/termination date — only emit when both present (matches CDM reference behavior)
         Element effectiveDate = XmlUtils.child(leg, "effectiveDate");
-        if (effectiveDate != null) {
-            AdjustableOrRelativeDate aord = buildDateWithId(effectiveDate);
-            if (aord != null) econ.setEffectiveDate(aord);
-        }
         Element terminationDate = XmlUtils.child(leg, "terminationDate");
-        if (terminationDate != null) {
-            AdjustableOrRelativeDate aord = buildDateWithId(terminationDate);
-            if (aord != null) econ.setTerminationDate(aord);
+        if (effectiveDate != null && terminationDate != null) {
+            AdjustableOrRelativeDate aordEff = buildDateWithId(effectiveDate);
+            if (aordEff != null) econ.setEffectiveDate(aordEff);
+            AdjustableOrRelativeDate aordTerm = buildDateWithId(terminationDate);
+            if (aordTerm != null) econ.setTerminationDate(aordTerm);
         }
 
         // Performance payout
@@ -254,6 +252,18 @@ public class VarianceSwapMapper implements ProductMapper {
         PerformanceValuationDates.PerformanceValuationDatesBuilder pvdb =
                 PerformanceValuationDates.builder().setValuationDate(aord);
 
+        String timeType = XmlUtils.childText(valuation, "valuationTimeType");
+        if (timeType != null) {
+            try {
+                pvdb.setValuationTimeType(cdm.observable.common.TimeTypeEnum.valueOf(
+                        timeType.replaceAll("([a-z])([A-Z])", "$1_$2").toUpperCase()));
+            } catch (IllegalArgumentException ignored) {
+                try {
+                    pvdb.setValuationTimeType(cdm.observable.common.TimeTypeEnum.fromDisplayName(timeType));
+                } catch (Exception ignored2) {}
+            }
+        }
+
         return ValuationDates.builder().setFinalValuationDate(pvdb.build()).build();
     }
 
@@ -323,20 +333,8 @@ public class VarianceSwapMapper implements ProductMapper {
     private VolatilityReturnTerms buildVolatilityReturnTerms(Element volatility, Element amount, Element valuation) {
         VolatilityReturnTerms.VolatilityReturnTermsBuilder vrtb = VolatilityReturnTerms.builder();
 
-        ValuationTerms valTerms = buildValuationTerms(valuation);
-        if (valTerms != null) vrtb.setValuationTerms(valTerms);
-
         DividendApplicability divApp = buildDividendApplicability(amount);
         if (divApp != null) vrtb.setDividendApplicability(divApp);
-
-        // initialLevelSource
-        String initialLevelSource = XmlUtils.childText(volatility, "initialLevelSource");
-        if (initialLevelSource != null) {
-            try {
-                vrtb.setInitialLevelSource(cdm.observable.common.DeterminationMethodEnum.valueOf(
-                        camelToUpper(initialLevelSource)));
-            } catch (IllegalArgumentException ignored) {}
-        }
 
         // expectedN
         String expN = XmlUtils.childText(volatility, "expectedN");
@@ -619,19 +617,15 @@ public class VarianceSwapMapper implements ProductMapper {
 
         if (adjDate != null) {
             AdjustableDate adj = DateMapper.adjustable(adjDate);
-            String innerId = adjDate.getAttribute("id");
             AdjustableOrRelativeDate.AdjustableOrRelativeDateBuilder b =
                     AdjustableOrRelativeDate.builder().setAdjustableDate(adj);
-            String useId = (innerId != null && !innerId.isEmpty()) ? innerId
-                    : ((id != null && !id.isEmpty()) ? id : null);
-            if (useId != null) {
-                b.setMeta(MetaFields.builder().setExternalKey(useId).build());
+            if (id != null && !id.isEmpty()) {
+                b.setMeta(MetaFields.builder().setExternalKey(id).build());
             }
             return b.build();
         }
 
         if (relDate != null) {
-            String innerId = relDate.getAttribute("id");
             AdjustedRelativeDateOffset.AdjustedRelativeDateOffsetBuilder rdb =
                     AdjustedRelativeDateOffset.builder();
             String pm = XmlUtils.childText(relDate, "periodMultiplier");
@@ -652,10 +646,8 @@ public class VarianceSwapMapper implements ProductMapper {
 
             AdjustableOrRelativeDate.AdjustableOrRelativeDateBuilder b =
                     AdjustableOrRelativeDate.builder().setRelativeDate(rdb.build());
-            String useId = (innerId != null && !innerId.isEmpty()) ? innerId
-                    : ((id != null && !id.isEmpty()) ? id : null);
-            if (useId != null) {
-                b.setMeta(MetaFields.builder().setExternalKey(useId).build());
+            if (id != null && !id.isEmpty()) {
+                b.setMeta(MetaFields.builder().setExternalKey(id).build());
             }
             return b.build();
         }

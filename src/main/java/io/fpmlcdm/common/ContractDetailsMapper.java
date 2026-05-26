@@ -101,7 +101,9 @@ public final class ContractDetailsMapper {
     }
 
     private static LegalAgreement buildMasterConfirmation(Element mc, MappingContext ctx) {
-        String typeText = XmlUtils.childText(mc, "masterConfirmationType");
+        Element typeEl = XmlUtils.child(mc, "masterConfirmationType");
+        String typeText = typeEl != null ? typeEl.getTextContent().trim() : null;
+        String typeScheme = typeEl != null ? typeEl.getAttribute("masterConfirmationTypeScheme") : null;
         String dateText = XmlUtils.childText(mc, "masterConfirmationDate");
 
         AgreementName.AgreementNameBuilder name = AgreementName.builder()
@@ -112,9 +114,10 @@ public final class ContractDetailsMapper {
             FieldWithMetaMasterConfirmationTypeEnum.FieldWithMetaMasterConfirmationTypeEnumBuilder fb =
                     FieldWithMetaMasterConfirmationTypeEnum.builder();
             if (mce != null) fb.setValue(mce);
-            else fb.setValue(null).setMeta(MetaFields.builder().build());
-            name.setMasterConfirmationType(FieldWithMetaMasterConfirmationTypeEnum.builder()
-                    .setValue(mce).build());
+            if (typeScheme != null && !typeScheme.isEmpty()) {
+                fb.setMeta(MetaFields.builder().setScheme(typeScheme).build());
+            }
+            name.setMasterConfirmationType(fb.build());
         }
 
         LegalAgreement.LegalAgreementBuilder la = LegalAgreement.builder()

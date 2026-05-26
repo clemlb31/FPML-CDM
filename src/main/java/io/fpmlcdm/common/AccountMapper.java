@@ -54,9 +54,15 @@ public final class AccountMapper {
         Account.AccountBuilder b = Account.builder();
         String id = fpml.getAttribute("id");
 
-        String accountId = XmlUtils.childText(fpml, "accountId");
-        if (accountId != null) {
-            b.setAccountNumber(FieldWithMetaString.builder().setValue(accountId).build());
+        Element accountIdEl = XmlUtils.child(fpml, "accountId");
+        if (accountIdEl != null) {
+            String accountId = accountIdEl.getTextContent().trim();
+            String accountIdScheme = accountIdEl.getAttribute("accountIdScheme");
+            FieldWithMetaString.FieldWithMetaStringBuilder fb = FieldWithMetaString.builder().setValue(accountId);
+            if (accountIdScheme != null && !accountIdScheme.isEmpty()) {
+                fb.setMeta(MetaFields.builder().setScheme(accountIdScheme).build());
+            }
+            b.setAccountNumber(fb.build());
         }
         String accountName = XmlUtils.childText(fpml, "accountName");
         if (accountName != null) {
