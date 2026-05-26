@@ -17,6 +17,7 @@ public class ProductDetector {
         if (XmlUtils.child(trade, "equityOptionTransactionSupplement") != null) return new EquityOptionMapper();
         if (XmlUtils.child(trade, "returnSwap") != null) return new ReturnSwapMapper();
         if (XmlUtils.child(trade, "equitySwapTransactionSupplement") != null) return new ReturnSwapMapper();
+        if (XmlUtils.child(trade, "dividendSwapOptionTransactionSupplement") != null) return new DividendSwapOptionMapper();
         if (XmlUtils.child(trade, "dividendSwapTransactionSupplement") != null) return new DividendSwapMapper();
         if (XmlUtils.child(trade, "commoditySwap") != null) return new CommoditySwapMapper();
         if (XmlUtils.child(trade, "commodityOption") != null) return new CommodityOptionMapper();
