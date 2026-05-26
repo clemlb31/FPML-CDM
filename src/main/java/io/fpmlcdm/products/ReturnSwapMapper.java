@@ -82,14 +82,21 @@ public class ReturnSwapMapper implements ProductMapper {
         boolean isEqSwapSupplement = XmlUtils.child(trade, "equitySwapTransactionSupplement") != null;
 
         Payout perfPayout = buildPerformancePayout(returnLeg, ctx);
-        // Use quantityReference when the return leg notional has an id
-        Element notionalForRef = XmlUtils.child(returnLeg, "notional");
-        String notionalIdForRef = notionalForRef != null ? notionalForRef.getAttribute("id") : null;
-        Element notionalAmtForRef = notionalForRef != null ? XmlUtils.child(notionalForRef, "notionalAmount") : null;
-        String notionalAmtIdForRef = notionalAmtForRef != null ? notionalAmtForRef.getAttribute("id") : null;
-        boolean useQtyRef = (notionalIdForRef != null && !notionalIdForRef.isEmpty())
-                || (notionalAmtIdForRef != null && !notionalAmtIdForRef.isEmpty());
-        Payout irPayout = interestLeg != null ? buildInterestRatePayout(interestLeg, returnLeg, ctx, useQtyRef) : null;
+        // Use quantityReference on the interest leg only when the interest leg has
+        // <notional><relativeNotionalAmount href="..."/></notional> — meaning it borrows
+        // the equity notional by reference rather than carrying its own quantity.
+        String interestRelHref = null;
+        if (interestLeg != null) {
+            Element intNotional = XmlUtils.child(interestLeg, "notional");
+            Element relNot = intNotional != null ? XmlUtils.child(intNotional, "relativeNotionalAmount") : null;
+            if (relNot != null) {
+                String href = relNot.getAttribute("href");
+                if (href != null && !href.isEmpty()) interestRelHref = href;
+            }
+        }
+        Payout irPayout = interestLeg != null
+                ? buildInterestRatePayout(interestLeg, returnLeg, ctx, interestRelHref)
+                : null;
 
         if (isEqSwapSupplement && irPayout != null) {
             econ.addPayout(irPayout);
@@ -266,7 +273,7 @@ public class ReturnSwapMapper implements ProductMapper {
         rpq.setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder()
                 .setReference(Reference.builder().setScope("DOCUMENT").setReference("quantity-1").build())
                 .build());
-        if (notionalReset != null && notionalReset) rpq.setReset(true);
+        if (notionalReset != null) rpq.setReset(notionalReset);
         if (effectiveNotionalId != null) {
             rpq.setMeta(MetaFields.builder().setExternalKey(effectiveNotionalId).build());
         }
@@ -302,16 +309,60 @@ public class ReturnSwapMapper implements ProductMapper {
                         .build())
                 .build());
 
+        // fxFeature (composite / quanto / crossCurrency)
+        Element fxFeatureEl = XmlUtils.child(returnLeg, "fxFeature");
+        if (fxFeatureEl != null) {
+            cdm.product.template.FxFeature fxf = buildFxFeature(fxFeatureEl);
+            if (fxf != null) ppb.addFxFeature(fxf);
+        }
+
         // ReturnTerms
         Element returnEl = XmlUtils.child(returnLeg, "return");
         if (returnEl != null) {
-            ppb.setReturnTerms(buildReturnTerms(returnEl, returnLeg));
+            ppb.setReturnTerms(buildReturnTerms(returnEl, returnLeg, fxFeatureEl));
         }
 
         return Payout.builder().setPerformancePayout(ppb.build()).build();
     }
 
-    private ReturnTerms buildReturnTerms(Element returnEl, Element returnLeg) {
+    private cdm.product.template.FxFeature buildFxFeature(Element fxFeatureEl) {
+        cdm.product.template.FxFeature.FxFeatureBuilder fxb = cdm.product.template.FxFeature.builder();
+        Element refCcyEl = XmlUtils.child(fxFeatureEl, "referenceCurrency");
+        if (refCcyEl != null) {
+            String value = refCcyEl.getTextContent().trim();
+            String id = refCcyEl.getAttribute("id");
+            com.rosetta.model.metafields.FieldWithMetaString.FieldWithMetaStringBuilder rcb =
+                    com.rosetta.model.metafields.FieldWithMetaString.builder().setValue(value);
+            if (id != null && !id.isEmpty()) {
+                rcb.setMeta(MetaFields.builder().setExternalKey(id).build());
+            }
+            fxb.setReferenceCurrency(rcb.build());
+        }
+        Element comp = XmlUtils.child(fxFeatureEl, "composite");
+        if (comp != null) {
+            cdm.product.template.Composite.CompositeBuilder cb = cdm.product.template.Composite.builder();
+            String detMethod = XmlUtils.childText(comp, "determinationMethod");
+            if (detMethod != null) cb.setDeterminationMethod(mapDeterminationMethod(detMethod));
+            fxb.setComposite(cb.build());
+        }
+        Element cross = XmlUtils.child(fxFeatureEl, "crossCurrency");
+        if (cross != null) {
+            String detMethod = XmlUtils.childText(cross, "determinationMethod");
+            // Only emit when there is actual content (avoid empty {} for <crossCurrency/>)
+            if (detMethod != null) {
+                cdm.product.template.Composite.CompositeBuilder cb = cdm.product.template.Composite.builder();
+                cb.setDeterminationMethod(mapDeterminationMethod(detMethod));
+                fxb.setCrossCurrency(cb.build());
+            }
+        }
+        Element quanto = XmlUtils.child(fxFeatureEl, "quanto");
+        if (quanto != null && quanto.getChildNodes().getLength() > 0) {
+            fxb.setQuanto(cdm.product.template.Quanto.builder().build());
+        }
+        return fxb.build();
+    }
+
+    private ReturnTerms buildReturnTerms(Element returnEl, Element returnLeg, Element fxFeatureEl) {
         ReturnTerms.ReturnTermsBuilder rtb = ReturnTerms.builder();
 
         String returnType = XmlUtils.childText(returnEl, "returnType");
@@ -322,16 +373,16 @@ public class ReturnSwapMapper implements ProductMapper {
 
         Element dividendConditions = XmlUtils.child(returnEl, "dividendConditions");
         if (dividendConditions != null) {
-            rtb.setDividendReturnTerms(buildDividendReturnTerms(dividendConditions, returnLeg));
+            rtb.setDividendReturnTerms(buildDividendReturnTerms(dividendConditions, returnLeg, fxFeatureEl));
         }
 
         return rtb.build();
     }
 
-    private DividendReturnTerms buildDividendReturnTerms(Element divCond, Element returnLeg) {
+    private DividendReturnTerms buildDividendReturnTerms(Element divCond, Element returnLeg, Element fxFeatureEl) {
         DividendReturnTerms.DividendReturnTermsBuilder drt = DividendReturnTerms.builder();
 
-        // Dividend payout ratio from underlyer
+        // Dividend payout ratio from underlyer (+ optional cashRatio from <declaredCashDividendPercentage>)
         Element underlyer = XmlUtils.child(returnLeg, "underlyer");
         if (underlyer != null) {
             Element singleUnderlyer = XmlUtils.child(underlyer, "singleUnderlyer");
@@ -339,12 +390,29 @@ public class ReturnSwapMapper implements ProductMapper {
                 Element dividendPayout = XmlUtils.child(singleUnderlyer, "dividendPayout");
                 if (dividendPayout != null) {
                     String ratio = XmlUtils.childText(dividendPayout, "dividendPayoutRatio");
-                    if (ratio != null) {
-                        drt.addDividendPayoutRatio(DividendPayoutRatio.builder()
-                                .setTotalRatio(new BigDecimal(ratio))
-                                .build());
+                    String cashPct = XmlUtils.childText(divCond, "declaredCashDividendPercentage");
+                    if (ratio != null || cashPct != null) {
+                        DividendPayoutRatio.DividendPayoutRatioBuilder dprb = DividendPayoutRatio.builder();
+                        if (ratio != null) dprb.setTotalRatio(new BigDecimal(ratio));
+                        if (cashPct != null) dprb.setCashRatio(new BigDecimal(cashPct));
+                        drt.addDividendPayoutRatio(dprb.build());
                     }
                 }
+            }
+        }
+
+        // firstOrSecondPeriod (FpML: <dividendPeriod>FirstPeriod|SecondPeriod</dividendPeriod>)
+        String divPeriodText = XmlUtils.childText(divCond, "dividendPeriod");
+        if (divPeriodText != null) {
+            try {
+                drt.setFirstOrSecondPeriod(
+                        cdm.product.asset.DividendPeriodEnum.fromDisplayName(divPeriodText));
+            } catch (Exception ignored) {
+                try {
+                    drt.setFirstOrSecondPeriod(
+                            cdm.product.asset.DividendPeriodEnum.valueOf(
+                                    divPeriodText.toUpperCase().replace(" ", "_")));
+                } catch (Exception ignored2) {}
             }
         }
 
@@ -371,20 +439,39 @@ public class ReturnSwapMapper implements ProductMapper {
             drt.setExcessDividendAmount(mapDividendAmountType(excessDiv));
         }
 
-        // determinationMethod → dividendCurrency
+        // dividendCurrency: explicit <currency>, or referenced via <fxFeature>/<referenceCurrency id="...">,
+        // or via <determinationMethod> in <dividendConditions> (rare)
+        DividendCurrency.DividendCurrencyBuilder dcb = DividendCurrency.builder();
+        boolean hasDivCurrency = false;
+        String divCcy = XmlUtils.childText(divCond, "currency");
+        if (divCcy != null) {
+            dcb.setCurrency(com.rosetta.model.metafields.FieldWithMetaString.builder()
+                    .setValue(divCcy).build());
+            hasDivCurrency = true;
+        } else if (fxFeatureEl != null) {
+            Element refCcyEl = XmlUtils.child(fxFeatureEl, "referenceCurrency");
+            if (refCcyEl != null) {
+                String id = refCcyEl.getAttribute("id");
+                if (id != null && !id.isEmpty()) {
+                    dcb.setCurrencyReference(com.rosetta.model.metafields.ReferenceWithMetaString.builder()
+                            .setExternalReference(id).build());
+                    hasDivCurrency = true;
+                }
+            }
+        }
         String detMethod = XmlUtils.childText(divCond, "determinationMethod");
         if (detMethod != null) {
-            DividendCurrency.DividendCurrencyBuilder dcb = DividendCurrency.builder();
             dcb.setDeterminationMethod(mapDeterminationMethod(detMethod));
-            drt.setDividendCurrency(dcb.build());
+            hasDivCurrency = true;
         }
+        if (hasDivCurrency) drt.setDividendCurrency(dcb.build());
 
         // Dividend period
         Element divPeriodEffDate = XmlUtils.child(divCond, "dividendPeriodEffectiveDate");
         Element divPeriodEndDate = XmlUtils.child(divCond, "dividendPeriodEndDate");
         Element divPaymentDate = XmlUtils.child(divCond, "dividendPaymentDate");
 
-        if (divPeriodEffDate != null || divPeriodEndDate != null) {
+        if (divPeriodEffDate != null || divPeriodEndDate != null || divPaymentDate != null) {
             DividendPeriod.DividendPeriodBuilder dpb = DividendPeriod.builder();
 
             if (divPeriodEffDate != null) {
@@ -613,10 +700,10 @@ public class ReturnSwapMapper implements ProductMapper {
     }
 
     private Payout buildInterestRatePayout(Element interestLeg, Element returnLeg, MappingContext ctx) {
-        return buildInterestRatePayout(interestLeg, returnLeg, ctx, false);
+        return buildInterestRatePayout(interestLeg, returnLeg, ctx, null);
     }
 
-    private Payout buildInterestRatePayout(Element interestLeg, Element returnLeg, MappingContext ctx, boolean useQuantityReference) {
+    private Payout buildInterestRatePayout(Element interestLeg, Element returnLeg, MappingContext ctx, String quantityReferenceHref) {
         cdm.product.asset.InterestRatePayout.InterestRatePayoutBuilder irpb =
                 cdm.product.asset.InterestRatePayout.builder();
 
@@ -625,27 +712,17 @@ public class ReturnSwapMapper implements ProductMapper {
         Element receiverRef = XmlUtils.child(interestLeg, "receiverPartyReference");
         irpb.setPayerReceiver(buildPayerReceiver(payerRef, receiverRef, ctx));
 
-        // PriceQuantity - reference to equity notional
-        Element notional = XmlUtils.child(returnLeg, "notional");
-        String notionalId = null;
-        if (notional != null) notionalId = notional.getAttribute("id");
-        String notionalAmtId = null;
-        Element notionalAmount = notional != null ? XmlUtils.child(notional, "notionalAmount") : null;
-        if (notionalAmount != null) notionalAmtId = notionalAmount.getAttribute("id");
-        String effectiveNotionalId = notionalAmtId != null ? notionalAmtId :
-                (notionalId != null ? notionalId : null);
-
-        if (useQuantityReference && effectiveNotionalId != null) {
-            // quantityReference to the equity notional (equitySwapTransactionSupplement pattern)
+        if (quantityReferenceHref != null && !quantityReferenceHref.isEmpty()) {
+            // quantityReference to the equity notional (interest leg borrows it via relativeNotionalAmount)
             ResolvablePriceQuantity rpq = ResolvablePriceQuantity.builder()
                     .setQuantityReference(
                             cdm.product.common.settlement.metafields.ReferenceWithMetaResolvablePriceQuantity.builder()
-                                    .setExternalReference(effectiveNotionalId)
+                                    .setExternalReference(quantityReferenceHref)
                                     .build())
                     .build();
             irpb.setPriceQuantity(rpq);
         } else {
-            // Use address reference (returnSwap pattern)
+            // Use address reference (default returnSwap pattern)
             ResolvablePriceQuantity rpq = ResolvablePriceQuantity.builder()
                     .setQuantitySchedule(
                             ReferenceWithMetaNonNegativeQuantitySchedule.builder()
