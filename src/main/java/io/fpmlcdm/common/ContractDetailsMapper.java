@@ -330,6 +330,13 @@ public final class ContractDetailsMapper {
             case "ISDA2002Equity" -> ContractualDefinitionsEnum.ISDA_2002_EQUITY_DERIVATIVES;
             case "ISDA1996Equity" -> ContractualDefinitionsEnum.ISDA_1996_EQUITY_DERIVATIVES;
             case "ISDA2011Equity" -> ContractualDefinitionsEnum.ISDA_2011_EQUITY_DERIVATIVES;
+            case "ISDA1999Credit" -> ContractualDefinitionsEnum.ISDA_1999_CREDIT_DERIVATIVES;
+            case "ISDA2003Credit" -> ContractualDefinitionsEnum.ISDA_2003_CREDIT_DERIVATIVES;
+            case "ISDA2014Credit" -> ContractualDefinitionsEnum.ISDA_2014_CREDIT_DERIVATIVES;
+            case "ISDA1993Commodity" -> ContractualDefinitionsEnum.ISDA_1993_COMMODITY_DERIVATIVES;
+            case "ISDA2005Commodity" -> ContractualDefinitionsEnum.ISDA_2005_COMMODITY;
+            case "ISDA2006Inflation" -> ContractualDefinitionsEnum.ISDA_2006_INFLATION_DERIVATIVES;
+            case "ISDA2008Inflation" -> ContractualDefinitionsEnum.ISDA_2008_INFLATION_DERIVATIVES;
             default -> null;
         };
         if (mapped != null) return mapped;

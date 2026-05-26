@@ -135,7 +135,7 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         // protectionTerms
         Element protTerms = XmlUtils.child(cds, "protectionTerms");
         if (protTerms != null) {
-            ProtectionTerms pt = buildProtectionTerms(protTerms);
+            ProtectionTerms pt = buildProtectionTerms(protTerms, buyerRole, sellerRole);
             if (pt != null) cdpBuilder.addProtectionTerms(pt);
         }
 
@@ -459,19 +459,89 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         String noRefObl = XmlUtils.childText(el, "noReferenceObligation");
         if ("true".equals(noRefObl)) b.setNoReferenceObligation(true);
 
+        // referencePrice (cdm.observable.asset.Price: assetPrice with currency unit/perUnitOf)
+        String refPrice = XmlUtils.childText(el, "referencePrice");
+        if (refPrice != null) {
+            // Find a currency from the enclosing CDS — use the protectionTerms/calculationAmount
+            // currency on the top-level CDS. Default to USD if not found.
+            // We look up via referenceInformation -> generalTerms -> creditDefaultSwap.
+            String ccy = findReferencePriceCurrency(el);
+            UnitType u = ccy != null ? ccyUnit(ccy, null) : null;
+            cdm.observable.asset.Price.PriceBuilder pb = cdm.observable.asset.Price.builder()
+                    .setValue(new BigDecimal(refPrice))
+                    .setPriceType(PriceTypeEnum.ASSET_PRICE);
+            if (u != null) pb.setUnit(u).setPerUnitOf(u);
+            b.setReferencePrice(pb.build());
+        }
+
         return b.build();
     }
 
-    /** Build ProtectionTerms.creditEvents from FpML protectionTerms/creditEvents (and other ProtectionTerms fields). */
-    private ProtectionTerms buildProtectionTerms(Element protTermsEl) {
-        Element ceEl = XmlUtils.child(protTermsEl, "creditEvents");
-        if (ceEl == null) return null; // skip empty protectionTerms
-        CreditEvents ce = buildCreditEvents(ceEl);
-        if (ce == null) return null;
-        return ProtectionTerms.builder().setCreditEvents(ce).build();
+    /** Find a currency context for the referencePrice — walk up to creditDefaultSwap, look at protectionTerms/calculationAmount/currency. */
+    private static String findReferencePriceCurrency(Element refInfo) {
+        org.w3c.dom.Node n = refInfo;
+        while (n != null && !(n instanceof Element && "creditDefaultSwap".equals(((Element) n).getLocalName()))) {
+            n = n.getParentNode();
+        }
+        if (!(n instanceof Element)) return null;
+        Element cds = (Element) n;
+        Element protTerms = XmlUtils.child(cds, "protectionTerms");
+        if (protTerms != null) {
+            Element calcAmount = XmlUtils.child(protTerms, "calculationAmount");
+            if (calcAmount != null) {
+                return XmlUtils.childText(calcAmount, "currency");
+            }
+        }
+        Element feeLeg = XmlUtils.child(cds, "feeLeg");
+        if (feeLeg != null) {
+            Element pp = XmlUtils.child(feeLeg, "periodicPayment");
+            if (pp != null) {
+                Element fac = XmlUtils.child(pp, "fixedAmountCalculation");
+                if (fac != null) {
+                    Element ca = XmlUtils.child(fac, "calculationAmount");
+                    if (ca != null) return XmlUtils.childText(ca, "currency");
+                }
+            }
+        }
+        return null;
     }
 
-    private CreditEvents buildCreditEvents(Element el) {
+    /** Build ProtectionTerms.creditEvents from FpML protectionTerms/creditEvents (and other ProtectionTerms fields). */
+    private ProtectionTerms buildProtectionTerms(Element protTermsEl,
+                                                 CounterpartyRoleEnum buyerRole, CounterpartyRoleEnum sellerRole) {
+        ProtectionTerms.ProtectionTermsBuilder ptb = ProtectionTerms.builder();
+        boolean any = false;
+        Element ceEl = XmlUtils.child(protTermsEl, "creditEvents");
+        if (ceEl != null) {
+            CreditEvents ce = buildCreditEvents(ceEl, buyerRole, sellerRole);
+            if (ce != null) { ptb.setCreditEvents(ce); any = true; }
+        }
+        Element oblEl = XmlUtils.child(protTermsEl, "obligations");
+        if (oblEl != null) {
+            cdm.base.staticdata.asset.credit.Obligations obl = buildObligations(oblEl);
+            if (obl != null) { ptb.setObligations(obl); any = true; }
+        }
+        return any ? ptb.build() : null;
+    }
+
+    private static cdm.base.staticdata.asset.credit.Obligations buildObligations(Element el) {
+        cdm.base.staticdata.asset.credit.Obligations.ObligationsBuilder b =
+                cdm.base.staticdata.asset.credit.Obligations.builder();
+        boolean any = false;
+        String cat = XmlUtils.childText(el, "category");
+        if (cat != null) {
+            cdm.base.staticdata.asset.credit.ObligationCategoryEnum oce = null;
+            try { oce = cdm.base.staticdata.asset.credit.ObligationCategoryEnum.fromDisplayName(cat); }
+            catch (Exception ignored) {
+                try { oce = cdm.base.staticdata.asset.credit.ObligationCategoryEnum.valueOf(cat.toUpperCase()); }
+                catch (Exception ignored2) {}
+            }
+            if (oce != null) { b.setCategory(oce); any = true; }
+        }
+        return any ? b.build() : null;
+    }
+
+    private CreditEvents buildCreditEvents(Element el, CounterpartyRoleEnum buyerRole, CounterpartyRoleEnum sellerRole) {
         CreditEvents.CreditEventsBuilder b = CreditEvents.builder();
         // Boolean flags. Note: obligationDefault and governmentalIntervention are intentionally not
         // mapped — the reference CDM ingester drops these from the FpML inputs we target.
@@ -488,10 +558,57 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         // failureToPay (complex)
         Element ftp = XmlUtils.child(el, "failureToPay");
         if (ftp != null) {
-            FailureToPay.FailureToPayBuilder fb = FailureToPay.builder();
+            cdm.observable.event.FailureToPay.FailureToPayBuilder fb = cdm.observable.event.FailureToPay.builder();
             String app = XmlUtils.childText(ftp, "applicable");
             if (app != null) fb.setApplicable(Boolean.parseBoolean(app));
+            Element pr = XmlUtils.child(ftp, "paymentRequirement");
+            if (pr != null) {
+                cdm.observable.asset.Money money = buildMoney(pr);
+                if (money != null) fb.setPaymentRequirement(money);
+            }
+            Element gpe = XmlUtils.child(ftp, "gracePeriodExtension");
+            if (gpe != null) {
+                cdm.observable.event.GracePeriodExtension.GracePeriodExtensionBuilder gpeb =
+                        cdm.observable.event.GracePeriodExtension.builder();
+                String gpApp = XmlUtils.childText(gpe, "applicable");
+                if (gpApp != null) gpeb.setApplicable(Boolean.parseBoolean(gpApp));
+                fb.setGracePeriodExtension(gpeb.build());
+            }
             b.setFailureToPay(fb.build());
+        }
+
+        // defaultRequirement → Money
+        Element dr = XmlUtils.child(el, "defaultRequirement");
+        if (dr != null) {
+            cdm.observable.asset.Money money = buildMoney(dr);
+            if (money != null) b.setDefaultRequirement(money);
+        }
+
+        // creditEventNotice
+        Element cen = XmlUtils.child(el, "creditEventNotice");
+        if (cen != null) {
+            cdm.observable.event.CreditEventNotice.CreditEventNoticeBuilder cenb =
+                    cdm.observable.event.CreditEventNotice.builder();
+            Element np = XmlUtils.child(cen, "notifyingParty");
+            if (np != null) {
+                // FpML 5.x: notifyingParty contains buyerPartyReference and/or sellerPartyReference.
+                // Reference output is [buyer-counterparty-role, seller-counterparty-role].
+                Element buyer = XmlUtils.child(np, "buyerPartyReference");
+                Element seller = XmlUtils.child(np, "sellerPartyReference");
+                if (buyer != null) cenb.addNotifyingParty(buyerRole);
+                if (seller != null) cenb.addNotifyingParty(sellerRole);
+            }
+            Element pai = XmlUtils.child(cen, "publiclyAvailableInformation");
+            if (pai != null) {
+                cdm.observable.event.PubliclyAvailableInformation.PubliclyAvailableInformationBuilder paib =
+                        cdm.observable.event.PubliclyAvailableInformation.builder();
+                String sps = XmlUtils.childText(pai, "standardPublicSources");
+                if (sps != null) paib.setStandardPublicSources(Boolean.parseBoolean(sps));
+                String sn = XmlUtils.childText(pai, "specifiedNumber");
+                if (sn != null) paib.setSpecifiedNumber(Integer.parseInt(sn));
+                cenb.setPubliclyAvailableInformation(paib.build());
+            }
+            b.setCreditEventNotice(cenb.build());
         }
 
         // restructuring (complex)
@@ -527,23 +644,148 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         if (cst == null && pst == null) return null;
         cdm.product.common.settlement.SettlementTerms.SettlementTermsBuilder b =
                 cdm.product.common.settlement.SettlementTerms.builder();
+        // settlementCurrency lives on one of the *settlementTerms wrappers in FpML
+        Element ccyHost = cst != null ? cst : pst;
+        Element ccyEl = ccyHost == null ? null : XmlUtils.child(ccyHost, "settlementCurrency");
+        if (ccyEl != null) {
+            String ccy = ccyEl.getTextContent().trim();
+            String scheme = ccyEl.getAttribute("currencyScheme");
+            FieldWithMetaString.FieldWithMetaStringBuilder fb = FieldWithMetaString.builder().setValue(ccy);
+            if (scheme != null && !scheme.isEmpty()) {
+                fb.setMeta(MetaFields.builder().setScheme(scheme).build());
+            }
+            b.setSettlementCurrency(fb.build());
+        }
         if (cst != null) {
             b.setSettlementType(cdm.product.common.settlement.SettlementTypeEnum.CASH);
             cdm.product.common.settlement.CashSettlementTerms.CashSettlementTermsBuilder cb =
                     cdm.product.common.settlement.CashSettlementTerms.builder();
             String rf = XmlUtils.childText(cst, "recoveryFactor");
-            if (rf != null) cb.setRecoveryFactor(new BigDecimal(rf));
-            b.addCashSettlementTerms(cb.build());
+            boolean any = false;
+            if (rf != null) { cb.setRecoveryFactor(new BigDecimal(rf)); any = true; }
+            // Only emit a cashSettlementTerms entry when it has content; otherwise leave the list empty.
+            if (any) b.addCashSettlementTerms(cb.build());
         }
         if (pst != null) {
             b.setSettlementType(cdm.product.common.settlement.SettlementTypeEnum.PHYSICAL);
+            // physicalSettlementPeriod + deliverableObligations
+            cdm.product.common.settlement.PhysicalSettlementTerms physTerms = buildPhysicalSettlementTerms(pst);
+            if (physTerms != null) b.setPhysicalSettlementTerms(physTerms);
         }
         return b.build();
+    }
+
+    private static cdm.product.common.settlement.PhysicalSettlementTerms buildPhysicalSettlementTerms(Element pst) {
+        cdm.product.common.settlement.PhysicalSettlementTerms.PhysicalSettlementTermsBuilder b =
+                cdm.product.common.settlement.PhysicalSettlementTerms.builder();
+        boolean any = false;
+        Element period = XmlUtils.child(pst, "physicalSettlementPeriod");
+        if (period != null) {
+            String bd = XmlUtils.childText(period, "businessDays");
+            if (bd != null) {
+                b.setPhysicalSettlementPeriod(cdm.product.common.settlement.PhysicalSettlementPeriod.builder()
+                        .setBusinessDays(Integer.parseInt(bd)).build());
+                any = true;
+            }
+        }
+        Element dlv = XmlUtils.child(pst, "deliverableObligations");
+        if (dlv != null) {
+            cdm.product.common.settlement.DeliverableObligations dobl = buildDeliverableObligations(dlv);
+            if (dobl != null) { b.setDeliverableObligations(dobl); any = true; }
+        }
+        String esc = XmlUtils.childText(pst, "escrow");
+        if (esc != null) { b.setEscrow(Boolean.parseBoolean(esc)); any = true; }
+        return any ? b.build() : null;
+    }
+
+    private static cdm.product.common.settlement.DeliverableObligations buildDeliverableObligations(Element el) {
+        cdm.product.common.settlement.DeliverableObligations.DeliverableObligationsBuilder b =
+                cdm.product.common.settlement.DeliverableObligations.builder();
+        boolean any = false;
+        String ai = XmlUtils.childText(el, "accruedInterest");
+        if (ai != null) { b.setAccruedInterest(Boolean.parseBoolean(ai)); any = true; }
+        String cat = XmlUtils.childText(el, "category");
+        if (cat != null) {
+            cdm.base.staticdata.asset.credit.ObligationCategoryEnum dce = null;
+            try { dce = cdm.base.staticdata.asset.credit.ObligationCategoryEnum.fromDisplayName(cat); }
+            catch (Exception ignored) {
+                try { dce = cdm.base.staticdata.asset.credit.ObligationCategoryEnum.valueOf(cat.toUpperCase()); }
+                catch (Exception ignored2) {}
+            }
+            if (dce != null) { b.setCategory(dce); any = true; }
+        }
+        // Boolean leaf fields commonly present in FpML deliverableObligations:
+        String ns = XmlUtils.childText(el, "notSubordinated");
+        if (ns != null) { b.setNotSubordinated(Boolean.parseBoolean(ns)); any = true; }
+        String nc = XmlUtils.childText(el, "notContingent");
+        if (nc != null) { b.setNotContingent(Boolean.parseBoolean(nc)); any = true; }
+        String tr = XmlUtils.childText(el, "transferable");
+        if (tr != null) { b.setTransferable(Boolean.parseBoolean(tr)); any = true; }
+        String nb = XmlUtils.childText(el, "notBearer");
+        if (nb != null) { b.setNotBearer(Boolean.parseBoolean(nb)); any = true; }
+
+        // specifiedCurrency (FpML: applicable + currency list); we emit just applicable.
+        Element scEl = XmlUtils.child(el, "specifiedCurrency");
+        if (scEl != null) {
+            String app = XmlUtils.childText(scEl, "applicable");
+            if (app != null) {
+                b.setSpecifiedCurrency(cdm.base.staticdata.asset.credit.SpecifiedCurrency.builder()
+                        .setApplicable(Boolean.parseBoolean(app)).build());
+                any = true;
+            }
+        }
+        // assignableLoan / consentRequiredLoan
+        Element alEl = XmlUtils.child(el, "assignableLoan");
+        if (alEl != null) {
+            String app = XmlUtils.childText(alEl, "applicable");
+            if (app != null) {
+                b.setAssignableLoan(cdm.product.common.settlement.PCDeliverableObligationCharac.builder()
+                        .setApplicable(Boolean.parseBoolean(app)).build());
+                any = true;
+            }
+        }
+        Element crlEl = XmlUtils.child(el, "consentRequiredLoan");
+        if (crlEl != null) {
+            String app = XmlUtils.childText(crlEl, "applicable");
+            if (app != null) {
+                b.setConsentRequiredLoan(cdm.product.common.settlement.PCDeliverableObligationCharac.builder()
+                        .setApplicable(Boolean.parseBoolean(app)).build());
+                any = true;
+            }
+        }
+        // maximumMaturity (Period)
+        Element mmEl = XmlUtils.child(el, "maximumMaturity");
+        if (mmEl != null) {
+            String pm = XmlUtils.childText(mmEl, "periodMultiplier");
+            String p = XmlUtils.childText(mmEl, "period");
+            if (pm != null && p != null) {
+                cdm.base.datetime.Period.PeriodBuilder pb = cdm.base.datetime.Period.builder()
+                        .setPeriodMultiplier(Integer.parseInt(pm));
+                try { pb.setPeriod(EnumMappers.period(p)); } catch (Exception ignored) {}
+                b.setMaximumMaturity(pb.build());
+                any = true;
+            }
+        }
+        return any ? b.build() : null;
     }
 
     private static void setBoolIfPresent(Element el, String childName, java.util.function.Consumer<Boolean> setter) {
         String v = XmlUtils.childText(el, childName);
         if (v != null) setter.accept(Boolean.parseBoolean(v));
+    }
+
+    /** Build cdm.observable.asset.Money from an FpML <currency>+<amount> sub-element pair. */
+    private static cdm.observable.asset.Money buildMoney(Element el) {
+        Element ccyEl = XmlUtils.child(el, "currency");
+        String amt = XmlUtils.childText(el, "amount");
+        if (ccyEl == null || amt == null) return null;
+        String ccy = ccyEl.getTextContent().trim();
+        String scheme = ccyEl.getAttribute("currencyScheme");
+        UnitType u = ccyUnit(ccy, (scheme != null && !scheme.isEmpty()) ? scheme : null);
+        return cdm.observable.asset.Money.builder()
+                .setValue(new BigDecimal(amt))
+                .setUnit(u)
+                .build();
     }
 
     /** Build the fee leg as an InterestRatePayout (FixedRateSpecification with rate=price-1, quantity=quantity-1). */
