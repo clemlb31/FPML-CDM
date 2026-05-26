@@ -203,6 +203,18 @@ public class ReturnSwapMapper implements ProductMapper {
         Element adjDate = XmlUtils.child(dateEl, "adjustableDate");
         Element relDate = XmlUtils.child(dateEl, "relativeDate");
 
+        // FpML <relativeDateSequence> aggregates <dateRelativeTo> (on the sequence) and
+        // <dateOffset> (the relative period). Combine into a single relativeDate-equivalent.
+        Element relDateSeq = XmlUtils.child(dateEl, "relativeDateSequence");
+        Element relDateSeqAnchor = null;
+        if (relDate == null && relDateSeq != null) {
+            Element offset = XmlUtils.child(relDateSeq, "dateOffset");
+            if (offset != null) {
+                relDate = offset;
+                relDateSeqAnchor = XmlUtils.child(relDateSeq, "dateRelativeTo");
+            }
+        }
+
         if (adjDate != null) {
             AdjustableDate adj = DateMapper.adjustable(adjDate);
             AdjustableOrRelativeDate.AdjustableOrRelativeDateBuilder b =
@@ -225,6 +237,7 @@ public class ReturnSwapMapper implements ProductMapper {
             String bdc = XmlUtils.childText(relDate, "businessDayConvention");
             if (bdc != null) rdb.setBusinessDayConvention(EnumMappers.bdc(bdc));
             Element drt = XmlUtils.child(relDate, "dateRelativeTo");
+            if (drt == null) drt = relDateSeqAnchor; // from relativeDateSequence
             if (drt != null) {
                 rdb.setDateRelativeTo(ReferenceWithMetaDate.builder()
                         .setExternalReference(drt.getAttribute("href")).build());
@@ -677,6 +690,12 @@ public class ReturnSwapMapper implements ProductMapper {
     private ValuationDates buildValuationDates(Element rateOfReturn) {
         ValuationDates.ValuationDatesBuilder vdb = ValuationDates.builder();
 
+        // Initial valuation: from <initialPrice> when it has <valuationRules>
+        Element initialPrice = XmlUtils.child(rateOfReturn, "initialPrice");
+        if (initialPrice != null && XmlUtils.child(initialPrice, "valuationRules") != null) {
+            vdb.setInitialValuationDate(buildPerformanceValuationDates(initialPrice));
+        }
+
         // Interim valuation
         Element vpInterim = XmlUtils.child(rateOfReturn, "valuationPriceInterim");
         if (vpInterim != null) {
@@ -976,7 +995,45 @@ public class ReturnSwapMapper implements ProductMapper {
             }
         }
 
+        // Stub period: <stubCalculationPeriod>/<initialStub|finalStub>
+        Element stubCalc = XmlUtils.child(interestLeg, "stubCalculationPeriod");
+        if (stubCalc != null) {
+            cdm.product.common.schedule.StubPeriod.StubPeriodBuilder spb =
+                    cdm.product.common.schedule.StubPeriod.builder();
+            Element initialStub = XmlUtils.child(stubCalc, "initialStub");
+            if (initialStub != null) spb.setInitialStub(buildStubValue(initialStub));
+            Element finalStub = XmlUtils.child(stubCalc, "finalStub");
+            if (finalStub != null) spb.setFinalStub(buildStubValue(finalStub));
+            irpb.setStubPeriod(spb.build());
+        }
+
         return Payout.builder().setInterestRatePayout(irpb.build()).build();
+    }
+
+    private cdm.product.asset.StubValue buildStubValue(Element stub) {
+        cdm.product.asset.StubValue.StubValueBuilder svb = cdm.product.asset.StubValue.builder();
+        String rate = XmlUtils.childText(stub, "stubRate");
+        if (rate != null) svb.setStubRate(new BigDecimal(rate));
+        for (Element fr : XmlUtils.children(stub, "floatingRate")) {
+            cdm.product.asset.StubFloatingRate.StubFloatingRateBuilder fb =
+                    cdm.product.asset.StubFloatingRate.builder();
+            String idxName = XmlUtils.childText(fr, "floatingRateIndex");
+            if (idxName != null) {
+                FieldWithMetaFloatingRateIndexEnum fwm = EnumMappers.floatingRateIndex(idxName);
+                if (fwm != null) fb.setFloatingRateIndex(fwm.getValue());
+            }
+            Element tenor = XmlUtils.child(fr, "indexTenor");
+            if (tenor != null) {
+                String pm = XmlUtils.childText(tenor, "periodMultiplier");
+                String period = XmlUtils.childText(tenor, "period");
+                cdm.base.datetime.Period.PeriodBuilder pb = cdm.base.datetime.Period.builder();
+                if (pm != null) pb.setPeriodMultiplier(Integer.parseInt(pm));
+                if (period != null) pb.setPeriod(EnumMappers.period(period));
+                fb.setIndexTenor(pb.build());
+            }
+            svb.addFloatingRate(fb.build());
+        }
+        return svb.build();
     }
 
     private cdm.product.common.schedule.CalculationPeriodDates buildCalcPeriodDates(Element calcPeriodDatesEl) {

@@ -521,6 +521,36 @@ public class EquityOptionMapper implements ProductMapper {
         return null;
     }
 
+    static Observable buildBondObservable(Element bond) {
+        Security.SecurityBuilder secb = Security.builder();
+        for (Element instId : XmlUtils.children(bond, "instrumentId")) {
+            String value = instId.getTextContent().trim();
+            String scheme = instId.getAttribute("instrumentIdScheme");
+            AssetIdentifier.AssetIdentifierBuilder aib = AssetIdentifier.builder()
+                    .setIdentifier(FieldWithMetaString.builder()
+                            .setValue(value)
+                            .setMeta(scheme != null && !scheme.isEmpty()
+                                    ? MetaFields.builder().setScheme(scheme).build() : null)
+                            .build())
+                    .setIdentifierType(mapAssetIdType(scheme));
+            secb.addIdentifier(aib.build());
+        }
+        String description = XmlUtils.childText(bond, "description");
+        if (description != null) {
+            secb.addIdentifier(AssetIdentifier.builder()
+                    .setIdentifier(FieldWithMetaString.builder().setValue(description).build())
+                    .setIdentifierType(AssetIdTypeEnum.NAME)
+                    .build());
+        }
+        return Observable.builder()
+                .setAsset(Asset.builder()
+                        .setInstrument(Instrument.builder()
+                                .setSecurity(secb.build())
+                                .build())
+                        .build())
+                .build();
+    }
+
     static Observable buildBasketObservable(Element basket) {
         cdm.observable.asset.Basket.BasketBuilder bb = cdm.observable.asset.Basket.builder();
         int idx = 0;
@@ -530,8 +560,12 @@ public class EquityOptionMapper implements ProductMapper {
                     cdm.observable.asset.BasketConstituent.builder();
             Element eq = XmlUtils.child(bcEl, "equity");
             Element ix = XmlUtils.child(bcEl, "index");
+            Element bd = XmlUtils.child(bcEl, "bond");
             if (eq != null) {
                 Observable inner = buildStockObservable(eq);
+                if (inner != null && inner.getAsset() != null) cb.setAsset(inner.getAsset());
+            } else if (bd != null) {
+                Observable inner = buildBondObservable(bd);
                 if (inner != null && inner.getAsset() != null) cb.setAsset(inner.getAsset());
             } else if (ix != null) {
                 Observable inner = buildIndexObservable(ix);
@@ -687,7 +721,7 @@ public class EquityOptionMapper implements ProductMapper {
         if (lower.contains("isin")) return AssetIdTypeEnum.ISIN;
         if (lower.contains("sedol")) return AssetIdTypeEnum.SEDOL;
         if (lower.contains("ticker")) return AssetIdTypeEnum.BBGTICKER;
-        if (lower.contains("bloomberg")) return AssetIdTypeEnum.BBGID;
+        if (lower.contains("instrument-id-bloomberg")) return AssetIdTypeEnum.BBGID;
         if (lower.contains("figi")) return AssetIdTypeEnum.FIGI;
         if (lower.contains("valoren")) return AssetIdTypeEnum.VALOREN;
         if (lower.contains("wertpapier")) return AssetIdTypeEnum.WERTPAPIER;
