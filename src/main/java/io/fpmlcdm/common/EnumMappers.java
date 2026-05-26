@@ -82,7 +82,11 @@ public final class EnumMappers {
 
     public static FieldWithMetaFloatingRateIndexEnum floatingRateIndex(String text) {
         if (text == null) return null;
-        FloatingRateIndexEnum e = FloatingRateIndexEnum.fromDisplayName(text);
+        FloatingRateIndexEnum e = null;
+        // FloatingRateIndexEnum.fromDisplayName throws IllegalArgumentException when not found,
+        // rather than returning null — wrap to make this null-safe.
+        try { e = FloatingRateIndexEnum.fromDisplayName(text); }
+        catch (Exception ignored) {}
         if (e == null) {
             for (FloatingRateIndexEnum candidate : FloatingRateIndexEnum.values()) {
                 if (candidate.name().equalsIgnoreCase(text.replace('-', '_').replace('.', '_'))) {
