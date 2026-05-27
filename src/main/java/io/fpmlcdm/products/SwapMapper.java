@@ -28,6 +28,7 @@ import io.fpmlcdm.common.ProductIdentifierMapper;
 import io.fpmlcdm.common.QuantityMapper;
 import io.fpmlcdm.common.TransferMapper;
 import io.fpmlcdm.common.StreamLabels;
+import io.fpmlcdm.common.TerminationProvisionMapper;
 import io.fpmlcdm.common.TaxonomyMapper;
 import io.fpmlcdm.common.XmlUtils;
 import io.fpmlcdm.common.DateMapper;
@@ -163,6 +164,10 @@ public class SwapMapper implements ProductMapper {
 
         EconomicTerms.EconomicTermsBuilder econ = EconomicTerms.builder();
         for (Payout p : payouts) econ.addPayout(p);
+
+        // terminationProvision inside swap (needed for swaption underlier too)
+        cdm.product.template.TerminationProvision swapTermProv = TerminationProvisionMapper.map(swap, ctx);
+        if (swapTermProv != null) econ.setTerminationProvision(swapTermProv);
 
         NonTransferableProduct.NonTransferableProductBuilder ntp = NonTransferableProduct.builder()
                 .setEconomicTerms(econ.build());
