@@ -10,17 +10,22 @@ Le dataset de validation provient du [test pack officiel FINOS CDM](https://gith
 
 ## Résultats
 
-**182 / 565 paires** passent en égalité sémantique stricte (32.2%), couvrant les **10 familles de produits** du dataset.
+**349 / 565 paires** du dataset complet passent en égalité sémantique stricte (61.8%).
+Sur le sous-ensemble curaté (catégories `complete` uniquement, hors `-incomplete` et `invalid-products-*`) : **274 / 360 paires (76.1%)**.
 
-| Famille | Produits FpML | Mapper | Paires validées |
+Couverture des **10 familles de produits** du dataset (chiffres sur le sous-ensemble curaté) :
+
+| Famille | Produits FpML | Mapper(s) | Paires validées |
 |---|---|---|---|
-| IRS | swap, swaption, capFloor, fra | SwapMapper, SwaptionMapper, CapFloorMapper, FraMapper | ~85 |
-| FX | fxSingleLeg, fxSwap, fxOption | FxSingleLegMapper, FxSwapMapper, FxOptionMapper | ~23 |
-| Credit | creditDefaultSwap | CreditDefaultSwapMapper | ~19 |
-| Equity | equityOption, returnSwap, equitySwapTransactionSupplement, dividendSwapTransactionSupplement | EquityOptionMapper, ReturnSwapMapper, DividendSwapMapper | ~18 |
-| Commodity | commoditySwap, commodityOption | CommoditySwapMapper, CommodityOptionMapper | ~15 |
-| Variance/Corr/Vol | varianceSwap, correlationSwap, volatilitySwap | VarianceSwapMapper | ~10 |
-| Repo | securityLending | SecurityLendingMapper | 1 |
+| IRS | swap, swaption, capFloor, fra, bulletPayment | SwapMapper, SwaptionMapper, CapFloorMapper, FraMapper, BulletPaymentMapper | 103 / 133 |
+| FX | fxSingleLeg, fxSwap, fxOption | FxSingleLegMapper, FxSwapMapper, FxOptionMapper | 34 / 37 |
+| Credit | creditDefaultSwap | CreditDefaultSwapMapper | 54 / 71 |
+| Equity | equityOption, returnSwap, equitySwapTransactionSupplement, dividendSwapTransactionSupplement | EquityOptionMapper, ReturnSwapMapper, DividendSwapMapper | 36 / 55 |
+| Commodity | commoditySwap, commodityOption, commoditySwaption | CommoditySwapMapper, CommodityOptionMapper | 20 / 29 |
+| Variance/Corr/Vol | varianceSwap, correlationSwap, volatilitySwap, varianceOptionTransactionSupplement | VarianceSwapMapper | 14 / 17 |
+| Inflation | swap avec inflationRateCalculation | SwapMapper (route inflation legs vers InflationRateSpecification) | 12 / 14 |
+| Bond options | bondOption | BondOptionMapper | 1 / 3 |
+| Repo | securityLending | SecurityLendingMapper (stub) | 0 / 1 |
 
 ## Stack technique
 
@@ -106,21 +111,23 @@ src/main/java/io/fpmlcdm/
 ├── detect/
 │   └── ProductDetector.java           # Dispatch par élément produit FpML
 ├── products/                          # Un mapper par type de produit
-│   ├── SwapMapper.java                #   IRS vanilla, basis, OIS, cross-currency
+│   ├── SwapMapper.java                #   IRS vanilla, basis, OIS, cross-currency, inflation
 │   ├── SwaptionMapper.java            #   Swaptions (réutilise SwapMapper pour l'underlier)
 │   ├── CapFloorMapper.java            #   Cap/Floor/Collar
 │   ├── FraMapper.java                 #   Forward Rate Agreement
+│   ├── BulletPaymentMapper.java       #   Bullet payments (cashflow-only trades)
 │   ├── FxSingleLegMapper.java         #   FX spot, forward, NDF
 │   ├── FxSwapMapper.java              #   FX swap (near + far legs)
 │   ├── FxOptionMapper.java            #   FX options vanille
-│   ├── CreditDefaultSwapMapper.java   #   CDS single-name et index
+│   ├── CreditDefaultSwapMapper.java   #   CDS single-name, index, basket
 │   ├── EquityOptionMapper.java        #   Equity options
 │   ├── ReturnSwapMapper.java          #   Equity/total return swaps
 │   ├── DividendSwapMapper.java        #   Dividend swaps
-│   ├── CommoditySwapMapper.java       #   Commodity swaps
+│   ├── CommoditySwapMapper.java       #   Commodity swaps (fixe, float, basis)
 │   ├── CommodityOptionMapper.java     #   Commodity options
-│   ├── VarianceSwapMapper.java        #   Variance/correlation/volatility swaps
-│   └── SecurityLendingMapper.java     #   Repo/securities lending
+│   ├── VarianceSwapMapper.java        #   Variance/correlation/volatility swaps + variance options
+│   ├── BondOptionMapper.java          #   Bond options et convertible bond options
+│   └── SecurityLendingMapper.java     #   Repo/securities lending (stub)
 ├── payouts/
 │   ├── InterestRatePayoutMapper.java  #   InterestRatePayout (fixe + floating)
 │   └── CashflowMapper.java           #   Cashflows additionnels
@@ -139,6 +146,19 @@ Le `SemanticDiff` compare les JSON CDM après normalisation. Les champs suivants
 | `globalReference` | Hash du contenu de l'objet référencé |
 | `assetType` | Pas de setter sur `AssetBase`/`IndexBase` dans CDM 6.19.0 |
 | `securityType` | Pas de setter sur `Security` dans CDM 6.19.0 |
+| `priceSubType` | Pas de setter sur `PriceSchedule` dans CDM 6.19.0 |
+
+### Outils de debug
+
+```bash
+# Score par catégorie + liste des paires en échec (avec leur diff count)
+mvn -q exec:java -Dexec.mainClass=io.fpmlcdm.CategoryReport \
+    -Dexec.args="rates-5-10 credit-derivatives-5-13"
+
+# Diff sémantique sur une seule paire (utile pour itérer rapidement)
+mvn -q exec:java -Dexec.mainClass=io.fpmlcdm.DiffOne \
+    -Dexec.args="rates-5-10 ird-ex01-vanilla-swap"
+```
 
 ## Ajouter un nouveau type de produit
 
