@@ -245,6 +245,13 @@ public final class InterestRatePayoutMapper {
             irp.setPrincipalPayment(pp.build());
         }
 
+        // settlementTerms (from <settlementProvision> inside swapStream)
+        Element settlProv = XmlUtils.child(swapStream, "settlementProvision");
+        if (settlProv != null) {
+            cdm.product.common.settlement.SettlementTerms st = buildSettlementTerms(settlProv);
+            if (st != null) irp.setSettlementTerms(st);
+        }
+
         return Payout.builder().setInterestRatePayout(irp.build()).build();
     }
 
@@ -603,6 +610,94 @@ public final class InterestRatePayoutMapper {
                     .build());
         }
         return b.build();
+    }
+
+    /* ───── settlementTerms from <settlementProvision> ───── */
+
+    private static cdm.product.common.settlement.SettlementTerms buildSettlementTerms(Element settlProv) {
+        if (settlProv == null) return null;
+        cdm.product.common.settlement.SettlementTerms.SettlementTermsBuilder stb =
+                cdm.product.common.settlement.SettlementTerms.builder();
+        String settlCcy = XmlUtils.childText(settlProv, "settlementCurrency");
+        if (settlCcy != null) {
+            stb.setSettlementCurrency(com.rosetta.model.metafields.FieldWithMetaString.builder()
+                    .setValue(settlCcy).build());
+        }
+        Element nds = XmlUtils.child(settlProv, "nonDeliverableSettlement");
+        if (nds != null) {
+            stb.setSettlementType(cdm.product.common.settlement.SettlementTypeEnum.CASH);
+            cdm.product.common.settlement.CashSettlementTerms.CashSettlementTermsBuilder cstb =
+                    cdm.product.common.settlement.CashSettlementTerms.builder();
+            String sro = XmlUtils.childText(nds, "settlementRateOption");
+            if (sro != null) {
+                cdm.observable.asset.SettlementRateOptionEnum sroEnum = mapSettlementRateOption(sro);
+                cdm.observable.asset.metafields.FieldWithMetaSettlementRateOptionEnum fwm =
+                        cdm.observable.asset.metafields.FieldWithMetaSettlementRateOptionEnum.builder()
+                                .setValue(sroEnum).build();
+                cstb.setValuationMethod(cdm.observable.asset.ValuationMethod.builder()
+                        .setValuationSource(cdm.observable.asset.ValuationSource.builder()
+                                .setSettlementRateOption(cdm.observable.asset.SettlementRateOption.builder()
+                                        .setSettlementRateOption(fwm).build())
+                                .build())
+                        .build());
+            }
+            Element fxFixingEl = XmlUtils.child(nds, "fxFixingDate");
+            if (fxFixingEl != null) {
+                cdm.product.common.settlement.FxFixingDate fxFix = buildFxFixingDate(fxFixingEl);
+                if (fxFix != null) {
+                    cstb.setValuationDate(cdm.product.common.settlement.ValuationDate.builder()
+                            .setFxFixingDate(fxFix).build());
+                }
+            }
+            stb.addCashSettlementTerms(cstb.build());
+        }
+        return stb.build();
+    }
+
+    private static cdm.product.common.settlement.FxFixingDate buildFxFixingDate(Element el) {
+        cdm.product.common.settlement.FxFixingDate.FxFixingDateBuilder b =
+                cdm.product.common.settlement.FxFixingDate.builder();
+        String pm = XmlUtils.childText(el, "periodMultiplier");
+        if (pm != null) b.setPeriodMultiplier(Integer.parseInt(pm));
+        String p = XmlUtils.childText(el, "period");
+        if (p != null) b.setPeriod(EnumMappers.period(p));
+        String dt = XmlUtils.childText(el, "dayType");
+        if (dt != null) {
+            try { b.setDayType(DayTypeEnum.valueOf(dt.toUpperCase())); }
+            catch (Exception ignored) {}
+        }
+        String bdc = XmlUtils.childText(el, "businessDayConvention");
+        if (bdc != null) b.setBusinessDayConvention(EnumMappers.bdc(bdc));
+        Element centers = XmlUtils.child(el, "businessCenters");
+        if (centers != null) b.setBusinessCenters(DateMapper.buildBusinessCenters(centers));
+        Element centersRef = XmlUtils.child(el, "businessCentersReference");
+        if (centersRef != null) {
+            b.setBusinessCentersReference(ReferenceWithMetaBusinessCenters.builder()
+                    .setExternalReference(centersRef.getAttribute("href")).build());
+        }
+        Element drtpd = XmlUtils.child(el, "dateRelativeToPaymentDates");
+        if (drtpd != null) {
+            cdm.product.common.schedule.DateRelativeToPaymentDates.DateRelativeToPaymentDatesBuilder drtb =
+                    cdm.product.common.schedule.DateRelativeToPaymentDates.builder();
+            Element pdRef = XmlUtils.child(drtpd, "paymentDatesReference");
+            if (pdRef != null) {
+                drtb.addPaymentDatesReference(
+                        cdm.product.common.schedule.metafields.ReferenceWithMetaPaymentDates.builder()
+                                .setExternalReference(pdRef.getAttribute("href")).build());
+            }
+            b.setDateRelativeToPaymentDates(drtb.build());
+        }
+        return b.build();
+    }
+
+    private static cdm.observable.asset.SettlementRateOptionEnum mapSettlementRateOption(String text) {
+        if (text == null) return null;
+        try { return cdm.observable.asset.SettlementRateOptionEnum.fromDisplayName(text); }
+        catch (Exception ignored) {}
+        String normalized = text.replace('.', '_').replace('/', '_');
+        try { return cdm.observable.asset.SettlementRateOptionEnum.valueOf(normalized); }
+        catch (Exception ignored) {}
+        return null;
     }
 
     /* ───── helpers ───── */
