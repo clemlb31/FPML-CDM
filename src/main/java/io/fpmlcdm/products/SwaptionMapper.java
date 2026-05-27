@@ -66,6 +66,7 @@ import io.fpmlcdm.common.DateMapper;
 import io.fpmlcdm.common.EnumMappers;
 import io.fpmlcdm.common.IdentifierMapper;
 import io.fpmlcdm.common.MappingContext;
+import io.fpmlcdm.common.ProductIdentifierMapper;
 import io.fpmlcdm.common.PartyMapper;
 import io.fpmlcdm.common.PartyRoleMapper;
 import io.fpmlcdm.common.XmlUtils;
@@ -92,19 +93,31 @@ public class SwaptionMapper implements ProductMapper {
         Element swap = XmlUtils.child(swaption, "swap");
         List<Element> streams = XmlUtils.children(swap, "swapStream");
 
-        // PARTY_1 = payer of first stream in the underlying swap.
+        // Extract buyer/seller before role assignment
+        String buyerHref = href(XmlUtils.child(swaption, "buyerPartyReference"));
+        String sellerHref = href(XmlUtils.child(swaption, "sellerPartyReference"));
+
+        // PARTY_1 = buyer of the swaption (NOT payer of first stream).
+        // First assign from streams (populates all party hrefs into ctx.partyOrder),
+        // then override with buyer-based assignment.
         SwapMapper.assignCounterpartyRoles(streams, ctx);
+        // Override: buyer = PARTY_1
+        if (buyerHref != null) {
+            java.util.Map<String, Integer> newOrder = new java.util.LinkedHashMap<>();
+            newOrder.put(buyerHref, 0);
+            int idx = 1;
+            for (String pid : ctx.partyOrder.keySet()) {
+                if (!pid.equals(buyerHref)) newOrder.put(pid, idx++);
+            }
+            ctx.partyOrder.clear();
+            ctx.partyOrder.putAll(newOrder);
+        }
 
         // Underlier — full swap economics (taxonomy, payouts, priceQuantities).
         SwapMapper.SwapEconomics swapEcon = SwapMapper.buildSwapEconomics(trade, swap, streams, ctx);
 
         // Build OptionPayout
         OptionPayout.OptionPayoutBuilder op = OptionPayout.builder();
-
-        // payerReceiver = inverse of buyerSeller (premium-payer side):
-        // The buyer of the swaption receives the option payout; the seller pays it.
-        String buyerHref = href(XmlUtils.child(swaption, "buyerPartyReference"));
-        String sellerHref = href(XmlUtils.child(swaption, "sellerPartyReference"));
         CounterpartyRoleEnum buyerRole = roleFor(buyerHref, ctx);
         CounterpartyRoleEnum sellerRole = roleFor(sellerHref, ctx);
         op.setBuyerSeller(BuyerSeller.builder().setBuyer(buyerRole).setSeller(sellerRole).build());
@@ -137,12 +150,29 @@ public class SwaptionMapper implements ProductMapper {
         if (ca.calculationAgent() != null) econ.setCalculationAgent(ca.calculationAgent());
 
         // Outer product taxonomy = swaption qualifier
+        // If the swaption element carries a <productType>, emit it as taxonomy entry before ISDA qualifier.
         NonTransferableProduct.NonTransferableProductBuilder ntp = NonTransferableProduct.builder()
                 .setEconomicTerms(econ.build());
+        Element swaptionProductType = XmlUtils.child(swaption, "productType");
+        if (swaptionProductType != null) {
+            String ptText = swaptionProductType.getTextContent().trim();
+            String ptScheme = swaptionProductType.getAttribute("productTypeScheme");
+            FieldWithMetaString.FieldWithMetaStringBuilder nameB = FieldWithMetaString.builder().setValue(ptText);
+            if (ptScheme != null && !ptScheme.isEmpty()) {
+                nameB.setMeta(MetaFields.builder().setScheme(ptScheme).build());
+            }
+            cdm.base.staticdata.asset.common.TaxonomyValue tv =
+                    cdm.base.staticdata.asset.common.TaxonomyValue.builder().setName(nameB.build()).build();
+            TaxonomySourceEnum src = (ptScheme != null && !ptScheme.isEmpty())
+                    ? TaxonomySourceEnum.ISDA : TaxonomySourceEnum.OTHER;
+            ntp.addTaxonomy(ProductTaxonomy.builder().setSource(src).setValue(tv).build());
+        }
         ntp.addTaxonomy(ProductTaxonomy.builder()
                 .setSource(TaxonomySourceEnum.ISDA)
                 .setProductQualifier("InterestRate_Option_Swaption")
                 .build());
+        // Map productId from swaption into product identifiers
+        ProductIdentifierMapper.map(swaption).forEach(ntp::addIdentifier);
 
         // tradeLot (use the underlier's priceQuantities)
         TradeLot tradeLot = TradeLot.builder().setPriceQuantity(swapEcon.priceQuantities).build();
@@ -537,10 +567,10 @@ public class SwaptionMapper implements ProductMapper {
         ExerciseProcedure.ExerciseProcedureBuilder b = ExerciseProcedure.builder();
         Element manualEx = XmlUtils.child(procedureEl, "manualExercise");
         Element autoEx = XmlUtils.child(procedureEl, "automaticExercise");
-        if (manualEx != null) {
+        if (manualEx != null && XmlUtils.child(manualEx, "exerciseNotice") != null) {
             ManualExercise.ManualExerciseBuilder mb = ManualExercise.builder();
             Element exerciseNotice = XmlUtils.child(manualEx, "exerciseNotice");
-            if (exerciseNotice != null) {
+            {
                 ExerciseNotice.ExerciseNoticeBuilder enb = ExerciseNotice.builder();
                 Element partyRef = XmlUtils.child(exerciseNotice, "partyReference");
                 if (partyRef != null) {

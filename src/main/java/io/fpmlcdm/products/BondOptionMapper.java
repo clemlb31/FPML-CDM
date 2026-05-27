@@ -556,8 +556,17 @@ public class BondOptionMapper implements ProductMapper {
             }
             String interp = XmlUtils.childText(mwa, "interpolationMethod");
             if (interp != null) {
-                try { mwb.setInterpolationMethod(InterpolationMethodEnum.valueOf(interp)); }
-                catch (Exception ignored) {}
+                InterpolationMethodEnum interpEnum = null;
+                try { interpEnum = InterpolationMethodEnum.valueOf(interp); } catch (Exception ignored) {}
+                if (interpEnum == null) {
+                    try { interpEnum = InterpolationMethodEnum.fromDisplayName(interp); } catch (Exception ignored) {}
+                }
+                if (interpEnum == null) {
+                    // Convert camelCase like "LinearZeroYield" to UPPER_SNAKE_CASE
+                    String snake = interp.replaceAll("([a-z])([A-Z])", "$1_$2").toUpperCase();
+                    try { interpEnum = InterpolationMethodEnum.valueOf(snake); } catch (Exception ignored) {}
+                }
+                if (interpEnum != null) mwb.setInterpolationMethod(interpEnum);
             }
             String earlyCall = XmlUtils.childText(mwa, "earlyCallDate");
             if (earlyCall != null) {

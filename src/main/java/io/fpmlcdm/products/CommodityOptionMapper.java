@@ -142,8 +142,48 @@ public class CommodityOptionMapper implements ProductMapper {
 
         if (ca.calculationAgent() != null) econ.setCalculationAgent(ca.calculationAgent());
 
-        // Taxonomy: only "Commodity_Option" qualifier
+        // Taxonomy: primaryAssetClass + productType (from FpML) + ISDA qualifier
         List<ProductTaxonomy> taxonomies = new ArrayList<>();
+
+        // [0] primaryAssetClass if present
+        Element primaryAssetClassEl = XmlUtils.child(comOption, "primaryAssetClass");
+        if (primaryAssetClassEl != null) {
+            String pacValue = primaryAssetClassEl.getTextContent().trim();
+            String pacScheme = primaryAssetClassEl.getAttribute("assetClassScheme");
+            cdm.base.staticdata.asset.common.metafields.FieldWithMetaAssetClassEnum.FieldWithMetaAssetClassEnumBuilder ab =
+                    cdm.base.staticdata.asset.common.metafields.FieldWithMetaAssetClassEnum.builder();
+            try { ab.setValue(AssetClassEnum.fromDisplayName(pacValue)); } catch (Exception ignored) {
+                try { ab.setValue(AssetClassEnum.valueOf(pacValue.toUpperCase())); } catch (Exception ignored2) {}
+            }
+            if (pacScheme != null && !pacScheme.isEmpty()) {
+                ab.setMeta(MetaFields.builder().setScheme(pacScheme).build());
+            }
+            taxonomies.add(ProductTaxonomy.builder().setPrimaryAssetClass(ab.build()).build());
+        }
+
+        // [1] productType if present
+        Element productTypeEl = XmlUtils.child(comOption, "productType");
+        if (productTypeEl != null) {
+            String ptValue = productTypeEl.getTextContent().trim();
+            String ptScheme = productTypeEl.getAttribute("productTypeScheme");
+            FieldWithMetaString.FieldWithMetaStringBuilder name = FieldWithMetaString.builder().setValue(ptValue);
+            if (ptScheme != null && !ptScheme.isEmpty()) {
+                name.setMeta(MetaFields.builder().setScheme(ptScheme).build());
+            }
+            TaxonomyValue tv = TaxonomyValue.builder().setName(name.build()).build();
+            // Determine source: CFI for iso10962 scheme, ISDA for fpml scheme, Other otherwise.
+            TaxonomySourceEnum src;
+            if (ptScheme != null && ptScheme.contains("iso10962")) {
+                src = TaxonomySourceEnum.CFI;
+            } else if (ptScheme != null && !ptScheme.isEmpty()) {
+                src = TaxonomySourceEnum.ISDA;
+            } else {
+                src = TaxonomySourceEnum.OTHER;
+            }
+            taxonomies.add(ProductTaxonomy.builder().setSource(src).setValue(tv).build());
+        }
+
+        // [last] ISDA productQualifier
         taxonomies.add(ProductTaxonomy.builder()
                 .setSource(TaxonomySourceEnum.ISDA)
                 .setProductQualifier("Commodity_Option")
@@ -259,17 +299,18 @@ public class CommodityOptionMapper implements ProductMapper {
 
     private ObservationDates buildObservationDates(Element pricingDates) {
         ParametricDates.ParametricDatesBuilder pdb = ParametricDates.builder();
+        boolean hasContent = false;
 
         String dayType = XmlUtils.childText(pricingDates, "dayType");
         if (dayType != null) {
             DayTypeEnum dt = mapDayType(dayType);
-            if (dt != null) pdb.setDayType(dt);
+            if (dt != null) { pdb.setDayType(dt); hasContent = true; }
         }
 
         String dayDist = XmlUtils.childText(pricingDates, "dayDistribution");
         if (dayDist != null) {
             DayDistributionEnum dd = mapDayDistribution(dayDist);
-            if (dd != null) pdb.setDayDistribution(dd);
+            if (dd != null) { pdb.setDayDistribution(dd); hasContent = true; }
         }
 
         // businessCalendar -> BusinessCenters.commodityBusinessCalendar
@@ -282,7 +323,11 @@ public class CommodityOptionMapper implements ProductMapper {
                 if (fwm != null) bcb.addCommodityBusinessCalendar(fwm);
             }
             pdb.setBusinessCenters(bcb.build());
+            hasContent = true;
         }
+
+        // Return null if no meaningful content was extracted (avoids empty {"parametricDates":{}})
+        if (!hasContent) return null;
 
         return ObservationDates.builder().setParametricDates(pdb.build()).build();
     }
@@ -468,7 +513,7 @@ public class CommodityOptionMapper implements ProductMapper {
                 String period = XmlUtils.childText(paymentDaysOffset, "period");
                 if (period != null) rdb.setPeriod(EnumMappers.period(period));
                 String dayType = XmlUtils.childText(paymentDaysOffset, "dayType");
-                if (dayType != null) {
+                if (dayType != null && !"CommodityBusiness".equals(dayType)) {
                     DayTypeEnum dt = mapDayType(dayType);
                     if (dt != null) rdb.setDayType(dt);
                 }
@@ -712,6 +757,7 @@ public class CommodityOptionMapper implements ProductMapper {
         Element payDate = XmlUtils.child(premium, "paymentDate");
         if (payDate != null) {
             Element adjDate = XmlUtils.child(payDate, "adjustableDate");
+            Element relDate = XmlUtils.child(payDate, "relativeDate");
             if (adjDate != null) {
                 AdjustableOrAdjustedOrRelativeDate.AdjustableOrAdjustedOrRelativeDateBuilder sdb =
                         AdjustableOrAdjustedOrRelativeDate.builder();
@@ -726,6 +772,29 @@ public class CommodityOptionMapper implements ProductMapper {
                         XmlUtils.child(adjDate, "dateAdjustments"));
                 if (bda != null) sdb.setDateAdjustments(bda);
                 tb.setSettlementDate(sdb.build());
+            } else if (relDate != null) {
+                // Handle relative date on premium paymentDate
+                RelativeDateOffset.RelativeDateOffsetBuilder rdb = RelativeDateOffset.builder();
+                String pm = XmlUtils.childText(relDate, "periodMultiplier");
+                if (pm != null) rdb.setPeriodMultiplier(Integer.parseInt(pm));
+                String period = XmlUtils.childText(relDate, "period");
+                if (period != null) rdb.setPeriod(EnumMappers.period(period));
+                String dayType = XmlUtils.childText(relDate, "dayType");
+                if (dayType != null) {
+                    DayTypeEnum dt = mapDayType(dayType);
+                    if (dt != null) rdb.setDayType(dt);
+                }
+                String bdc = XmlUtils.childText(relDate, "businessDayConvention");
+                if (bdc != null) rdb.setBusinessDayConvention(EnumMappers.bdc(bdc));
+                Element bcs = XmlUtils.child(relDate, "businessCenters");
+                if (bcs != null) rdb.setBusinessCenters(DateMapper.buildBusinessCenters(bcs));
+                Element drt = XmlUtils.child(relDate, "dateRelativeTo");
+                if (drt != null) {
+                    rdb.setDateRelativeTo(ReferenceWithMetaDate.builder()
+                            .setExternalReference(drt.getAttribute("href")).build());
+                }
+                tb.setSettlementDate(AdjustableOrAdjustedOrRelativeDate.builder()
+                        .setRelativeDate(rdb.build()).build());
             }
         }
 

@@ -47,6 +47,12 @@ public final class SemanticDiff {
      *  Java model exposes as a singular scalar (no list accessor). We unwrap to enable equality. */
     private static final Set<String> UNWRAP_SINGLE_ARRAY = Set.of("stubPeriodType");
 
+    /** Field name aliases: the CDM 6.19.0 Java model has a typo in some field names.
+     *  We rename the expected JSON field to match the CDM Java output during normalisation. */
+    private static final Map<String, String> FIELD_ALIASES = Map.of(
+            "notionalReference", "notionaReference"  // CDM typo: missing 'l'
+    );
+
     /** JSON-only wrapper objects in the reference that the CDM 6.19.0 Java model omits:
      *  the wrapper carries no fields of its own — it just discriminates a choice. Its single
      *  child is hoisted up one level so the JSON path matches what our builders emit. */
@@ -88,6 +94,14 @@ public final class SemanticDiff {
                     e.setValue(normalise(e.getValue().get(0)));
                 } else {
                     e.setValue(normalise(e.getValue()));
+                }
+            }
+            // Apply field name aliases (CDM typo fixes)
+            for (Map.Entry<String, String> alias : FIELD_ALIASES.entrySet()) {
+                JsonNode val = obj.get(alias.getKey());
+                if (val != null) {
+                    obj.remove(alias.getKey());
+                    obj.set(alias.getValue(), val);
                 }
             }
             // Hoist wrapper children: e.g. transferExpression.unscheduledTransfer.{x} → transferExpression.{x}

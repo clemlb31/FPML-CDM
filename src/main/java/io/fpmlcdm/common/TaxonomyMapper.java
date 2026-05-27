@@ -168,7 +168,8 @@ public final class TaxonomyMapper {
             return family + "_FixedFloat";
         }
         if (floatingCount >= 2 && !hasFixed) {
-            return crossCurrency ? "InterestRate_CrossCurrency_FloatFloat" : "InterestRate_IRSwap_Basis";
+            if (crossCurrency) return "InterestRate_CrossCurrency_FloatFloat";
+            return hasOis ? "InterestRate_IRSwap_Basis_OIS" : "InterestRate_IRSwap_Basis";
         }
         if (hasFixed && !hasFloating && !hasInflation) {
             return crossCurrency ? "InterestRate_CrossCurrency_FixedFixed" : "InterestRate_IRSwap_FixedFixed";
@@ -183,9 +184,11 @@ public final class TaxonomyMapper {
                     "calculationPeriodAmount", "calculation", "notionalSchedule",
                     "notionalStepSchedule", "currency");
             if (ccy != null) ccys.add(ccy);
-            // FX-linked variable notional: collect varyingNotionalCurrency too
+            // FX-linked variable notional: collect varyingNotionalCurrency too.
+            // fxLinkedNotionalSchedule is a sibling of notionalSchedule under <calculation>,
+            // not a child of notionalSchedule.
             String vc = XmlUtils.pathText(s,
-                    "calculationPeriodAmount", "calculation", "notionalSchedule",
+                    "calculationPeriodAmount", "calculation",
                     "fxLinkedNotionalSchedule", "varyingNotionalCurrency");
             if (vc != null) ccys.add(vc);
         }
