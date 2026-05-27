@@ -114,7 +114,9 @@ public final class ContractDetailsMapper {
     }
 
     private static LegalAgreement buildMasterConfirmation(Element mc, MappingContext ctx) {
-        String typeText = XmlUtils.childText(mc, "masterConfirmationType");
+        Element typeEl = XmlUtils.child(mc, "masterConfirmationType");
+        String typeText = typeEl != null ? typeEl.getTextContent().trim() : null;
+        String typeScheme = typeEl != null ? typeEl.getAttribute("masterConfirmationTypeScheme") : null;
         String dateText = XmlUtils.childText(mc, "masterConfirmationDate");
         String annexTypeText = XmlUtils.childText(mc, "masterConfirmationAnnexType");
 
@@ -123,12 +125,15 @@ public final class ContractDetailsMapper {
 
         if (typeText != null) {
             MasterConfirmationTypeEnum mce = mapMasterConfirmationType(typeText);
-            if (mce != null) {
-                name.setMasterConfirmationType(FieldWithMetaMasterConfirmationTypeEnum.builder()
-                        .setValue(mce).build());
+            if (mce != null || (typeScheme != null && !typeScheme.isEmpty())) {
+                FieldWithMetaMasterConfirmationTypeEnum.FieldWithMetaMasterConfirmationTypeEnumBuilder fb =
+                        FieldWithMetaMasterConfirmationTypeEnum.builder();
+                if (mce != null) fb.setValue(mce);
+                if (typeScheme != null && !typeScheme.isEmpty()) {
+                    fb.setMeta(MetaFields.builder().setScheme(typeScheme).build());
+                }
+                name.setMasterConfirmationType(fb.build());
             }
-            // When the FpML masterConfirmationType doesn't map to a CDM enum (e.g. "iBoxx"),
-            // the reference ingester drops the field entirely.
         }
         if (annexTypeText != null) {
             MasterConfirmationAnnexTypeEnum at = mapMasterConfirmationAnnexType(annexTypeText);
