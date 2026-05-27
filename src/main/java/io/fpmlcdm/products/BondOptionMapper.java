@@ -671,7 +671,9 @@ public class BondOptionMapper implements ProductMapper {
         Element notionalEl = XmlUtils.child(bondOption, "notionalAmount");
         String numberOfOptions = XmlUtils.childText(bondOption, "numberOfOptions");
         String optionEntitlement = XmlUtils.childText(bondOption, "optionEntitlement");
-        String entitlementCurrency = XmlUtils.childText(bondOption, "entitlementCurrency");
+        Element entitlementCurrencyEl = XmlUtils.child(bondOption, "entitlementCurrency");
+        String entitlementCurrency = entitlementCurrencyEl != null ? entitlementCurrencyEl.getTextContent().trim() : null;
+        String entitlementCurrencyScheme = entitlementCurrencyEl != null ? entitlementCurrencyEl.getAttribute("currencyScheme") : null;
 
         boolean notionalAvail = notionalEl != null
                 && XmlUtils.childText(notionalEl, "amount") != null
@@ -679,12 +681,18 @@ public class BondOptionMapper implements ProductMapper {
 
         if (notionalAvail) {
             // quantity-1: notional currency amount
-            String ccy = XmlUtils.childText(notionalEl, "currency");
+            Element ccyEl = XmlUtils.child(notionalEl, "currency");
+            String ccy = ccyEl != null ? ccyEl.getTextContent().trim() : null;
+            String ccyScheme = ccyEl != null ? ccyEl.getAttribute("currencyScheme") : null;
             String amt = XmlUtils.childText(notionalEl, "amount");
+            FieldWithMetaString.FieldWithMetaStringBuilder ccyFwm = FieldWithMetaString.builder().setValue(ccy);
+            if (ccyScheme != null && !ccyScheme.isEmpty()) {
+                ccyFwm.setMeta(MetaFields.builder().setScheme(ccyScheme).build());
+            }
             NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder n1 = NonNegativeQuantitySchedule.builder()
                     .setValue(new BigDecimal(amt))
                     .setUnit(UnitType.builder()
-                            .setCurrency(FieldWithMetaString.builder().setValue(ccy).build())
+                            .setCurrency(ccyFwm.build())
                             .build());
             pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder()
                     .setValue(n1.build())
@@ -693,9 +701,10 @@ public class BondOptionMapper implements ProductMapper {
 
             // quantity-2: contract + multiplier(contract+ccy)
             if (numberOfOptions != null && optionEntitlement != null) {
+                String eccy = entitlementCurrency != null ? entitlementCurrency : ccy;
+                String eccyScheme = entitlementCurrency != null ? entitlementCurrencyScheme : ccyScheme;
                 NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder n2 = buildContractQty(
-                        numberOfOptions, optionEntitlement,
-                        entitlementCurrency != null ? entitlementCurrency : ccy);
+                        numberOfOptions, optionEntitlement, eccy, eccyScheme);
                 pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder()
                         .setValue(n2.build())
                         .setMeta(QuantityMapper.locationMeta("quantity-2"))
@@ -704,7 +713,7 @@ public class BondOptionMapper implements ProductMapper {
         } else if (numberOfOptions != null && optionEntitlement != null) {
             // Only the contract+multiplier quantity (as quantity-1)
             NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder n1 = buildContractQty(
-                    numberOfOptions, optionEntitlement, entitlementCurrency);
+                    numberOfOptions, optionEntitlement, entitlementCurrency, entitlementCurrencyScheme);
             pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder()
                     .setValue(n1.build())
                     .setMeta(QuantityMapper.locationMeta("quantity-1"))
@@ -722,7 +731,7 @@ public class BondOptionMapper implements ProductMapper {
     }
 
     private static NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder buildContractQty(
-            String numberOfOptions, String optionEntitlement, String entitlementCurrency) {
+            String numberOfOptions, String optionEntitlement, String entitlementCurrency, String entitlementCurrencyScheme) {
         NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qb = NonNegativeQuantitySchedule.builder()
                 .setValue(new BigDecimal(numberOfOptions))
                 .setUnit(UnitType.builder()
@@ -731,7 +740,11 @@ public class BondOptionMapper implements ProductMapper {
         UnitType.UnitTypeBuilder multUnit = UnitType.builder()
                 .setFinancialUnit(FinancialUnitEnum.CONTRACT);
         if (entitlementCurrency != null) {
-            multUnit.setCurrency(FieldWithMetaString.builder().setValue(entitlementCurrency).build());
+            FieldWithMetaString.FieldWithMetaStringBuilder eccyFwm = FieldWithMetaString.builder().setValue(entitlementCurrency);
+            if (entitlementCurrencyScheme != null && !entitlementCurrencyScheme.isEmpty()) {
+                eccyFwm.setMeta(MetaFields.builder().setScheme(entitlementCurrencyScheme).build());
+            }
+            multUnit.setCurrency(eccyFwm.build());
         }
         qb.setMultiplier(Measure.builder()
                 .setValue(new BigDecimal(optionEntitlement))
@@ -746,13 +759,19 @@ public class BondOptionMapper implements ProductMapper {
         Transfer.TransferBuilder tb = Transfer.builder();
 
         Element amtEl = XmlUtils.child(premium, "paymentAmount");
-        String ccy = XmlUtils.childText(amtEl, "currency");
+        Element ccyEl = amtEl != null ? XmlUtils.child(amtEl, "currency") : null;
+        String ccy = ccyEl != null ? ccyEl.getTextContent().trim() : null;
+        String ccyScheme = ccyEl != null ? ccyEl.getAttribute("currencyScheme") : null;
         String amount = XmlUtils.childText(amtEl, "amount");
         if (amount != null && ccy != null) {
+            FieldWithMetaString.FieldWithMetaStringBuilder premCcyFwm = FieldWithMetaString.builder().setValue(ccy);
+            if (ccyScheme != null && !ccyScheme.isEmpty()) {
+                premCcyFwm.setMeta(MetaFields.builder().setScheme(ccyScheme).build());
+            }
             tb.setQuantity(cdm.base.math.NonNegativeQuantity.builder()
                     .setValue(new BigDecimal(amount))
                     .setUnit(UnitType.builder()
-                            .setCurrency(FieldWithMetaString.builder().setValue(ccy).build()).build())
+                            .setCurrency(premCcyFwm.build()).build())
                     .build());
             tb.setAsset(Asset.builder()
                     .setCash(cdm.base.staticdata.asset.common.Cash.builder()
@@ -770,8 +789,8 @@ public class BondOptionMapper implements ProductMapper {
                     AdjustableOrAdjustedOrRelativeDate.builder();
             Element adjDate = XmlUtils.child(payDate, "adjustableDate");
             if (adjDate != null) {
-                String unadj = XmlUtils.childText(adjDate, "unadjustedDate");
-                if (unadj != null) sdb.setUnadjustedDate(DateMapper.parse(unadj));
+                // Note: for bond option premiums, only the dateAdjustments (BDA) are included
+                // in the CDM transfer settlement date; unadjustedDate is NOT emitted.
                 String adj = XmlUtils.childText(adjDate, "adjustedDate");
                 if (adj != null) {
                     sdb.setAdjustedDate(FieldWithMetaDate.builder()

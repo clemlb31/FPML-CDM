@@ -661,10 +661,9 @@ public class CreditDefaultSwapMapper implements ProductMapper {
         // allGuarantees: emit as-is (the reference preserves explicit false).
         String allG = XmlUtils.childText(el, "allGuarantees");
         if (allG != null) b.setAllGuarantees(Boolean.parseBoolean(allG));
-        // noReferenceObligation / unknownReferenceObligation / securedList: emit only when true.
-        if ("true".equals(XmlUtils.childText(el, "noReferenceObligation"))) b.setNoReferenceObligation(true);
-        if ("true".equals(XmlUtils.childText(el, "unknownReferenceObligation"))) b.setUnknownReferenceObligation(true);
-        if ("true".equals(XmlUtils.childText(el, "securedList"))) b.setSecuredList(true);
+        // noReferenceObligation / unknownReferenceObligation / securedList:
+        // Omitted per CDM reference convention — these boolean fields are not emitted even when true.
+        // (The CDM model has setters but the reference JSONs don't include them.)
 
         // referencePrice (cdm.observable.asset.Price: assetPrice with currency unit/perUnitOf)
         String refPrice = XmlUtils.childText(el, "referencePrice");

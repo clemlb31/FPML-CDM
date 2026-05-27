@@ -11,6 +11,7 @@ public class ProductDetector {
         if (XmlUtils.child(trade, "fxSingleLeg") != null) return new FxSingleLegMapper();
         if (XmlUtils.child(trade, "fxSwap") != null) return new FxSwapMapper();
         if (XmlUtils.child(trade, "fxOption") != null) return new FxOptionMapper();
+        if (XmlUtils.child(trade, "creditDefaultSwapOption") != null) return new CreditDefaultSwapOptionMapper();
         if (XmlUtils.child(trade, "creditDefaultSwap") != null) return new CreditDefaultSwapMapper();
         if (XmlUtils.child(trade, "equityOption") != null) return new EquityOptionMapper();
         if (XmlUtils.child(trade, "brokerEquityOption") != null) return new EquityOptionMapper();

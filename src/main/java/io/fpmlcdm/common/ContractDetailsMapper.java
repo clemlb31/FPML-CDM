@@ -273,7 +273,8 @@ public final class ContractDetailsMapper {
     }
 
     private static ContractualMatrix buildContractualMatrix(Element cm) {
-        String typeText = XmlUtils.childText(cm, "matrixType");
+        Element matrixTypeEl = io.fpmlcdm.common.XmlUtils.child(cm, "matrixType");
+        String typeText = matrixTypeEl != null ? matrixTypeEl.getTextContent().trim() : null;
         if (typeText == null) return null;
         MatrixTypeEnum mte = null;
         try { mte = MatrixTypeEnum.fromDisplayName(typeText); }
@@ -283,9 +284,15 @@ public final class ContractDetailsMapper {
         }
         ContractualMatrix.ContractualMatrixBuilder b = ContractualMatrix.builder();
         if (mte != null) {
-            b.setMatrixType(FieldWithMetaMatrixTypeEnum.builder().setValue(mte).build());
+            FieldWithMetaMatrixTypeEnum.FieldWithMetaMatrixTypeEnumBuilder mtb = FieldWithMetaMatrixTypeEnum.builder().setValue(mte);
+            String matrixTypeScheme = matrixTypeEl.getAttribute("matrixTypeScheme");
+            if (matrixTypeScheme != null && !matrixTypeScheme.isEmpty()) {
+                mtb.setMeta(com.rosetta.model.metafields.MetaFields.builder().setScheme(matrixTypeScheme).build());
+            }
+            b.setMatrixType(mtb.build());
         }
-        String termText = XmlUtils.childText(cm, "matrixTerm");
+        Element matrixTermEl = io.fpmlcdm.common.XmlUtils.child(cm, "matrixTerm");
+        String termText = matrixTermEl != null ? matrixTermEl.getTextContent().trim() : null;
         if (termText != null) {
             MatrixTermEnum term = null;
             try { term = MatrixTermEnum.fromDisplayName(termText); }
@@ -294,7 +301,12 @@ public final class ContractDetailsMapper {
                 catch (Exception ignored2) {}
             }
             if (term != null) {
-                b.setMatrixTerm(FieldWithMetaMatrixTermEnum.builder().setValue(term).build());
+                FieldWithMetaMatrixTermEnum.FieldWithMetaMatrixTermEnumBuilder mtermB = FieldWithMetaMatrixTermEnum.builder().setValue(term);
+                String matrixTermScheme = matrixTermEl.getAttribute("matrixTermScheme");
+                if (matrixTermScheme != null && !matrixTermScheme.isEmpty()) {
+                    mtermB.setMeta(com.rosetta.model.metafields.MetaFields.builder().setScheme(matrixTermScheme).build());
+                }
+                b.setMatrixTerm(mtermB.build());
             }
         }
         return b.build();

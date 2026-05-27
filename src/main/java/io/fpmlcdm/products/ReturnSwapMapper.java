@@ -52,8 +52,11 @@ public class ReturnSwapMapper implements ProductMapper {
         Element returnLeg = XmlUtils.child(product, "returnLeg");
         Element interestLeg = XmlUtils.child(product, "interestLeg");
 
-        // Assign counterparty roles: PARTY_1 = payer of returnLeg
-        Element payerRef = XmlUtils.child(returnLeg, "payerPartyReference");
+        // Assign counterparty roles: PARTY_1 = payer of the FIRST leg in document order.
+        // In long-form (<returnSwap>), returnLeg typically comes first.
+        // In short-form (<equitySwapTransactionSupplement>), interestLeg may come first.
+        Element firstLeg = firstLegInDocumentOrder(product, returnLeg, interestLeg);
+        Element payerRef = firstLeg != null ? XmlUtils.child(firstLeg, "payerPartyReference") : null;
         if (payerRef != null) {
             String payerHref = payerRef.getAttribute("href");
             assignRoles(payerHref, ctx);
@@ -1391,6 +1394,23 @@ public class ReturnSwapMapper implements ProductMapper {
         if (isIndex) return prefix + "_Index";
         if (isBasket) return prefix + "_Basket";
         return prefix + "_SingleName";
+    }
+
+    /**
+     * Determines which leg appears first in document order.
+     * Compares the position of returnLeg vs interestLeg within the parent product element.
+     */
+    private static Element firstLegInDocumentOrder(Element product, Element returnLeg, Element interestLeg) {
+        if (returnLeg == null) return interestLeg;
+        if (interestLeg == null) return returnLeg;
+        // Walk children of product to determine order
+        org.w3c.dom.NodeList children = product.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            org.w3c.dom.Node child = children.item(i);
+            if (child == returnLeg) return returnLeg;
+            if (child == interestLeg) return interestLeg;
+        }
+        return returnLeg; // fallback
     }
 
     private void assignRoles(String payerHref, MappingContext ctx) {

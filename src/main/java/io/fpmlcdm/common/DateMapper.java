@@ -3,6 +3,7 @@ package io.fpmlcdm.common;
 import cdm.base.datetime.AdjustableDate;
 import cdm.base.datetime.AdjustableOrRelativeDate;
 import cdm.base.datetime.AdjustedRelativeDateOffset;
+import cdm.base.datetime.RelativeDateOffset;
 import cdm.base.datetime.BusinessCenters;
 import cdm.base.datetime.BusinessDayAdjustments;
 import cdm.base.datetime.DayTypeEnum;
@@ -86,7 +87,9 @@ public final class DateMapper {
      */
     public static AdjustableOrRelativeDate adjustableOrRelative(Element fpml) {
         if (fpml == null) return null;
-        AdjustableDate adj = adjustable(fpml);
+        // Check for a nested <adjustableDate> child first (e.g. <commencementDate><adjustableDate>...)
+        Element adjustableDateChild = XmlUtils.child(fpml, "adjustableDate");
+        AdjustableDate adj = adjustable(adjustableDateChild != null ? adjustableDateChild : fpml);
         return adj == null ? null : AdjustableOrRelativeDate.builder().setAdjustableDate(adj).build();
     }
 
@@ -127,6 +130,40 @@ public final class DateMapper {
             b.setRelativeDateAdjustments(businessDayAdjustments(relAdj));
         }
         return AdjustableOrRelativeDate.builder().setRelativeDate(b.build()).build();
+    }
+
+    /**
+     * Builds a RelativeDateOffset from an FpML element containing
+     * periodMultiplier, period, dayType, businessDayConvention, businessCenters, dateRelativeTo.
+     */
+    public static RelativeDateOffset buildRelativeDateOffset(Element fpml) {
+        if (fpml == null) return null;
+        RelativeDateOffset.RelativeDateOffsetBuilder b = RelativeDateOffset.builder();
+        String pm = XmlUtils.childText(fpml, "periodMultiplier");
+        if (pm != null) b.setPeriodMultiplier(Integer.parseInt(pm));
+        String p = XmlUtils.childText(fpml, "period");
+        if (p != null) b.setPeriod(EnumMappers.period(p));
+        String dt = XmlUtils.childText(fpml, "dayType");
+        if (dt != null) {
+            try { b.setDayType(DayTypeEnum.valueOf(dt.toUpperCase())); }
+            catch (Exception ignored) {}
+        }
+        String bdc = XmlUtils.childText(fpml, "businessDayConvention");
+        if (bdc != null) b.setBusinessDayConvention(EnumMappers.bdc(bdc));
+        Element centers = XmlUtils.child(fpml, "businessCenters");
+        Element centersRef = XmlUtils.child(fpml, "businessCentersReference");
+        if (centers != null) {
+            b.setBusinessCenters(buildBusinessCenters(centers));
+        } else if (centersRef != null) {
+            b.setBusinessCentersReference(cdm.base.datetime.metafields.ReferenceWithMetaBusinessCenters.builder()
+                    .setExternalReference(centersRef.getAttribute("href")).build());
+        }
+        Element drt = XmlUtils.child(fpml, "dateRelativeTo");
+        if (drt != null) {
+            b.setDateRelativeTo(com.rosetta.model.metafields.ReferenceWithMetaDate.builder()
+                    .setExternalReference(drt.getAttribute("href")).build());
+        }
+        return b.build();
     }
 
     public static AdjustableDate adjustable(Element fpml) {

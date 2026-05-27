@@ -52,7 +52,16 @@ public final class QuantityMapper {
             if (calc == null) continue;
             StreamLabels.Labels lbl = labels.get(stream);
             if (XmlUtils.child(calc, "floatingRateCalculation") != null) {
-                out.add(buildFloating(stream, lbl, false));
+                Element fxLinked = XmlUtils.child(calc, "fxLinkedNotionalSchedule");
+                if (fxLinked != null) {
+                    // fxLinkedNotionalSchedule: replace the normal floating PQ with the fxLinked one
+                    String varCcy = XmlUtils.childText(fxLinked, "varyingNotionalCurrency");
+                    if (varCcy != null) {
+                        out.add(buildFxLinkedPriceQuantity(stream, varCcy, lbl));
+                    }
+                } else {
+                    out.add(buildFloating(stream, lbl, false));
+                }
             } else if (XmlUtils.child(calc, "inflationRateCalculation") != null) {
                 out.add(buildFloating(stream, lbl, true));
             } else {
@@ -240,6 +249,66 @@ public final class QuantityMapper {
                     .setValue(new BigDecimal(value))
                     .build());
         }
+    }
+
+    /**
+     * Builds a PriceQuantity for the fxLinked varying notional currency.
+     * Contains a quantity with no value but with the currency unit, plus an observable.
+     */
+    private static PriceQuantity buildFxLinkedPriceQuantity(Element stream, String currency, StreamLabels.Labels lbl) {
+        PriceQuantity.PriceQuantityBuilder b = PriceQuantity.builder();
+        UnitType unit = UnitType.builder()
+                .setCurrency(FieldWithMetaString.builder().setValue(currency).build())
+                .build();
+        NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qsb = NonNegativeQuantitySchedule.builder()
+                .setUnit(unit);
+        b.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder()
+                .setValue(qsb.build())
+                .setMeta(locationMeta(lbl.quantityLabel))
+                .build());
+
+        // Include the floating rate observable (same as a regular floating leg)
+        Element frc = XmlUtils.path(stream, "calculationPeriodAmount", "calculation", "floatingRateCalculation");
+        String idxName = frc != null ? XmlUtils.childText(frc, "floatingRateIndex") : null;
+        if (idxName != null) {
+            cdm.base.staticdata.asset.rates.FloatingRateIndexEnum idx = null;
+            try { idx = cdm.base.staticdata.asset.rates.FloatingRateIndexEnum.fromDisplayName(idxName); }
+            catch (Exception ignored) {}
+            FloatingRateIndex.FloatingRateIndexBuilder frib = FloatingRateIndex.builder()
+                    .setAssetClass(AssetClassEnum.INTEREST_RATE);
+            cdm.base.staticdata.asset.rates.metafields.FieldWithMetaFloatingRateIndexEnum friEnum = EnumMappers.floatingRateIndex(idxName);
+            if (friEnum != null) frib.setFloatingRateIndex(friEnum);
+            frib.addIdentifier(AssetIdentifier.builder()
+                    .setIdentifier(FieldWithMetaString.builder().setValue(idxName).build())
+                    .setIdentifierType(AssetIdTypeEnum.OTHER)
+                    .build());
+            Element tenor = XmlUtils.child(frc, "indexTenor");
+            if (tenor != null) {
+                String pm = XmlUtils.childText(tenor, "periodMultiplier");
+                String per = XmlUtils.childText(tenor, "period");
+                Period.PeriodBuilder tb = Period.builder();
+                if (pm != null) tb.setPeriodMultiplier(Integer.parseInt(pm));
+                if (per != null) tb.setPeriod(cdm.base.datetime.PeriodEnum.valueOf(per));
+                frib.setIndexTenor(tb.build());
+            }
+            FieldWithMetaInterestRateIndex fwmIri = FieldWithMetaInterestRateIndex.builder()
+                    .setValue(InterestRateIndex.builder()
+                            .setFloatingRateIndex(frib.build())
+                            .build())
+                    .setMeta(locationMeta(lbl.indexLabel))
+                    .build();
+            Observable obs = Observable.builder()
+                    .setIndex(Index.builder()
+                            .setInterestRateIndex(fwmIri)
+                            .build())
+                    .build();
+            b.setObservable(FieldWithMetaObservable.builder()
+                    .setValue(obs)
+                    .setMeta(locationMeta("observable-1"))
+                    .build());
+        }
+
+        return b.build();
     }
 
     private static UnitType currencyUnit(Element ccyEl) {

@@ -87,11 +87,28 @@ public final class InterestRatePayoutMapper {
                 .build());
 
         // priceQuantity (address ref into tradeLot) — quantity-N matches this stream's label
-        irp.setPriceQuantity(ResolvablePriceQuantity.builder()
+        ResolvablePriceQuantity.ResolvablePriceQuantityBuilder rpqb = ResolvablePriceQuantity.builder()
                 .setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder()
                         .setReference(addressRef(labels.quantityLabel))
-                        .build())
-                .build());
+                        .build());
+
+        // fxLinkedNotionalSchedule: add quantityMultiplier + quantityReference
+        Element fxLinked = XmlUtils.path(swapStream,
+                "calculationPeriodAmount", "calculation", "fxLinkedNotionalSchedule");
+        if (fxLinked != null) {
+            rpqb.setQuantityMultiplier(buildFxLinkedQuantityMultiplier(fxLinked));
+            Element constRef = XmlUtils.child(fxLinked, "constantNotionalScheduleReference");
+            if (constRef != null) {
+                String refHref = constRef.getAttribute("href");
+                if (refHref != null && !refHref.isEmpty()) {
+                    rpqb.setQuantityReference(
+                            cdm.product.common.settlement.metafields.ReferenceWithMetaResolvablePriceQuantity.builder()
+                                    .setExternalReference(refHref).build());
+                }
+            }
+        }
+
+        irp.setPriceQuantity(rpqb.build());
 
         // rateSpecification (address ref)
         if (isInflation) {
@@ -100,6 +117,13 @@ public final class InterestRatePayoutMapper {
                             .setRateOption(ReferenceWithMetaInterestRateIndex.builder()
                                     .setReference(addressRef(labels.indexLabel))
                                     .build());
+            if (labels.spreadPriceLabel != null) {
+                ib.setSpreadSchedule(cdm.product.asset.SpreadSchedule.builder()
+                        .setPrice(ReferenceWithMetaPriceSchedule.builder()
+                                .setReference(addressRef(labels.spreadPriceLabel))
+                                .build())
+                        .build());
+            }
             irp.setRateSpecification(RateSpecification.builder()
                     .setInflationRateSpecification(ib.build())
                     .build());
@@ -242,6 +266,11 @@ public final class InterestRatePayoutMapper {
                 if (sched != null) pp.setPrincipalPaymentSchedule(sched);
             }
 
+            // externalKey from principalExchanges/@id
+            String peId = pe.getAttribute("id");
+            if (peId != null && !peId.isEmpty()) {
+                pp.setMeta(MetaFields.builder().setExternalKey(peId).build());
+            }
             irp.setPrincipalPayment(pp.build());
         }
 
@@ -270,10 +299,13 @@ public final class InterestRatePayoutMapper {
         cdm.product.common.settlement.PrincipalPaymentSchedule.PrincipalPaymentScheduleBuilder b =
                 cdm.product.common.settlement.PrincipalPaymentSchedule.builder();
 
-        // Currency from the swapStream's notional
+        // Currency from the swapStream's notional, or settlement currency for NDS
         Element notional = XmlUtils.path(swapStream, "calculationPeriodAmount", "calculation",
                 "notionalSchedule", "notionalStepSchedule");
         String ccy = XmlUtils.childText(notional, "currency");
+        // For NDS swaps, use settlement currency instead
+        String settlCcy = XmlUtils.pathText(swapStream, "settlementProvision", "settlementCurrency");
+        if (settlCcy != null) ccy = settlCcy;
 
         // Assign each principalExchange to initial / final based on the principalExchanges
         // flags and exchange count. When only one of initial/final flags is true (e.g. NDS),
@@ -718,5 +750,76 @@ public final class InterestRatePayoutMapper {
                 .setScope("DOCUMENT")
                 .setReference(value)
                 .build();
+    }
+
+    /**
+     * Builds QuantityMultiplier from an FpML fxLinkedNotionalSchedule element.
+     */
+    private static cdm.product.common.settlement.QuantityMultiplier buildFxLinkedQuantityMultiplier(Element fxLinked) {
+        cdm.product.common.schedule.FxLinkedNotionalSchedule.FxLinkedNotionalScheduleBuilder fb =
+                cdm.product.common.schedule.FxLinkedNotionalSchedule.builder();
+
+        String varCcy = XmlUtils.childText(fxLinked, "varyingNotionalCurrency");
+        if (varCcy != null) fb.setVaryingNotionalCurrencyValue(varCcy);
+
+        Element fixingDates = XmlUtils.child(fxLinked, "varyingNotionalFixingDates");
+        if (fixingDates != null) {
+            fb.setVaryingNotionalFixingDates(DateMapper.buildRelativeDateOffset(fixingDates));
+        }
+
+        Element fxSource = XmlUtils.child(fxLinked, "fxSpotRateSource");
+        if (fxSource != null) {
+            fb.setFxSpotRateSource(buildFxSpotRateSource(fxSource));
+        }
+
+        // fixingTime may be at top level or nested inside fxSpotRateSource
+        Element fixingTime = XmlUtils.child(fxLinked, "fixingTime");
+        if (fixingTime == null) {
+            Element fxSrcEl = XmlUtils.child(fxLinked, "fxSpotRateSource");
+            if (fxSrcEl != null) fixingTime = XmlUtils.child(fxSrcEl, "fixingTime");
+        }
+        if (fixingTime != null) {
+            cdm.base.datetime.BusinessCenterTime.BusinessCenterTimeBuilder bct =
+                    cdm.base.datetime.BusinessCenterTime.builder();
+            String hmt = XmlUtils.childText(fixingTime, "hourMinuteTime");
+            if (hmt != null) try { bct.setHourMinuteTime(java.time.LocalTime.parse(hmt)); } catch (Exception ignored) {}
+            String bc = XmlUtils.childText(fixingTime, "businessCenter");
+            if (bc != null) {
+                try {
+                    bct.setBusinessCenter(cdm.base.datetime.metafields.FieldWithMetaBusinessCenterEnum.builder()
+                            .setValue(cdm.base.datetime.BusinessCenterEnum.valueOf(bc)).build());
+                } catch (Exception ignored) {}
+            }
+            fb.setFixingTime(bct.build());
+        }
+
+        Element interimDates = XmlUtils.child(fxLinked, "varyingNotionalInterimExchangePaymentDates");
+        if (interimDates != null) {
+            fb.setVaryingNotionalInterimExchangePaymentDates(DateMapper.buildRelativeDateOffset(interimDates));
+        }
+
+        return cdm.product.common.settlement.QuantityMultiplier.builder()
+                .setFxLinkedNotionalSchedule(fb.build())
+                .build();
+    }
+
+    private static cdm.observable.asset.FxSpotRateSource buildFxSpotRateSource(Element el) {
+        cdm.observable.asset.FxSpotRateSource.FxSpotRateSourceBuilder b = cdm.observable.asset.FxSpotRateSource.builder();
+        Element primary = XmlUtils.child(el, "primaryRateSource");
+        if (primary != null) {
+            cdm.observable.asset.InformationSource.InformationSourceBuilder isb = cdm.observable.asset.InformationSource.builder();
+            String rateSource = XmlUtils.childText(primary, "rateSource");
+            if (rateSource != null) {
+                cdm.observable.asset.InformationProviderEnum provider = null;
+                try { provider = cdm.observable.asset.InformationProviderEnum.fromDisplayName(rateSource); } catch (Exception ignored) {}
+                if (provider == null) try { provider = cdm.observable.asset.InformationProviderEnum.valueOf(rateSource.toUpperCase().replace(" ", "_")); } catch (Exception ignored) {}
+                cdm.observable.asset.metafields.FieldWithMetaInformationProviderEnum.FieldWithMetaInformationProviderEnumBuilder pb =
+                        cdm.observable.asset.metafields.FieldWithMetaInformationProviderEnum.builder();
+                if (provider != null) pb.setValue(provider);
+                isb.setSourceProvider(pb.build());
+            }
+            b.setPrimarySource(isb.build());
+        }
+        return b.build();
     }
 }
