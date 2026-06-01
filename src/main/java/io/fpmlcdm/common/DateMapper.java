@@ -43,7 +43,8 @@ public final class DateMapper {
         Element centers = XmlUtils.child(fpml, "businessCenters");
         Element centersRef = XmlUtils.child(fpml, "businessCentersReference");
         if (centers != null) {
-            b.setBusinessCenters(buildBusinessCenters(centers));
+            BusinessCenters bc = buildBusinessCenters(centers);
+            if (bc != null) b.setBusinessCenters(bc);
         } else if (centersRef != null) {
             String href = centersRef.getAttribute("href");
             BusinessCenters.BusinessCentersBuilder wrap = BusinessCenters.builder();
@@ -59,6 +60,7 @@ public final class DateMapper {
         if (fpml == null) return null;
         BusinessCenters.BusinessCentersBuilder b = BusinessCenters.builder();
         List<Element> centerEls = XmlUtils.children(fpml, "businessCenter");
+        boolean any = false;
         for (Element c : centerEls) {
             String code = c.getTextContent().trim();
             try {
@@ -70,6 +72,7 @@ public final class DateMapper {
                     fb.setMeta(MetaFields.builder().setScheme(scheme).build());
                 }
                 b.addBusinessCenter(fb.build());
+                any = true;
             } catch (IllegalArgumentException ignored) {
                 // Unknown business center — skip; rare in standard ISO codes.
             }
@@ -77,7 +80,9 @@ public final class DateMapper {
         String id = fpml.getAttribute("id");
         if (id != null && !id.isEmpty()) {
             b.setMeta(MetaFields.builder().setExternalKey(id).build());
+            any = true;
         }
+        if (!any) return null;
         return b.build();
     }
 
@@ -115,7 +120,8 @@ public final class DateMapper {
         Element centers = XmlUtils.child(fpml, "businessCenters");
         Element centersRef = XmlUtils.child(fpml, "businessCentersReference");
         if (centers != null) {
-            b.setBusinessCenters(buildBusinessCenters(centers));
+            BusinessCenters bc = buildBusinessCenters(centers);
+            if (bc != null) b.setBusinessCenters(bc);
         } else if (centersRef != null) {
             b.setBusinessCentersReference(ReferenceWithMetaBusinessCenters.builder()
                     .setExternalReference(centersRef.getAttribute("href")).build());
@@ -145,15 +151,19 @@ public final class DateMapper {
         if (p != null) b.setPeriod(EnumMappers.period(p));
         String dt = XmlUtils.childText(fpml, "dayType");
         if (dt != null) {
-            try { b.setDayType(DayTypeEnum.valueOf(dt.toUpperCase())); }
-            catch (Exception ignored) {}
+            try { b.setDayType(DayTypeEnum.fromDisplayName(dt)); }
+            catch (Exception ignored) {
+                try { b.setDayType(DayTypeEnum.valueOf(dt.replaceAll("([a-z])([A-Z])", "$1_$2").toUpperCase())); }
+                catch (Exception ig2) {}
+            }
         }
         String bdc = XmlUtils.childText(fpml, "businessDayConvention");
         if (bdc != null) b.setBusinessDayConvention(EnumMappers.bdc(bdc));
         Element centers = XmlUtils.child(fpml, "businessCenters");
         Element centersRef = XmlUtils.child(fpml, "businessCentersReference");
         if (centers != null) {
-            b.setBusinessCenters(buildBusinessCenters(centers));
+            BusinessCenters bc = buildBusinessCenters(centers);
+            if (bc != null) b.setBusinessCenters(bc);
         } else if (centersRef != null) {
             b.setBusinessCentersReference(cdm.base.datetime.metafields.ReferenceWithMetaBusinessCenters.builder()
                     .setExternalReference(centersRef.getAttribute("href")).build());

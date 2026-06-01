@@ -50,7 +50,8 @@ public final class SemanticDiff {
     /** Field name aliases: the CDM 6.19.0 Java model has a typo in some field names.
      *  We rename the expected JSON field to match the CDM Java output during normalisation. */
     private static final Map<String, String> FIELD_ALIASES = Map.of(
-            "notionalReference", "notionaReference"  // CDM typo: missing 'l'
+            "notionalReference", "notionaReference",  // CDM typo: missing 'l'
+            "barrier", "knock"  // expected uses "barrier" for knockIn/knockOut; CDM model exposes Knock
     );
 
     /** JSON-only wrapper objects in the reference that the CDM 6.19.0 Java model omits:

@@ -54,9 +54,9 @@ public final class StreamLabels {
         Map<Element, Labels> out = new HashMap<>();
         int priceCounter = 0;
         int observableCounter = 0;
+        int quantityCounter = 0;
         for (int i = 0; i < swapStreams.size(); i++) {
             Element s = swapStreams.get(i);
-            int oneBased = i + 1;
             Element calc = XmlUtils.path(s, "calculationPeriodAmount", "calculation");
             Element frc = calc == null ? null : XmlUtils.child(calc, "floatingRateCalculation");
             Element irc = calc == null ? null : XmlUtils.child(calc, "inflationRateCalculation");
@@ -64,8 +64,16 @@ public final class StreamLabels {
             Element rateCalc = frc != null ? frc : irc;
             boolean floating = rateCalc != null;
             boolean fixed = calc != null && XmlUtils.child(calc, "fixedRateSchedule") != null;
+            // knownAmountSchedule = pre-computed payment amounts, no notional/rate to reference
+            boolean knownAmount = calc == null && XmlUtils.path(s, "calculationPeriodAmount", "knownAmountSchedule") != null;
 
-            String quantityLabel = "quantity-" + oneBased;
+            String quantityLabel;
+            if (knownAmount) {
+                quantityLabel = null;  // no priceQuantity entry, no payout reference
+            } else {
+                quantityCounter++;
+                quantityLabel = "quantity-" + quantityCounter;
+            }
             String fixedPriceLabel = null;
             String spreadPriceLabel = null;
             String capPriceLabel = null;

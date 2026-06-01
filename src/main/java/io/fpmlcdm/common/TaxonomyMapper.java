@@ -36,7 +36,7 @@ public final class TaxonomyMapper {
         if (swap == null) return out;
 
         Element primaryAssetClass = XmlUtils.child(swap, "primaryAssetClass");
-        Element productType = XmlUtils.child(swap, "productType");
+        Element productType = XmlUtils.child(swap, "productType");  // first only (for legacy fallback checks)
 
         if (primaryAssetClass != null) {
             String pacScheme = primaryAssetClass.getAttribute("assetClassScheme");
@@ -51,17 +51,24 @@ public final class TaxonomyMapper {
             out.add(ProductTaxonomy.builder().setPrimaryAssetClass(ab.build()).build());
         }
 
-        if (productType != null) {
-            String ptScheme = productType.getAttribute("productTypeScheme");
-            String ptValue = productType.getTextContent().trim();
+        // Multiple productType elements: CFI (iso10962), EMIR (emir-contract-type), Other for the rest.
+        // A single colon-form productType ("InterestRate:IRSwap:Foo") is emitted with source=Other.
+        List<Element> productTypes = XmlUtils.children(swap, "productType");
+        for (Element ptEl : productTypes) {
+            String ptScheme = ptEl.getAttribute("productTypeScheme");
+            String ptValue = ptEl.getTextContent().trim();
             FieldWithMetaString.FieldWithMetaStringBuilder name = FieldWithMetaString.builder().setValue(ptValue);
             if (ptScheme != null && !ptScheme.isEmpty()) {
                 name.setMeta(MetaFields.builder().setScheme(ptScheme).build());
             }
             TaxonomyValue tv = TaxonomyValue.builder().setName(name.build()).build();
-            // Source = ISDA when the productType carries an FpML scheme; Other otherwise.
-            TaxonomySourceEnum src = (ptScheme != null && !ptScheme.isEmpty())
-                    ? TaxonomySourceEnum.ISDA : TaxonomySourceEnum.OTHER;
+            String schemeLower = ptScheme == null ? "" : ptScheme.toLowerCase();
+            TaxonomySourceEnum src;
+            if (schemeLower.contains("iso10962")) src = TaxonomySourceEnum.CFI;
+            else if (schemeLower.contains("emir-contract-type")) src = TaxonomySourceEnum.EMIR;
+            else if (ptScheme == null || ptScheme.isEmpty()) src = TaxonomySourceEnum.OTHER;
+            else if (productTypes.size() == 1) src = TaxonomySourceEnum.ISDA;  // single legacy productType
+            else src = TaxonomySourceEnum.OTHER;
             ProductTaxonomy.ProductTaxonomyBuilder b = ProductTaxonomy.builder()
                     .setSource(src)
                     .setValue(tv);
@@ -77,6 +84,20 @@ public final class TaxonomyMapper {
             String ptText = productType.getTextContent() == null ? "" : productType.getTextContent();
             String ptScheme = productType.getAttribute("productTypeScheme");
             if (ptText.contains(":") || (ptScheme != null && !ptScheme.isEmpty())) {
+                skipQualifier = true;
+            }
+        }
+        // Same rule for known-amount swaps with a colon-form productType: skip the auto qualifier.
+        boolean hasKnownAmount = false;
+        for (Element s : XmlUtils.children(swap, "swapStream")) {
+            if (XmlUtils.path(s, "calculationPeriodAmount", "knownAmountSchedule") != null) {
+                hasKnownAmount = true;
+                break;
+            }
+        }
+        if (hasKnownAmount && productType != null) {
+            String ptText = productType.getTextContent() == null ? "" : productType.getTextContent();
+            if (ptText.contains(":")) {
                 skipQualifier = true;
             }
         }
@@ -118,6 +139,10 @@ public final class TaxonomyMapper {
         boolean hasOis = false;
         int floatingCount = 0;
         for (Element s : streams) {
+            // knownAmountSchedule = pre-computed fixed payments (counts as fixed leg for qualifier)
+            if (XmlUtils.path(s, "calculationPeriodAmount", "knownAmountSchedule") != null) {
+                hasFixed = true;
+            }
             Element calc = XmlUtils.path(s, "calculationPeriodAmount", "calculation");
             if (calc == null) continue;
             if (XmlUtils.child(calc, "fixedRateSchedule") != null) hasFixed = true;
@@ -140,7 +165,15 @@ public final class TaxonomyMapper {
                 }
             }
         }
-        boolean isZeroCoupon = isZeroCouponSwap(streams);
+        // With knownAmountSchedule, payments are pre-computed; don't tag as ZC even if period=T
+        boolean hasKnownAmount = false;
+        for (Element s : streams) {
+            if (XmlUtils.path(s, "calculationPeriodAmount", "knownAmountSchedule") != null) {
+                hasKnownAmount = true;
+                break;
+            }
+        }
+        boolean isZeroCoupon = !hasKnownAmount && isZeroCouponSwap(streams);
         boolean crossCurrency = isCrossCurrency(streams);
 
         boolean isInflationZc = hasInflation && isInflationZeroCoupon(streams);
@@ -168,7 +201,7 @@ public final class TaxonomyMapper {
             return family + "_FixedFloat";
         }
         if (floatingCount >= 2 && !hasFixed) {
-            if (crossCurrency) return "InterestRate_CrossCurrency_FloatFloat";
+            if (crossCurrency) return "InterestRate_CrossCurrency_Basis";
             return hasOis ? "InterestRate_IRSwap_Basis_OIS" : "InterestRate_IRSwap_Basis";
         }
         if (hasFixed && !hasFloating && !hasInflation) {
@@ -184,6 +217,10 @@ public final class TaxonomyMapper {
                     "calculationPeriodAmount", "calculation", "notionalSchedule",
                     "notionalStepSchedule", "currency");
             if (ccy != null) ccys.add(ccy);
+            // knownAmountSchedule has its own currency
+            String kaCcy = XmlUtils.pathText(s,
+                    "calculationPeriodAmount", "knownAmountSchedule", "currency");
+            if (kaCcy != null) ccys.add(kaCcy);
             // FX-linked variable notional: collect varyingNotionalCurrency too.
             // fxLinkedNotionalSchedule is a sibling of notionalSchedule under <calculation>,
             // not a child of notionalSchedule.

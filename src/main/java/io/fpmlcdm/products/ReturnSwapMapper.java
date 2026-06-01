@@ -126,8 +126,21 @@ public class ReturnSwapMapper implements ProductMapper {
         buildTaxonomy(product, returnLeg).forEach(ntp::addTaxonomy);
         ProductIdentifierMapper.map(product).forEach(ntp::addIdentifier);
 
-        // TradeLot
+        // TradeLot — short-form (equitySwapTransactionSupplement) with interestLeg first in
+        // document order ⇒ reference output emits the InterestRate priceQuantity at index 0
+        // (with observable-2) and the equity priceQuantity at index 1 (with observable-1).
         List<PriceQuantity> priceQuantities = buildTradeLotPriceQuantities(returnLeg, interestLeg);
+        Element firstLegForPq = firstLegInDocumentOrder(product, returnLeg, interestLeg);
+        if (firstLegForPq == interestLeg && interestLeg != null && priceQuantities.size() == 2) {
+            // Swap order and relabel observables
+            PriceQuantity equityPq = priceQuantities.get(0);
+            PriceQuantity ratePq = priceQuantities.get(1);
+            PriceQuantity newRatePq = relabelObservable(ratePq, "observable-2");
+            PriceQuantity newEquityPq = relabelObservable(equityPq, "observable-1");
+            priceQuantities = new ArrayList<>();
+            priceQuantities.add(newRatePq);
+            priceQuantities.add(newEquityPq);
+        }
         TradeLot tradeLot = TradeLot.builder().setPriceQuantity(priceQuantities).build();
 
         // Counterparties
@@ -192,8 +205,8 @@ public class ReturnSwapMapper implements ProductMapper {
 
         TradeState.TradeStateBuilder tsBuilder = TradeState.builder().setTrade(t.build());
 
-        // otherPartyPayment at trade level
-        for (TransferState ts : TransferMapper.map(trade, null)) {
+        // otherPartyPayment at trade level + additionalPayment under returnSwap
+        for (TransferState ts : TransferMapper.map(trade, product)) {
             tsBuilder.addTransferHistory(ts);
         }
 
@@ -297,10 +310,18 @@ public class ReturnSwapMapper implements ProductMapper {
         // Check if we should use quantityReference or quantitySchedule address
         String effectiveNotionalId = notionalAmtId != null ? notionalAmtId : notionalId;
 
+        // When notional uses <determinationMethod> only (no <notionalAmount>),
+        // emit a sparse priceQuantity (just reset/no schedule reference).
+        boolean hasDeterminationMethodOnly = notional != null
+                && notionalAmount == null
+                && XmlUtils.child(notional, "determinationMethod") != null;
+
         ResolvablePriceQuantity.ResolvablePriceQuantityBuilder rpq = ResolvablePriceQuantity.builder();
-        rpq.setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder()
-                .setReference(Reference.builder().setScope("DOCUMENT").setReference("quantity-1").build())
-                .build());
+        if (!hasDeterminationMethodOnly) {
+            rpq.setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder()
+                    .setReference(Reference.builder().setScope("DOCUMENT").setReference("quantity-1").build())
+                    .build());
+        }
         // Emit reset whenever notionalReset is explicitly specified (true OR false)
         if (notionalReset != null) rpq.setReset(notionalReset);
         // Emit externalKey only when notionalAmount (the inner element) carries the id.
@@ -395,7 +416,19 @@ public class ReturnSwapMapper implements ProductMapper {
         Element intNotional = XmlUtils.child(interestLeg, "notional");
         if (intNotional == null) return false;
         Element rel = XmlUtils.child(intNotional, "relativeNotionalAmount");
+        if (rel == null) rel = XmlUtils.child(intNotional, "relativeDeterminationMethod");
         if (rel == null) return false;
+        // Short-form (equitySwapTransactionSupplement) with <index> underlyer suppresses
+        // the inferred settlementTerms (reference output convention).
+        boolean shortForm = product != null && "equitySwapTransactionSupplement".equals(product.getLocalName());
+        Element underlyer = XmlUtils.child(returnLeg, "underlyer");
+        boolean isIndexUnderlyer = false;
+        if (underlyer != null) {
+            Element su = XmlUtils.child(underlyer, "singleUnderlyer");
+            if (su != null && XmlUtils.child(su, "index") != null) isIndexUnderlyer = true;
+            if (XmlUtils.child(underlyer, "index") != null) isIndexUnderlyer = true;
+        }
+        if (shortForm && isIndexUnderlyer) return false;
         Element ret = XmlUtils.child(returnLeg, "return");
         if (ret != null && XmlUtils.child(ret, "dividendConditions") != null) return true;
         // currencyReference inside the amount block also triggers emission
@@ -457,9 +490,71 @@ public class ReturnSwapMapper implements ProductMapper {
         }
 
         Element crossCcy = XmlUtils.child(fxFeatureEl, "crossCurrency");
-        // crossCurrency is empty in FpML; not represented in CDM output (per reference data)
-        // Only emit feature when there's at least referenceCurrency or quanto or composite
-        if (refCcy != null || quanto != null || composite != null || crossCcy != null) {
+        Element ccFx = crossCcy == null ? null : XmlUtils.child(crossCcy, "fxSpotRateSource");
+        boolean crossHasContent = crossCcy != null && (ccFx != null
+                || XmlUtils.child(crossCcy, "fixingTime") != null);
+        if (crossHasContent) {
+            Composite.CompositeBuilder ccb = Composite.builder();
+            Element fxsrs = XmlUtils.child(crossCcy, "fxSpotRateSource");
+            if (fxsrs != null) {
+                cdm.observable.asset.FxSpotRateSource.FxSpotRateSourceBuilder srcB =
+                        cdm.observable.asset.FxSpotRateSource.builder();
+                Element prim = XmlUtils.child(fxsrs, "primaryRateSource");
+                if (prim != null) {
+                    cdm.observable.asset.InformationSource.InformationSourceBuilder isb =
+                            cdm.observable.asset.InformationSource.builder();
+                    String src = XmlUtils.childText(prim, "rateSource");
+                    if (src != null) {
+                        try {
+                            isb.setSourceProvider(cdm.observable.asset.metafields.FieldWithMetaInformationProviderEnum.builder()
+                                    .setValue(cdm.observable.asset.InformationProviderEnum.fromDisplayName(src))
+                                    .build());
+                        } catch (Exception ignored) {
+                            try {
+                                isb.setSourceProvider(cdm.observable.asset.metafields.FieldWithMetaInformationProviderEnum.builder()
+                                        .setValue(cdm.observable.asset.InformationProviderEnum.valueOf(src.toUpperCase()))
+                                        .build());
+                            } catch (Exception ig2) {}
+                        }
+                    }
+                    Element pageEl = XmlUtils.child(prim, "rateSourcePage");
+                    if (pageEl != null) {
+                        FieldWithMetaString.FieldWithMetaStringBuilder sp = FieldWithMetaString.builder()
+                                .setValue(pageEl.getTextContent().trim());
+                        String pageScheme = pageEl.getAttribute("rateSourcePageScheme");
+                        if (pageScheme != null && !pageScheme.isEmpty()) {
+                            sp.setMeta(MetaFields.builder().setScheme(pageScheme).build());
+                        }
+                        isb.setSourcePage(sp.build());
+                    }
+                    srcB.setPrimarySource(isb.build());
+                }
+                ccb.setFxSpotRateSource(srcB.build());
+            }
+            // fixingTime may be directly under crossCurrency OR nested inside fxSpotRateSource
+            Element fix = XmlUtils.child(crossCcy, "fixingTime");
+            if (fix == null && fxsrs != null) fix = XmlUtils.child(fxsrs, "fixingTime");
+            if (fix != null) {
+                cdm.base.datetime.BusinessCenterTime.BusinessCenterTimeBuilder bct =
+                        cdm.base.datetime.BusinessCenterTime.builder();
+                String hmt = XmlUtils.childText(fix, "hourMinuteTime");
+                if (hmt != null) {
+                    try { bct.setHourMinuteTime(java.time.LocalTime.parse(hmt)); }
+                    catch (Exception ignored) {}
+                }
+                String bc = XmlUtils.childText(fix, "businessCenter");
+                if (bc != null) {
+                    try { bct.setBusinessCenter(
+                            cdm.base.datetime.metafields.FieldWithMetaBusinessCenterEnum.builder()
+                                    .setValue(cdm.base.datetime.BusinessCenterEnum.valueOf(bc))
+                                    .build()); } catch (Exception ignored) {}
+                }
+                ccb.setFixingTime(bct.build());
+            }
+            fb.setCrossCurrency(ccb.build());
+        }
+        // Only emit feature when there's at least referenceCurrency or quanto or composite or non-empty crossCcy
+        if (refCcy != null || quanto != null || composite != null || crossHasContent) {
             return fb.build();
         }
         return null;
@@ -557,6 +652,30 @@ public class ReturnSwapMapper implements ProductMapper {
                 }
             }
             drt.setDividendCurrency(dcb.build());
+        }
+
+        // dividendComposition / nonCashDividendTreatment
+        String divComp = XmlUtils.childText(divCond, "dividendComposition");
+        if (divComp != null) {
+            try {
+                drt.setDividendComposition(cdm.product.asset.DividendCompositionEnum.fromDisplayName(divComp));
+            } catch (Exception ignored) {
+                try {
+                    drt.setDividendComposition(cdm.product.asset.DividendCompositionEnum.valueOf(
+                            divComp.replaceAll("([a-z])([A-Z])", "$1_$2").toUpperCase()));
+                } catch (Exception ig2) {}
+            }
+        }
+        String nonCash = XmlUtils.childText(divCond, "nonCashDividendTreatment");
+        if (nonCash != null) {
+            try {
+                drt.setNonCashDividendTreatment(cdm.product.asset.NonCashDividendTreatmentEnum.fromDisplayName(nonCash));
+            } catch (Exception ignored) {
+                try {
+                    drt.setNonCashDividendTreatment(cdm.product.asset.NonCashDividendTreatmentEnum.valueOf(
+                            nonCash.replaceAll("([a-z])([A-Z])", "$1_$2").toUpperCase()));
+                } catch (Exception ig2) {}
+            }
         }
 
         // firstOrSecondPeriod: <dividendPeriod>FirstPeriod</dividendPeriod> (value, not the nested struct)
@@ -693,9 +812,11 @@ public class ReturnSwapMapper implements ProductMapper {
     private ValuationDates buildValuationDates(Element rateOfReturn) {
         ValuationDates.ValuationDatesBuilder vdb = ValuationDates.builder();
 
-        // Initial valuation: from <initialPrice> when it has <valuationRules>
+        // Initial valuation: from <initialPrice> when it has <valuationRules> or <determinationMethod>
         Element initialPrice = XmlUtils.child(rateOfReturn, "initialPrice");
-        if (initialPrice != null && XmlUtils.child(initialPrice, "valuationRules") != null) {
+        if (initialPrice != null
+                && (XmlUtils.child(initialPrice, "valuationRules") != null
+                    || XmlUtils.childText(initialPrice, "determinationMethod") != null)) {
             vdb.setInitialValuationDate(buildPerformanceValuationDates(initialPrice));
         }
 
@@ -765,6 +886,27 @@ public class ReturnSwapMapper implements ProductMapper {
         Element relDates = XmlUtils.child(el, "relativeDates");
         if (relDates != null) {
             b.setRelativeDates(buildRelativeDates(relDates));
+        }
+
+        // relativeDateSequence: <dateRelativeTo>+<dateOffset> on the sequence flatten to relativeDates
+        Element relSeq = XmlUtils.child(el, "relativeDateSequence");
+        if (relSeq != null && relDates == null) {
+            Element drt = XmlUtils.child(relSeq, "dateRelativeTo");
+            Element offset = XmlUtils.child(relSeq, "dateOffset");
+            if (offset != null) {
+                cdm.base.datetime.RelativeDates.RelativeDatesBuilder rdb = cdm.base.datetime.RelativeDates.builder();
+                String pm = XmlUtils.childText(offset, "periodMultiplier");
+                String p = XmlUtils.childText(offset, "period");
+                if (pm != null) rdb.setPeriodMultiplier(Integer.parseInt(pm));
+                if (p != null) rdb.setPeriod(EnumMappers.period(p));
+                String bdc = XmlUtils.childText(offset, "businessDayConvention");
+                if (bdc != null) rdb.setBusinessDayConvention(EnumMappers.bdc(bdc));
+                if (drt != null) {
+                    rdb.setDateRelativeTo(com.rosetta.model.metafields.ReferenceWithMetaDate.builder()
+                            .setExternalReference(drt.getAttribute("href")).build());
+                }
+                b.setRelativeDates(rdb.build());
+            }
         }
 
         Element periodicDates = XmlUtils.child(el, "periodicDates");
@@ -931,14 +1073,23 @@ public class ReturnSwapMapper implements ProductMapper {
                     .build();
             irpb.setPriceQuantity(rpq);
         } else {
-            // Use address reference (returnSwap pattern)
-            ResolvablePriceQuantity rpq = ResolvablePriceQuantity.builder()
-                    .setQuantitySchedule(
-                            ReferenceWithMetaNonNegativeQuantitySchedule.builder()
-                                    .setReference(Reference.builder().setScope("DOCUMENT").setReference("quantity-2").build())
-                                    .build())
-                    .build();
-            irpb.setPriceQuantity(rpq);
+            // Use address reference (returnSwap pattern) — but only when the interest leg has
+            // a concrete notional amount to reference. When notional is given via
+            // <relativeDeterminationMethod> (no amount), don't emit priceQuantity.
+            boolean intHasReferenceableQuantity = false;
+            if (intNotionalOpt != null) {
+                if (XmlUtils.child(intNotionalOpt, "notionalAmount") != null) intHasReferenceableQuantity = true;
+                else if (XmlUtils.child(intNotionalOpt, "relativeNotionalAmount") != null) intHasReferenceableQuantity = true;
+            }
+            if (intHasReferenceableQuantity) {
+                ResolvablePriceQuantity rpq = ResolvablePriceQuantity.builder()
+                        .setQuantitySchedule(
+                                ReferenceWithMetaNonNegativeQuantitySchedule.builder()
+                                        .setReference(Reference.builder().setScope("DOCUMENT").setReference("quantity-2").build())
+                                        .build())
+                        .build();
+                irpb.setPriceQuantity(rpq);
+            }
         }
 
         // Interest calculation
@@ -970,6 +1121,21 @@ public class ReturnSwapMapper implements ProductMapper {
 
                 irpb.setRateSpecification(cdm.product.asset.RateSpecification.builder()
                         .setFloatingRateSpecification(frsb.build())
+                        .build());
+            }
+
+            // Fixed rate
+            String fixedRate = XmlUtils.childText(interestCalc, "fixedRate");
+            if (fixedRate != null) {
+                irpb.setRateSpecification(cdm.product.asset.RateSpecification.builder()
+                        .setFixedRateSpecification(cdm.product.asset.FixedRateSpecification.builder()
+                                .setRateSchedule(cdm.product.common.schedule.RateSchedule.builder()
+                                        .setPrice(cdm.observable.asset.metafields.ReferenceWithMetaPriceSchedule.builder()
+                                                .setReference(Reference.builder().setScope("DOCUMENT")
+                                                        .setReference("price-1").build())
+                                                .build())
+                                        .build())
+                                .build())
                         .build());
             }
 
@@ -1076,6 +1242,11 @@ public class ReturnSwapMapper implements ProductMapper {
             pds.addInterimPaymentDates(buildAdjustableRelativeOrPeriodicDates(interestPayDates));
         }
 
+        Element pdEl = XmlUtils.child(interestPayDates, "periodicDates");
+        if (pdEl != null) {
+            pds.addInterimPaymentDates(buildAdjustableRelativeOrPeriodicDates(interestPayDates));
+        }
+
         pdb.setPaymentDateSchedule(pds.build());
         // ExternalKey from the interestLegPaymentDates id attribute
         String id = interestPayDates.getAttribute("id");
@@ -1110,6 +1281,30 @@ public class ReturnSwapMapper implements ProductMapper {
             }
         }
 
+        // resetFrequency
+        Element rf = XmlUtils.child(resetDatesEl, "resetFrequency");
+        if (rf != null) {
+            cdm.product.common.schedule.ResetFrequency.ResetFrequencyBuilder rfb =
+                    cdm.product.common.schedule.ResetFrequency.builder();
+            String pm = XmlUtils.childText(rf, "periodMultiplier");
+            String p = XmlUtils.childText(rf, "period");
+            if (pm != null) rfb.setPeriodMultiplier(Integer.parseInt(pm));
+            if (p != null) rfb.setPeriod(EnumMappers.periodExtended(p));
+            rdb.setResetFrequency(rfb.build());
+        }
+
+        // fixingDates (relative date offset) — may have inline fields or a nested <relativeDate>
+        Element fd = XmlUtils.child(resetDatesEl, "fixingDates");
+        if (fd != null) {
+            Element source = fd;
+            Element nested = XmlUtils.child(fd, "relativeDate");
+            if (nested != null) source = nested;
+            if (XmlUtils.childText(source, "periodMultiplier") != null
+                    || XmlUtils.childText(source, "period") != null) {
+                rdb.setFixingDates(DateMapper.buildRelativeDateOffset(source));
+            }
+        }
+
         return rdb.build();
     }
 
@@ -1132,6 +1327,19 @@ public class ReturnSwapMapper implements ProductMapper {
 
     private List<PriceQuantity> buildTradeLotPriceQuantities(Element returnLeg, Element interestLeg) {
         List<PriceQuantity> out = new ArrayList<>();
+
+        // Determine if interest leg adds its own price (spread or fixedRate) → equity initial price
+        // becomes price-2 (interest is price-1). Otherwise equity is price-1.
+        boolean interestHasOwnPrice = false;
+        if (interestLeg != null) {
+            Element ic = XmlUtils.child(interestLeg, "interestCalculation");
+            if (ic != null) {
+                Element frc = XmlUtils.child(ic, "floatingRateCalculation");
+                if (frc != null && XmlUtils.child(frc, "spreadSchedule") != null) interestHasOwnPrice = true;
+                if (XmlUtils.childText(ic, "fixedRate") != null) interestHasOwnPrice = true;
+            }
+        }
+        String equityPriceLabel = interestHasOwnPrice ? "price-2" : "price-1";
 
         // First PQ: equity leg with observable + initial price + quantities
         PriceQuantity.PriceQuantityBuilder pq1 = PriceQuantity.builder();
@@ -1175,7 +1383,7 @@ public class ReturnSwapMapper implements ProductMapper {
                         }
                         pq1.addPrice(FieldWithMetaPriceSchedule.builder()
                                 .setValue(psb.build())
-                                .setMeta(QuantityMapper.locationMeta("price-2"))
+                                .setMeta(QuantityMapper.locationMeta(equityPriceLabel))
                                 .build());
                     }
                 }
@@ -1197,7 +1405,9 @@ public class ReturnSwapMapper implements ProductMapper {
         String unitCcy = notionalCcy;
         String unitCcyScheme = notionalCcyScheme;
 
-        // openUnits label: quantity-3 if interest leg has separate notional, quantity-2 otherwise
+        // openUnits label: depends on whether the return leg has its own notional amount.
+        //   - returnLeg has notionalAmount → openUnits at quantity-2/3 (notional uses quantity-1)
+        //   - returnLeg has no notionalAmount (determinationMethod only) → openUnits IS the only quantity-1
         boolean interestHasNotional = false;
         if (interestLeg != null) {
             Element intNotional = XmlUtils.child(interestLeg, "notional");
@@ -1205,7 +1415,15 @@ public class ReturnSwapMapper implements ProductMapper {
             String intAmt = intNotionalAmt != null ? XmlUtils.childText(intNotionalAmt, "amount") : null;
             interestHasNotional = intAmt != null;
         }
-        String openUnitsLabel = interestHasNotional ? "quantity-3" : "quantity-2";
+        boolean returnHasNotionalAmount = notionalAmt != null;
+        String openUnitsLabel;
+        if (!returnHasNotionalAmount) {
+            openUnitsLabel = "quantity-1";
+        } else if (interestHasNotional) {
+            openUnitsLabel = "quantity-3";
+        } else {
+            openUnitsLabel = "quantity-2";
+        }
 
         if (openUnits != null) {
             pq1.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder()
@@ -1240,6 +1458,34 @@ public class ReturnSwapMapper implements ProductMapper {
             Element interestCalc = XmlUtils.child(interestLeg, "interestCalculation");
             if (interestCalc != null) {
                 Element frc = XmlUtils.child(interestCalc, "floatingRateCalculation");
+                String fixedRate = XmlUtils.childText(interestCalc, "fixedRate");
+
+                // Interest leg notional (may be in interestLeg or fall back to equity notional)
+                Element intNotionalP = XmlUtils.child(interestLeg, "notional");
+                Element intNotionalAmtP = intNotionalP != null ? XmlUtils.child(intNotionalP, "notionalAmount") : null;
+                Element intCcyElP = intNotionalAmtP != null ? XmlUtils.child(intNotionalAmtP, "currency") : null;
+                String intCcyP = intCcyElP != null ? intCcyElP.getTextContent().trim() : null;
+                String intCcySchemeP = intCcyElP != null ? intCcyElP.getAttribute("currencyScheme") : null;
+                if (intCcyP == null) { intCcyP = notionalCcy; intCcySchemeP = notionalCcyScheme; }
+
+                // Fixed rate -> emit price-1 PriceSchedule for fixed coupon
+                if (fixedRate != null && frc == null) {
+                    PriceSchedule.PriceScheduleBuilder psb = PriceSchedule.builder()
+                            .setValue(new BigDecimal(fixedRate))
+                            .setPriceType(PriceTypeEnum.INTEREST_RATE);
+                    if (intCcyP != null) {
+                        UnitType ccyUnit = UnitType.builder()
+                                .setCurrency(buildCcyField(intCcyP, intCcySchemeP))
+                                .build();
+                        psb.setUnit(ccyUnit);
+                        psb.setPerUnitOf(ccyUnit);
+                    }
+                    pq2.addPrice(FieldWithMetaPriceSchedule.builder()
+                            .setValue(psb.build())
+                            .setMeta(QuantityMapper.locationMeta("price-1"))
+                            .build());
+                }
+
                 if (frc != null) {
                     String idxName = XmlUtils.childText(frc, "floatingRateIndex");
 
@@ -1361,6 +1607,14 @@ public class ReturnSwapMapper implements ProductMapper {
                 .build());
 
         return out;
+    }
+
+    /** Returns a copy of {@code pq} with the observable's location key renamed to {@code newLabel}. */
+    private static PriceQuantity relabelObservable(PriceQuantity pq, String newLabel) {
+        if (pq.getObservable() == null) return pq;
+        PriceQuantity.PriceQuantityBuilder b = pq.toBuilder();
+        b.getObservable().setMeta(QuantityMapper.locationMeta(newLabel));
+        return b.build();
     }
 
     private static FieldWithMetaString buildCcyField(String ccy, String scheme) {

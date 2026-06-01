@@ -86,32 +86,37 @@ public final class InterestRatePayoutMapper {
                 .setReceiver(roleFor(receiver, ctx))
                 .build());
 
-        // priceQuantity (address ref into tradeLot) — quantity-N matches this stream's label
-        ResolvablePriceQuantity.ResolvablePriceQuantityBuilder rpqb = ResolvablePriceQuantity.builder()
-                .setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder()
-                        .setReference(addressRef(labels.quantityLabel))
-                        .build());
+        // priceQuantity (address ref into tradeLot) — quantity-N matches this stream's label.
+        // Skip entirely for knownAmountSchedule streams (no quantity to reference).
+        if (labels.quantityLabel != null) {
+            ResolvablePriceQuantity.ResolvablePriceQuantityBuilder rpqb = ResolvablePriceQuantity.builder()
+                    .setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder()
+                            .setReference(addressRef(labels.quantityLabel))
+                            .build());
 
-        // fxLinkedNotionalSchedule: add quantityMultiplier + quantityReference
-        Element fxLinked = XmlUtils.path(swapStream,
-                "calculationPeriodAmount", "calculation", "fxLinkedNotionalSchedule");
-        if (fxLinked != null) {
-            rpqb.setQuantityMultiplier(buildFxLinkedQuantityMultiplier(fxLinked));
-            Element constRef = XmlUtils.child(fxLinked, "constantNotionalScheduleReference");
-            if (constRef != null) {
-                String refHref = constRef.getAttribute("href");
-                if (refHref != null && !refHref.isEmpty()) {
-                    rpqb.setQuantityReference(
-                            cdm.product.common.settlement.metafields.ReferenceWithMetaResolvablePriceQuantity.builder()
-                                    .setExternalReference(refHref).build());
+            // fxLinkedNotionalSchedule: add quantityMultiplier + quantityReference
+            Element fxLinked = XmlUtils.path(swapStream,
+                    "calculationPeriodAmount", "calculation", "fxLinkedNotionalSchedule");
+            if (fxLinked != null) {
+                rpqb.setQuantityMultiplier(buildFxLinkedQuantityMultiplier(fxLinked));
+                Element constRef = XmlUtils.child(fxLinked, "constantNotionalScheduleReference");
+                if (constRef != null) {
+                    String refHref = constRef.getAttribute("href");
+                    if (refHref != null && !refHref.isEmpty()) {
+                        rpqb.setQuantityReference(
+                                cdm.product.common.settlement.metafields.ReferenceWithMetaResolvablePriceQuantity.builder()
+                                        .setExternalReference(refHref).build());
+                    }
                 }
             }
+            irp.setPriceQuantity(rpqb.build());
         }
 
-        irp.setPriceQuantity(rpqb.build());
-
         // rateSpecification (address ref)
-        if (isInflation) {
+        boolean isKnownAmount = labels.quantityLabel == null;
+        if (isKnownAmount) {
+            // no rate spec — payments are pre-computed via knownAmountSchedule
+        } else if (isInflation) {
             cdm.product.asset.InflationRateSpecification.InflationRateSpecificationBuilder ib =
                     cdm.product.asset.InflationRateSpecification.builder()
                             .setRateOption(ReferenceWithMetaInterestRateIndex.builder()
@@ -817,6 +822,21 @@ public final class InterestRatePayoutMapper {
                         cdm.observable.asset.metafields.FieldWithMetaInformationProviderEnum.builder();
                 if (provider != null) pb.setValue(provider);
                 isb.setSourceProvider(pb.build());
+            }
+            Element pageEl = XmlUtils.child(primary, "rateSourcePage");
+            if (pageEl != null) {
+                String pageVal = pageEl.getTextContent().trim();
+                com.rosetta.model.metafields.FieldWithMetaString.FieldWithMetaStringBuilder sp =
+                        com.rosetta.model.metafields.FieldWithMetaString.builder().setValue(pageVal);
+                String pageScheme = pageEl.getAttribute("rateSourcePageScheme");
+                if (pageScheme != null && !pageScheme.isEmpty()) {
+                    sp.setMeta(com.rosetta.model.metafields.MetaFields.builder().setScheme(pageScheme).build());
+                }
+                isb.setSourcePage(sp.build());
+            }
+            String pageHeading = XmlUtils.childText(primary, "rateSourcePageHeading");
+            if (pageHeading != null) {
+                isb.setSourcePageHeading(pageHeading);
             }
             b.setPrimarySource(isb.build());
         }

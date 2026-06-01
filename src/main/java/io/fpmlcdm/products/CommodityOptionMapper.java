@@ -171,12 +171,11 @@ public class CommodityOptionMapper implements ProductMapper {
                 name.setMeta(MetaFields.builder().setScheme(ptScheme).build());
             }
             TaxonomyValue tv = TaxonomyValue.builder().setName(name.build()).build();
-            // Determine source: CFI for iso10962 scheme, ISDA for fpml scheme, Other otherwise.
+            // Determine source: CFI for iso10962 scheme; Other for product-type-simple
+            // (the FpML simple type is a free-text label, not an ISDA taxonomy).
             TaxonomySourceEnum src;
             if (ptScheme != null && ptScheme.contains("iso10962")) {
                 src = TaxonomySourceEnum.CFI;
-            } else if (ptScheme != null && !ptScheme.isEmpty()) {
-                src = TaxonomySourceEnum.ISDA;
             } else {
                 src = TaxonomySourceEnum.OTHER;
             }

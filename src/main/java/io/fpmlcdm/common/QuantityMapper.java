@@ -260,12 +260,36 @@ public final class QuantityMapper {
         UnitType unit = UnitType.builder()
                 .setCurrency(FieldWithMetaString.builder().setValue(currency).build())
                 .build();
+        // Quantity: pick up the initialValue from fxLinkedNotionalSchedule when present.
+        Element fxLinked = XmlUtils.path(stream, "calculationPeriodAmount", "calculation", "fxLinkedNotionalSchedule");
+        BigDecimal initialValue = fxLinked == null ? null : decimalText(fxLinked, "initialValue");
         NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qsb = NonNegativeQuantitySchedule.builder()
                 .setUnit(unit);
+        if (initialValue != null) qsb.setValue(initialValue);
         b.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder()
                 .setValue(qsb.build())
                 .setMeta(locationMeta(lbl.quantityLabel))
                 .build());
+
+        // Spread price (price-N) if present
+        Element frcSpread = XmlUtils.path(stream, "calculationPeriodAmount", "calculation", "floatingRateCalculation");
+        Element ss = frcSpread == null ? null : XmlUtils.child(frcSpread, "spreadSchedule");
+        if (ss != null && lbl.spreadPriceLabel != null) {
+            String spreadVal = XmlUtils.childText(ss, "initialValue");
+            if (spreadVal != null) {
+                PriceSchedule ps = PriceSchedule.builder()
+                        .setValue(new BigDecimal(spreadVal))
+                        .setUnit(unit)
+                        .setPerUnitOf(unit)
+                        .setPriceType(PriceTypeEnum.INTEREST_RATE)
+                        .setArithmeticOperator(cdm.base.math.ArithmeticOperationEnum.ADD)
+                        .build();
+                b.addPrice(FieldWithMetaPriceSchedule.builder()
+                        .setValue(ps)
+                        .setMeta(locationMeta(lbl.spreadPriceLabel))
+                        .build());
+            }
+        }
 
         // Include the floating rate observable (same as a regular floating leg)
         Element frc = XmlUtils.path(stream, "calculationPeriodAmount", "calculation", "floatingRateCalculation");

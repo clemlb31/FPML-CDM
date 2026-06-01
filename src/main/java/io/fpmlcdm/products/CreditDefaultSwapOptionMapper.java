@@ -104,6 +104,37 @@ public class CreditDefaultSwapOptionMapper implements ProductMapper {
         SettlementTerms st = buildSettlementTerms(cdso);
         if (st != null) op.setSettlementTerms(st);
 
+        // notionalReference → priceQuantity.quantityReference
+        Element notionalRef = XmlUtils.child(cdso, "notionalReference");
+        if (notionalRef != null) {
+            String href = notionalRef.getAttribute("href");
+            if (href != null && !href.isEmpty()) {
+                op.setPriceQuantity(ResolvablePriceQuantity.builder()
+                        .setQuantityReference(
+                                cdm.product.common.settlement.metafields.ReferenceWithMetaResolvablePriceQuantity.builder()
+                                        .setExternalReference(href).build())
+                        .build());
+            }
+        }
+
+        // feature/knock/knockOut → OptionFeature.knock.knockOut
+        Element featureEl = XmlUtils.child(cdso, "feature");
+        if (featureEl != null) {
+            Element knockEl = XmlUtils.child(featureEl, "knock");
+            if (knockEl != null) {
+                Knock.KnockBuilder kb = Knock.builder();
+                for (Element ko : XmlUtils.children(knockEl, "knockOut")) {
+                    cdm.observable.event.TriggerEvent te = buildTriggerEvent(ko);
+                    if (te != null) kb.addKnockOut(te);
+                }
+                for (Element ki : XmlUtils.children(knockEl, "knockIn")) {
+                    cdm.observable.event.TriggerEvent te = buildTriggerEvent(ki);
+                    if (te != null) kb.addKnockIn(te);
+                }
+                op.setFeature(OptionFeature.builder().setKnock(kb.build()).build());
+            }
+        }
+
         // Strike
         Element strikeEl = XmlUtils.child(cdso, "strike");
         if (strikeEl != null) {
@@ -111,11 +142,21 @@ public class CreditDefaultSwapOptionMapper implements ProductMapper {
             Element strikeSpread = XmlUtils.child(strikeEl, "spread");
             if (strikeSpread != null) {
                 String spreadVal = strikeSpread.getTextContent().trim();
+                // Find currency from inner CDS feeLeg/periodicPayment/fixedAmountCalculation/calculationAmount/currency
+                String strikeCcy = findStrikeCurrency(cdso);
+                cdm.observable.asset.Price.PriceBuilder pb = cdm.observable.asset.Price.builder()
+                        .setValue(new BigDecimal(spreadVal))
+                        .setPriceType(cdm.observable.asset.PriceTypeEnum.INTEREST_RATE)
+                        .setArithmeticOperator(cdm.base.math.ArithmeticOperationEnum.ADD);
+                if (strikeCcy != null) {
+                    cdm.base.math.UnitType ccyUnit = cdm.base.math.UnitType.builder()
+                            .setCurrency(FieldWithMetaString.builder().setValue(strikeCcy).build())
+                            .build();
+                    pb.setUnit(ccyUnit);
+                    pb.setPerUnitOf(ccyUnit);
+                }
                 op.setStrike(OptionStrike.builder()
-                        .setStrikePrice(cdm.observable.asset.Price.builder()
-                                .setValue(new BigDecimal(spreadVal))
-                                .setPriceType(cdm.observable.asset.PriceTypeEnum.INTEREST_RATE)
-                                .build())
+                        .setStrikePrice(pb.build())
                         .build());
             }
         }
@@ -132,7 +173,7 @@ public class CreditDefaultSwapOptionMapper implements ProductMapper {
                 .setEconomicTerms(econ.build());
         ntp.addTaxonomy(ProductTaxonomy.builder()
                 .setSource(TaxonomySourceEnum.ISDA)
-                .setProductQualifier("CreditDefaultSwap_Option")
+                .setProductQualifier("CreditDefaultSwaption")
                 .build());
 
         // TradeLot
@@ -209,11 +250,37 @@ public class CreditDefaultSwapOptionMapper implements ProductMapper {
             }
         }
 
+        Element earliestExTime = XmlUtils.child(exercise, "earliestExerciseTime");
+        if (earliestExTime != null) {
+            BusinessCenterTime bct = buildBusinessCenterTime(earliestExTime);
+            if (bct != null) b.setEarliestExerciseTime(bct);
+        }
+
         Element expTime = XmlUtils.child(exercise, "expirationTime");
         if (expTime != null) {
             BusinessCenterTime bct = buildBusinessCenterTime(expTime);
             if (bct != null) b.setExpirationTime(bct);
             b.setExpirationTimeType(ExpirationTimeTypeEnum.SPECIFIC_TIME);
+        }
+
+        // partialExercise (notionalReference + integralMultipleAmount + minimumNotionalAmount)
+        Element partialEx = XmlUtils.child(exercise, "partialExercise");
+        if (partialEx != null) {
+            PartialExercise.PartialExerciseBuilder peb = PartialExercise.builder();
+            Element notRef = XmlUtils.child(partialEx, "notionalReference");
+            if (notRef != null) {
+                String h = notRef.getAttribute("href");
+                if (h != null && !h.isEmpty()) {
+                    peb.setNotionaReference(
+                            cdm.observable.asset.metafields.ReferenceWithMetaMoney.builder()
+                                    .setExternalReference(h).build());
+                }
+            }
+            String integral = XmlUtils.childText(partialEx, "integralMultipleAmount");
+            if (integral != null) peb.setIntegralMultipleAmount(new BigDecimal(integral));
+            String minNot = XmlUtils.childText(partialEx, "minimumNotionalAmount");
+            if (minNot != null) peb.setMinimumNotionalAmount(new BigDecimal(minNot));
+            b.setPartialExercise(peb.build());
         }
 
         // Exercise procedure
@@ -264,6 +331,20 @@ public class CreditDefaultSwapOptionMapper implements ProductMapper {
             if (innerCds != null) ccy = XmlUtils.pathText(innerCds, "feeLeg", "periodicPayment", "fixedAmountCalculation",
                     "calculationAmount", "currency");
         }
+
+        // clearingInstructions → physicalSettlementTerms.clearedPhysicalSettlement + predeterminedClearingOrganizationParty
+        Element clearing = XmlUtils.child(cdso, "clearingInstructions");
+        if (clearing != null) {
+            PhysicalSettlementTerms.PhysicalSettlementTermsBuilder psb = PhysicalSettlementTerms.builder();
+            String cleared = XmlUtils.childText(clearing, "clearedPhysicalSettlement");
+            if (cleared != null) psb.setClearedPhysicalSettlement(Boolean.parseBoolean(cleared));
+            Element preRef = XmlUtils.child(clearing, "predeterminedClearingOrganizationPartyReference");
+            if (preRef != null) {
+                psb.setPredeterminedClearingOrganizationParty(
+                        cdm.base.staticdata.party.AncillaryRoleEnum.PREDETERMINED_CLEARING_ORGANIZATION_PARTY);
+            }
+            stb.setPhysicalSettlementTerms(psb.build());
+        }
         return stb.build();
     }
 
@@ -297,6 +378,10 @@ public class CreditDefaultSwapOptionMapper implements ProductMapper {
             if (adj != null) sdb.setAdjustedDate(FieldWithMetaDate.builder().setValue(DateMapper.parse(adj)).build());
             BusinessDayAdjustments bda = DateMapper.businessDayAdjustments(XmlUtils.child(payDate, "dateAdjustments"));
             if (bda != null) sdb.setDateAdjustments(bda);
+            Element relDate = XmlUtils.child(payDate, "relativeDate");
+            if (relDate != null) {
+                sdb.setRelativeDate(DateMapper.buildRelativeDateOffset(relDate));
+            }
             tb.setSettlementDate(sdb.build());
         }
         Element payerRef = XmlUtils.child(premium, "payerPartyReference");
@@ -313,6 +398,37 @@ public class CreditDefaultSwapOptionMapper implements ProductMapper {
         tb.setTransferExpression(TransferExpression.builder()
                 .setPriceTransfer(FeeTypeEnum.PREMIUM).build());
         return TransferState.builder().setTransfer(tb.build()).build();
+    }
+
+    private static String findStrikeCurrency(Element cdso) {
+        Element cds = XmlUtils.child(cdso, "creditDefaultSwap");
+        if (cds == null) return null;
+        // Try feeLeg/periodicPayment/fixedAmountCalculation/calculationAmount/currency
+        String ccy = XmlUtils.pathText(cds, "feeLeg", "periodicPayment", "fixedAmountCalculation",
+                "calculationAmount", "currency");
+        if (ccy != null) return ccy;
+        // Fall back to protectionTerms/calculationAmount/currency
+        ccy = XmlUtils.pathText(cds, "protectionTerms", "calculationAmount", "currency");
+        return ccy;
+    }
+
+    private static cdm.observable.event.TriggerEvent buildTriggerEvent(Element knockEl) {
+        cdm.observable.event.TriggerEvent.TriggerEventBuilder teb = cdm.observable.event.TriggerEvent.builder();
+        Element triggerEl = XmlUtils.child(knockEl, "trigger");
+        if (triggerEl != null) {
+            cdm.observable.event.Trigger.TriggerBuilder trb = cdm.observable.event.Trigger.builder();
+            Element creditEventsRef = XmlUtils.child(triggerEl, "creditEventsReference");
+            if (creditEventsRef != null) {
+                String href = creditEventsRef.getAttribute("href");
+                if (href != null && !href.isEmpty()) {
+                    trb.setCreditEventsReference(
+                            cdm.observable.event.metafields.ReferenceWithMetaCreditEvents.builder()
+                                    .setExternalReference(href).build());
+                }
+            }
+            teb.setTrigger(trb.build());
+        }
+        return teb.build();
     }
 
     private static BusinessCenterTime buildBusinessCenterTime(Element el) {

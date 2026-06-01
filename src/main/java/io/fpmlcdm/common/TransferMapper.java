@@ -61,8 +61,13 @@ public final class TransferMapper {
     private static TransferState buildTransferState(Element fpml) {
         Transfer.TransferBuilder tb = Transfer.builder();
 
-        // <paymentAmount> for initialPayment / additionalPayment; <fixedAmount> for CDS feeLeg/singlePayment
+        // <paymentAmount> for initialPayment / additionalPayment; <fixedAmount> for CDS feeLeg/singlePayment;
+        // <additionalPaymentAmount>/<paymentAmount> for returnSwap additionalPayment
         Element amtEl = XmlUtils.child(fpml, "paymentAmount");
+        if (amtEl == null) {
+            Element addAmt = XmlUtils.child(fpml, "additionalPaymentAmount");
+            if (addAmt != null) amtEl = XmlUtils.child(addAmt, "paymentAmount");
+        }
         if (amtEl == null) amtEl = XmlUtils.child(fpml, "fixedAmount");
         Element ccyEl = amtEl == null ? null : XmlUtils.child(amtEl, "currency");
         String ccy = ccyEl == null ? null : ccyEl.getTextContent().trim();
@@ -106,6 +111,21 @@ public final class TransferMapper {
         }
 
         Element payDate = XmlUtils.child(fpml, "paymentDate");
+        Element relDateForSettlement = null;
+        if (payDate == null) {
+            // returnSwap additionalPayment uses <additionalPaymentDate>/<adjustableDate or relativeDate>
+            Element addDate = XmlUtils.child(fpml, "additionalPaymentDate");
+            if (addDate != null) {
+                payDate = XmlUtils.child(addDate, "adjustableDate");
+                if (payDate == null) relDateForSettlement = XmlUtils.child(addDate, "relativeDate");
+            }
+        }
+        if (relDateForSettlement != null) {
+            AdjustableOrAdjustedOrRelativeDate.AdjustableOrAdjustedOrRelativeDateBuilder sdb =
+                    AdjustableOrAdjustedOrRelativeDate.builder();
+            sdb.setRelativeDate(io.fpmlcdm.common.DateMapper.buildRelativeDateOffset(relDateForSettlement));
+            tb.setSettlementDate(sdb.build());
+        }
         if (payDate != null) {
             AdjustableOrAdjustedOrRelativeDate.AdjustableOrAdjustedOrRelativeDateBuilder sdb =
                     AdjustableOrAdjustedOrRelativeDate.builder();
