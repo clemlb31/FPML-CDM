@@ -1,0 +1,1 @@
+npx -y supergateway --port 8080 --stdio "npx -y @modelcontextprotocol/server-filesystem .\workspaces"

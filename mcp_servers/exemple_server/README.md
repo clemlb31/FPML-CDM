@@ -1,0 +1,1 @@
+npx -y supergateway --port 8081 --stdio "npx -y @modelcontextprotocol/server-filesystem .\data\train"

@@ -1,0 +1,58 @@
+# Test suite configuration for the validator MCP server
+# ─────────────────────────────────────────────────────
+# Edit active_suite before launching the agentic pipeline.
+# The agent can also edit this file via the filesystem MCP.
+#
+# Suite options:
+#   dirs:              list of directory names under data/test/, or "*" for all
+#   max_files_per_dir: (optional) limit the number of files per directory
+#   exclude_files:     (optional) list of filenames to skip (e.g. known broken cases)
+
+active_suite: equity_5_13_with_incomplete
+
+suites:
+
+  # ── Quick sanity check (2 files per product, latest versions) ──────────────
+  smoke:
+    dirs:
+      - equity-5-12
+      - rates-5-10
+      - credit-5-12
+      - fx-5-12
+    max_files_per_dir: 2
+
+  # ── All equity-related 5.13 directories ────────────────────────────────────
+  equity_5_13:
+    dirs:
+      - equity-5-12           # base equity (latest available)
+      - equity-options-5-13
+      - equity-swaps-5-13
+
+  # ── Equity with incomplete variants ────────────────────────────────────────
+  equity_5_13_with_incomplete:
+    dirs:
+      - equity-5-12
+      - equity-options-5-13
+      - equity-options-5-13-incomplete
+      - equity-swaps-5-13
+      - equity-swaps-5-13-incomplete
+
+  # ── All complete 5.13 directories (no -incomplete) ─────────────────────────
+  v5_13_complete:
+    dirs:
+      - bond-options-5-13
+      - commodity-derivatives-5-13
+      - correlation-swaps-5-13
+      - credit-derivatives-5-13
+      - dividend-swaps-5-13
+      - equity-options-5-13
+      - equity-swaps-5-13
+      - fx-derivatives-5-13
+      - inflation-swaps-5-13
+      - interest-rate-derivatives-5-13
+      - variance-swaps-5-13
+      - volatility-swaps-5-13
+
+  # ── All test directories (full regression) ─────────────────────────────────
+  all:
+    dirs: "*"

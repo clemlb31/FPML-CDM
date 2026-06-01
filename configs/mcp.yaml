@@ -1,0 +1,54 @@
+# MCP server configuration
+# Loaded by agent/helpers.py::get_servers() → MultiServerMCPClient
+#
+# Transport options:
+#   streamable_http  — HTTP server (FastMCP with --transport streamablehttp)
+#   sse              — HTTP server (FastMCP with --transport sse)
+#
+# Start each server before launching the agent:
+#   python -m mcp_servers.knowledge_server.server --transport streamablehttp --port 8001
+#   python -m mcp_servers.triage_server.server    --transport streamablehttp --port 8002
+#   python -m mcp_servers.validator_server.server --transport streamablehttp --port 8003
+#
+# Filesystem MCP (supergateway wrapping @modelcontextprotocol/server-filesystem).
+# Exposes workspaces/ (read-write), knowledge_base/ and data/train/ (read-only):
+#   npx -y supergateway --port 8080 --outputTransport streamableHttp ^
+#     --stdio "npx -y @modelcontextprotocol/server-filesystem ^
+#       .\workspaces .\knowledge_base .\data\train"
+#
+# Tavily: set TAVILY_MCP=<url> in .env (e.g. https://mcp.tavily.com/mcp/?apiKey=...)
+
+servers:
+
+  # ── Domain knowledge is read via filesystem MCP from knowledge_base/ ──────────
+  # Dedicated knowledge disabled for now, use filesystem MCP instead (more flexible, can edit files directly if needed).
+
+  # ── Deterministic failure analyser (triage_compile_error, triage_test_diff) ──
+  triage:
+    transport: streamable_http
+    url: "http://localhost:8002/mcp"
+
+  # ── Build & test feedback loop (compile, run_test, run_test_all, score) ──────
+  validator:
+    transport: streamable_http
+    url: "http://localhost:8003/mcp"
+
+  # ── Filesystem (write workspaces/, read knowledge_base/ + data/train/) ────────
+  filesystem:
+    transport: streamable_http
+    url: "http://localhost:8080/mcp"
+
+  # ── Training examples (read-only data/train/) ────────────────────────────────
+  examples:
+    transport: streamable_http
+    url: "http://localhost:8081/mcp"
+
+  # ── Mapping / human-in-the-loop + Maven dependencies ────────────────────────
+  mapping:
+    transport: streamable_http
+    url: "http://localhost:8004/mcp"
+
+  # ── Internet search (Tavily — optional, for CDM/FpML spec lookups) ───────────
+  tavily:
+    transport: streamable_http
+    url: "${TAVILY_MCP}"

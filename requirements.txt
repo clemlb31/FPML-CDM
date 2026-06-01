@@ -1,0 +1,12 @@
+openai
+python-dotenv
+requests
+mcp
+mcp[cli]
+langgraph
+langchain
+langchain-openai
+langchain-mcp-adapters
+pyyaml
+lmstudio-client
+lmstudio 

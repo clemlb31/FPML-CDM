@@ -1,0 +1,25 @@
+vllm:
+  model_ip: "promaxgb10-bcae" # IP ou hostname du serveur vLLM
+  model_name: "/models/qwen3.6-27b-fp8" # chemin du modèle sur le serveur vLLM
+
+agents:
+  - id: calculator
+    name: CalculatorAgent
+    description: "Agent pour générer et tester du code arithmétique"
+    model: "gpt-5-mini"           # ou autre modèle
+    role: "assistant"
+    prompt_path: "prompt1.txt" # take in agent/prompts/ 
+    entrypoint: "run_agent.py"    # script/local entrypoint pour exécution
+    tools:
+      - name: java-runner
+        type: shell
+        command: "scripts/compile_and_run_tests.py"
+        description: "Compile et exécute les tests Maven"
+    memory:
+      enabled: false
+    permissions:
+      filesystem: true
+      network: false
+    constraints:
+      timeout_seconds: 30
+      max_tokens: 4096
