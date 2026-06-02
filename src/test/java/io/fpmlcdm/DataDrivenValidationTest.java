@@ -1,9 +1,14 @@
 package io.fpmlcdm;
 
 import cdm.event.common.TradeState;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import io.fpmlcdm.report.SemanticDiff;
+import io.fpmlcdm.validate.CdmValidator;
+import io.fpmlcdm.validate.GlobalKeyReproducer;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -12,7 +17,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,6 +36,14 @@ class DataDrivenValidationTest {
 
     private static final ObjectMapper JSON = RosettaObjectMapper.getNewRosettaObjectMapper();
     private static final Path TRAIN = Paths.get("data/train");
+
+    /** Shared validator — Guice setup (CdmRuntimeModule) is heavy, do it once. */
+    private static CdmValidator validator;
+
+    @BeforeAll
+    static void initValidator() {
+        validator = new CdmValidator();
+    }
 
     static Stream<Arguments> pairs() throws Exception {
         boolean includeIncomplete = Boolean.getBoolean("includeincomplete");
@@ -81,5 +96,110 @@ class DataDrivenValidationTest {
         SemanticDiff.Result diff = SemanticDiff.compare(expected, actual);
         assertTrue(diff.isEqual(),
                 () -> "Diffs (" + diff.size() + "):\n" + diff);
+    }
+
+    /**
+     * Second, independent validation signal: our converter must not introduce CDM
+     * data-rule violations beyond what the reference itself has.
+     *
+     * The FINOS reference dataset is itself only partially CDM-valid (we discovered
+     * during knowledge_base/knowledge/validation_findings.md that it carries quirks
+     * like issuer-less UTI tradeIdentifiers that violate IdentifierIssuerChoice).
+     * So we can't assert absolute validity — we assert that the set of violations
+     * in our output is a subset of (or equal to) the reference's violations. Any
+     * NEW violation we introduce is a regression even if SemanticDiff still passes.
+     */
+    @ParameterizedTest(name = "{0}: {1}")
+    @MethodSource("pairs")
+    void noNewCdmViolations(String category, Path xml, Path expectedJson) throws Exception {
+        assertTrue(Files.exists(expectedJson), "Missing reference CDM JSON: " + expectedJson);
+
+        FpmlToCdmConverter converter = new FpmlToCdmConverter();
+        List<TradeState> tradeStates;
+        try (InputStream in = Files.newInputStream(xml)) {
+            tradeStates = converter.convert(in);
+        }
+        assertEquals(1, tradeStates.size());
+        TradeState ours = tradeStates.get(0);
+
+        // The reference dataset serialises a few enum-valued fields as single-element arrays
+        // that the CDM Java model exposes as scalars; unwrap before deserialising.
+        JsonNode tree = JSON.readTree(Files.readString(expectedJson));
+        unwrapSingleArrays(tree, "stubPeriodType");
+        TradeState reference = JSON.treeToValue(tree, TradeState.class);
+
+        Set<String> refFailures = new HashSet<>(validator.validate(reference).failures());
+        Set<String> ourFailures = new HashSet<>(validator.validate(ours).failures());
+
+        Set<String> newOnes = new HashSet<>(ourFailures);
+        newOnes.removeAll(refFailures);
+
+        assertTrue(newOnes.isEmpty(), () ->
+                "Our converter introduces " + newOnes.size() + " new CDM data-rule violation(s)"
+                + " not present in the reference:\n  " + String.join("\n  ", newOnes));
+    }
+
+    /**
+     * Third independent validation signal: after applying the Regnosys content-hash
+     * pipeline to our output, every {@code globalReference} must resolve to a
+     * {@code globalKey} elsewhere in the same document.
+     *
+     * Catches mapper bugs where we emit cross-references pointing nowhere (the kind
+     * of bug that SemanticDiff can't see because both globalKey and globalReference
+     * are masked). The reproduced hashes won't exactly match the reference values
+     * (our content differs slightly), but the integrity property still holds.
+     */
+    @ParameterizedTest(name = "{0}: {1}")
+    @MethodSource("pairs")
+    void globalKeyIntegrity(String category, Path xml, Path expectedJson) throws Exception {
+        FpmlToCdmConverter converter = new FpmlToCdmConverter();
+        List<TradeState> tradeStates;
+        try (InputStream in = Files.newInputStream(xml)) {
+            tradeStates = converter.convert(in);
+        }
+        assertEquals(1, tradeStates.size());
+
+        TradeState rekeyed = new GlobalKeyReproducer().apply(tradeStates.get(0));
+        JsonNode tree = JSON.valueToTree(rekeyed);
+
+        Set<String> keys = new HashSet<>();
+        Set<String> refs = new HashSet<>();
+        collectKeysAndRefs(tree, keys, refs);
+
+        Set<String> dangling = new HashSet<>(refs);
+        dangling.removeAll(keys);
+        assertTrue(dangling.isEmpty(),
+                () -> "Dangling globalReference(s) — no matching globalKey: " + dangling);
+        // Sanity: we should produce some keys for a non-trivial trade.
+        assertFalse(keys.isEmpty(), "GlobalKeyReproducer produced no globalKeys");
+    }
+
+    private static void collectKeysAndRefs(JsonNode node, Set<String> keys, Set<String> refs) {
+        if (node.isObject()) {
+            node.fields().forEachRemaining(e -> {
+                if ("globalKey".equals(e.getKey()) && e.getValue().isTextual()) {
+                    keys.add(e.getValue().asText());
+                } else if ("globalReference".equals(e.getKey()) && e.getValue().isTextual()) {
+                    refs.add(e.getValue().asText());
+                } else {
+                    collectKeysAndRefs(e.getValue(), keys, refs);
+                }
+            });
+        } else if (node.isArray()) {
+            node.forEach(child -> collectKeysAndRefs(child, keys, refs));
+        }
+    }
+
+    private static void unwrapSingleArrays(JsonNode node, String fieldName) {
+        if (node.isObject()) {
+            ObjectNode obj = (ObjectNode) node;
+            JsonNode v = obj.get(fieldName);
+            if (v != null && v.isArray() && v.size() == 1) {
+                obj.set(fieldName, v.get(0));
+            }
+            obj.fields().forEachRemaining(e -> unwrapSingleArrays(e.getValue(), fieldName));
+        } else if (node.isArray()) {
+            node.forEach(child -> unwrapSingleArrays(child, fieldName));
+        }
     }
 }
