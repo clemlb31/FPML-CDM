@@ -23,67 +23,53 @@ mcp = FastMCP(
     ),
 )
 
-# ── Maven dependencies (static, curated for CDM/Rosetta) ─────────────────────
+# ── Maven dependencies (static, curated for CDM 6.x via Maven Central) ────────
+# Versions match what the `main` branch uses successfully (cdm 6.19.0, jackson 2.17.2).
+# org.finos.cdm IS on Maven Central — no custom repository needed.
 
 _CDM_DEPENDENCIES = """\
-    <dependency>
-      <groupId>com.regnosys</groupId>
-      <artifactId>rosetta-common</artifactId>
-      <version>${rosetta.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.isda.cdm</groupId>
-      <artifactId>cdm-java</artifactId>
-      <version>${cdm.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.regnosys</groupId>
-      <artifactId>rosetta-translate</artifactId>
-      <version>${rosetta.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>2.17.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.dom4j</groupId>
-      <artifactId>dom4j</artifactId>
-      <version>2.1.4</version>
-    </dependency>
-    <dependency>
-      <groupId>jaxen</groupId>
-      <artifactId>jaxen</artifactId>
-      <version>2.0.0</version>
-    </dependency>
+<dependency>
+  <groupId>org.finos.cdm</groupId>
+  <artifactId>cdm-java</artifactId>
+  <version>${cdm.version}</version>
+</dependency>
+<dependency>
+  <groupId>com.fasterxml.jackson.datatype</groupId>
+  <artifactId>jackson-datatype-jsr310</artifactId>
+  <version>${jackson.version}</version>
+</dependency>
+<dependency>
+  <groupId>com.google.inject</groupId>
+  <artifactId>guice</artifactId>
+  <version>6.0.0</version>
+</dependency>
 """
 
 _CDM_PROPERTIES = """\
-    <rosetta.version>11.25.1</rosetta.version>
-    <cdm.version>6.0.0-dev.67</cdm.version>
+<cdm.version>6.19.0</cdm.version>
+<jackson.version>2.17.2</jackson.version>
 """
+
+# Empty by design: org.finos.cdm is on Maven Central, no custom repo required.
+_CDM_REPOSITORIES = ""
 
 
 @mcp.tool()
 def get_maven_dependencies() -> dict:
     """
-    Return the CDM/Rosetta Maven dependency blocks for pom.xml.
+    Return the Maven dependency blocks for the CDM Java project.
 
     Returns:
         {
           dependencies_xml: str,  # <dependency> blocks to insert in <dependencies>
-          properties_xml: str,    # <properties> blocks for version management
-          repositories_xml: str,  # <repository> blocks for Rosetta/CDM artifacts
+          properties_xml: str,    # <properties> entries for version management
+          repositories_xml: str,  # <repository> entries (empty: Central only)
         }
     """
     return {
         "dependencies_xml": _CDM_DEPENDENCIES.strip(),
-        "properties_xml": _CDM_PROPERTIES.strip(),
-        "repositories_xml": """\
-    <repository>
-      <id>regnosys-releases</id>
-      <url>https://regnosys.jfrog.io/artifactory/libs-snapshot</url>
-    </repository>""",
+        "properties_xml":   _CDM_PROPERTIES.strip(),
+        "repositories_xml": _CDM_REPOSITORIES.strip(),
     }
 
 

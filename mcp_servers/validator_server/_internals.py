@@ -319,17 +319,52 @@ def parse_crash(stderr: str) -> dict:
 
 # ── JSON semantic diff ────────────────────────────────────────────────────────
 
+# SemanticDiff-style normalisation: drop fields that cannot be reproduced
+# deterministically without the Regnosys content-hash algorithm.
+# Keep in sync with workspaces/.../SemanticDiff.java.
+_DROPPED_ANYWHERE = {"globalReference", "assetType", "securityType", "priceSubType"}
+_DROPPED_FROM_META = {"globalKey"}
+
+
+def _normalise(node):
+    """Recursively drop non-reproducible meta fields. Returns the same node modified."""
+    if isinstance(node, dict):
+        for k in list(node.keys()):
+            if k in _DROPPED_ANYWHERE:
+                del node[k]
+            elif k == "meta" and isinstance(node[k], dict):
+                meta = node[k]
+                for mk in list(meta.keys()):
+                    if mk in _DROPPED_FROM_META:
+                        del meta[mk]
+                if not meta:               # empty after pruning
+                    del node[k]
+                else:
+                    _normalise(meta)
+            else:
+                _normalise(node[k])
+    elif isinstance(node, list):
+        for item in node:
+            _normalise(item)
+    return node
+
+
 def json_diff(actual_str: str, expected_str: str, max_diffs: int = 20) -> list[str]:
     """
     Compare two JSON strings and return a human-readable list of differences.
     Lists are compared semantically (order-insensitive) to avoid false positives
     on unordered CDM arrays like payout[] or party[].
+    Drops globalKey/globalReference/etc. — these are content-hashes our agent
+    cannot reproduce without the Regnosys algorithm.
     """
     try:
         actual   = json.loads(actual_str)
         expected = json.loads(expected_str)
     except json.JSONDecodeError as e:
         return [f"JSON parse error: {e}"]
+
+    _normalise(actual)
+    _normalise(expected)
 
     diffs: list[str] = []
     _diff_recursive(actual, expected, "", diffs, max_diffs)
@@ -461,6 +496,8 @@ def json_score(actual_str: str, expected_str: str) -> dict:
     try:
         actual   = json.loads(actual_str) if isinstance(actual_str, str) else actual_str
         expected = json.loads(expected_str) if isinstance(expected_str, str) else expected_str
+        _normalise(actual)
+        _normalise(expected)
     except json.JSONDecodeError as e:
         return {"score": 0.0, "error": str(e), "total": 0, "matched": 0}
 

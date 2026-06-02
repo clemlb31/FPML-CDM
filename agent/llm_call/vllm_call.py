@@ -1,17 +1,18 @@
-from logging import config
+import json
+from pathlib import Path
 
 import httpx
-import json
-from LLM_interface import LLM
 import yaml
 
-config_path = "configs/agent.yaml"
+from agent.llm_call.LLM_interface import BaseLLM
+
+_CONFIG_PATH = Path(__file__).resolve().parents[2] / "configs" / "agent.yaml"
 
 
-class Vllm_call(LLM):
+class Vllm_call(BaseLLM):
     def __init__(self):
         super().__init__()
-        self.load_config(config_path)
+        self.load_config(str(_CONFIG_PATH))
 
     def load_config(self, config_path: str):
         with open(config_path, "r") as f:

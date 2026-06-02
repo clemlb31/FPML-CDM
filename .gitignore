@@ -8,3 +8,9 @@ __pycache__/
 
 data/cdm-fpml_pairs/
 runs/
+.llm_io/
+.mcp_pids/
+.mcp_logs/
+
+# Generated Maven projects produced by the agent on each run
+workspaces/test-fra*/

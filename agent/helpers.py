@@ -5,8 +5,10 @@ because this is core agent logic, not a one-shot admin script.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import os
+import random
 import re
 import textwrap
 from pathlib import Path
@@ -30,6 +32,7 @@ if _env_file.exists():
 
 _PACKAGE              = "com.example"
 _TRANSFORMER_CLASS    = "IrsTransformer"
+_JAVA_VERSION         = "17"   # matches what `main` builds against (org.finos.cdm requires 17+)
 _MAX_PATCH_ITERATIONS = 8
 
 
@@ -55,6 +58,12 @@ def get_servers() -> dict[str, dict]:
                 lambda m: os.environ.get(m.group(1), m.group(0)),
                 entry["url"],
             )
+            # Skip servers whose URL still contains an unresolved ${VAR}
+            if "${" in entry["url"]:
+                print(
+                    f"[get_servers] skipping {name!r}: env var unresolved in url {entry['url']!r}"
+                )
+                continue
         servers[name] = entry
     return servers
 
@@ -62,7 +71,13 @@ def get_servers() -> dict[str, dict]:
 # ── Tool result unwrapping ────────────────────────────────────────────────────
 
 def unwrap(result: Any) -> str:
-    """Extract plain text from an MCP tool result (string, list of TextContent, ToolMessage…)."""
+    """Extract plain text from an MCP tool result.
+
+    Handles: plain strings, lists of TextContent objects or dicts
+    ({"type": "text", "text": "..."} per MCP spec), and ToolMessage-style
+    objects with a `.content` attribute. Never falls back to str(dict) — that
+    would write Python reprs to disk.
+    """
     if result is None:
         return ""
     if isinstance(result, str):
@@ -72,11 +87,24 @@ def unwrap(result: Any) -> str:
         for item in result:
             if hasattr(item, "text"):
                 parts.append(item.text)
+            elif isinstance(item, dict):
+                if "text" in item:
+                    parts.append(str(item["text"]))
+                elif "content" in item:
+                    parts.append(unwrap(item["content"]))
+                else:
+                    parts.append(json.dumps(item))
             elif isinstance(item, str):
                 parts.append(item)
             else:
                 parts.append(str(item))
         return "\n".join(parts)
+    if isinstance(result, dict):
+        if "text" in result:
+            return str(result["text"])
+        if "content" in result:
+            return unwrap(result["content"])
+        return json.dumps(result)
     if hasattr(result, "content"):
         return unwrap(result.content)
     return str(result)
@@ -150,18 +178,59 @@ async def llm_text_or_raise(
     strip_fences: bool = False,
 ) -> str:
     """
-    Call the vLLM endpoint with a list of LangChain messages.
+    Call the configured LLM backend with a list of LangChain messages.
 
-    Env vars:
-      VLLM_BASE_URL  (default: http://10.27.40.184:8000/v1)
-      VLLM_MODEL     (default: /models/qwen3.6-27b-fp8)
+    Backend selected by $LLM_BACKEND (default: gemini). Supported:
+      gemini    — Google AI Studio (OpenAI-compatible endpoint)
+      groq      — Groq Cloud (OpenAI-compatible endpoint)
+      ollama    — Local Ollama server (OpenAI-compatible endpoint)
+      vllm      — local/remote vLLM server
+      manual    — Writes prompt to .llm_io/inbox/, polls .llm_io/outbox/ for a
+                  text response. Use when an external operator (Claude in chat,
+                  human, separate process) answers each prompt.
 
+    All non-manual backends are spoken via the OpenAI async client.
     Raises RuntimeError if the LLM returns an empty response.
     """
+    backend = (os.getenv("LLM_BACKEND") or "gemini").lower()
+
+    if backend == "manual":
+        return await _manual_llm_call(label, prompt, max_tokens, strip_fences)
+
     from openai import AsyncOpenAI
 
-    base_url = os.getenv("VLLM_BASE_URL", "http://10.27.40.184:8000/v1")
-    model    = os.getenv("VLLM_MODEL",    "/models/qwen3.6-27b-fp8")
+    if backend == "gemini":
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            raise RuntimeError("GEMINI_API_KEY not set (check .env)")
+        base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
+        model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        extra_body: dict | None = None
+    elif backend == "groq":
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            raise RuntimeError("GROQ_API_KEY not set (check .env)")
+        base_url = "https://api.groq.com/openai/v1"
+        model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+        extra_body = None
+    elif backend == "ollama":
+        api_key = "ollama"  # any non-empty string; ollama ignores auth
+        base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+        model = os.getenv("OLLAMA_MODEL", "qwen3.5:4b")
+        # Ollama's OpenAI-compat forwards `think` as a native option.
+        # `think: false` disables Qwen3's thinking mode at the API level —
+        # belt-and-braces alongside the `/no_think` suffix on the user message.
+        extra_body = {"think": False}
+    elif backend == "vllm":
+        api_key = "dummy"
+        base_url = os.getenv("VLLM_BASE_URL", "http://10.27.40.184:8000/v1")
+        model    = os.getenv("VLLM_MODEL",    "/models/qwen3.6-27b-fp8")
+        extra_body = {"chat_template_kwargs": {"enable_thinking": False}}
+    else:
+        raise RuntimeError(
+            f"Unsupported LLM_BACKEND={backend!r} for llm_text_or_raise. "
+            f"Expected one of: gemini, groq, ollama, vllm."
+        )
 
     # Convert LangChain message types to OpenAI wire format
     messages = []
@@ -177,31 +246,154 @@ async def llm_text_or_raise(
         else:
             messages.append({"role": "user", "content": str(m)})
 
+    # Qwen3 defaults to thinking mode which loops on small (4B) checkpoints and
+    # leaves `content` empty. The /no_think token disables it for that turn.
+    if backend == "ollama" and "qwen3" in model.lower():
+        for m in reversed(messages):
+            if m["role"] == "user" and "/no_think" not in m["content"]:
+                m["content"] = m["content"].rstrip() + "\n\n/no_think"
+                break
+
     client = AsyncOpenAI(
         base_url=base_url,
-        api_key="dummy",
+        api_key=api_key,
         http_client=httpx.AsyncClient(
             timeout=httpx.Timeout(connect=30.0, read=1800.0, write=30.0, pool=30.0)
         ),
     )
-    response = await client.chat.completions.create(
+    create_kwargs: dict = dict(
         model=model,
         messages=messages,
         max_tokens=max_tokens,
         temperature=0.2,
-        extra_body={"chat_template_kwargs": {"enable_thinking": False}},
     )
-    text = (response.choices[0].message.content or "").strip()
-    if not text:
-        raise RuntimeError(f"[{label}] LLM returned empty response")
+    if extra_body is not None:
+        create_kwargs["extra_body"] = extra_body
 
-    return _strip_code_fences(text) if strip_fences else text
+    # Retry transient errors (overloaded / rate-limited / network)
+    # 5 retries, exponential backoff with jitter: 1, 2, 4, 8, 16 s (max ~30s total wait)
+    from openai import APIConnectionError, APIError, APITimeoutError, RateLimitError
+    last_exc: Exception | None = None
+    for attempt in range(6):
+        try:
+            response = await client.chat.completions.create(**create_kwargs)
+            msg = response.choices[0].message
+            text = (msg.content or "").strip()
+            # Some backends (Ollama with Qwen3 thinking-mode) put output in
+            # `reasoning` instead of `content` when the model never escapes
+            # its thinking loop. Fall back so we don't lose the run entirely.
+            if not text:
+                reasoning = getattr(msg, "reasoning", None) or ""
+                text = reasoning.strip()
+            if not text:
+                raise RuntimeError(f"[{label}] LLM returned empty response")
+            return _strip_code_fences(text) if strip_fences else text
+        except (RateLimitError, APIConnectionError, APITimeoutError) as e:
+            last_exc = e
+            transient = True
+        except APIError as e:
+            last_exc = e
+            status = getattr(e, "status_code", None)
+            transient = status in (429, 500, 502, 503, 504)
+            if not transient:
+                raise
+        if attempt == 5:
+            break
+        delay = (2 ** attempt) + random.uniform(0, 1)
+        print(
+            f"[{label}] LLM transient error ({type(last_exc).__name__}); "
+            f"retry {attempt + 1}/5 in {delay:.1f}s"
+        )
+        await asyncio.sleep(delay)
+
+    raise RuntimeError(f"[{label}] LLM failed after retries: {last_exc}")
 
 
 def _strip_code_fences(text: str) -> str:
     text = re.sub(r"^```[a-zA-Z]*\n?", "", text.strip())
     text = re.sub(r"\n?```\s*$", "", text)
     return text.strip()
+
+
+# ── Manual backend ─────────────────────────────────────────────────────────────
+# Acts as an LLM by writing each prompt to disk and polling for the answer.
+# An external operator (Claude in chat, sub-agent, or human) reads `.llm_io/inbox/`
+# and writes the response to `.llm_io/outbox/<same-id>.txt`.
+
+_LLM_IO_DIR = Path(__file__).resolve().parents[1] / ".llm_io"
+
+
+async def _manual_llm_call(
+    label: str,
+    prompt: list,
+    max_tokens: int,
+    strip_fences: bool,
+    poll_interval: float = 1.0,
+    timeout_seconds: float = 30 * 60,
+) -> str:
+    """Drop the prompt in an inbox file, wait for an outbox file, return its text.
+
+    Inbox file is JSON so the operator can read context (label, messages, hints).
+    Outbox file is plain text (the answer). Both are deleted after consumption.
+    """
+    inbox  = _LLM_IO_DIR / "inbox"
+    outbox = _LLM_IO_DIR / "outbox"
+    history = _LLM_IO_DIR / "history"
+    for d in (inbox, outbox, history):
+        d.mkdir(parents=True, exist_ok=True)
+
+    # Serialise prompt to plain dicts (OpenAI message shape)
+    serialised: list[dict] = []
+    for m in prompt:
+        if isinstance(m, SystemMessage):
+            serialised.append({"role": "system",    "content": m.content})
+        elif isinstance(m, HumanMessage):
+            serialised.append({"role": "user",      "content": m.content})
+        elif isinstance(m, AIMessage):
+            serialised.append({"role": "assistant", "content": m.content})
+        elif isinstance(m, dict):
+            serialised.append(m)
+        else:
+            serialised.append({"role": "user", "content": str(m)})
+
+    safe_label = re.sub(r"[^a-zA-Z0-9_-]+", "_", label)
+    ts = int(asyncio.get_event_loop().time() * 1000)
+    req_id = f"{ts}_{safe_label}"
+    req_file  = inbox  / f"{req_id}.json"
+    resp_file = outbox / f"{req_id}.txt"
+
+    payload = {
+        "id":            req_id,
+        "label":         label,
+        "max_tokens":    max_tokens,
+        "strip_fences":  strip_fences,
+        "messages":      serialised,
+    }
+    req_file.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"[{label}] manual: waiting on .llm_io/outbox/{resp_file.name}")
+
+    deadline = asyncio.get_event_loop().time() + timeout_seconds
+    while asyncio.get_event_loop().time() < deadline:
+        if resp_file.exists():
+            text = resp_file.read_text(encoding="utf-8")
+            # Archive both files so future runs and the operator can re-read.
+            try:
+                (history / f"{req_id}.req.json").write_text(req_file.read_text(encoding="utf-8"), encoding="utf-8")
+                (history / f"{req_id}.resp.txt").write_text(text, encoding="utf-8")
+            except OSError:
+                pass
+            req_file.unlink(missing_ok=True)
+            resp_file.unlink(missing_ok=True)
+            text = text.strip()
+            if not text:
+                raise RuntimeError(f"[{label}] manual: empty response file")
+            return _strip_code_fences(text) if strip_fences else text
+        await asyncio.sleep(poll_interval)
+
+    raise RuntimeError(
+        f"[{label}] manual: timed out after {timeout_seconds:.0f}s. "
+        f"Expected operator to write {resp_file}"
+    )
 
 
 # ── JSON helpers ──────────────────────────────────────────────────────────────
@@ -228,15 +420,37 @@ def json_list_or_raise(raw: str, label: str) -> list:
 
 # ── Maven dependency extraction ───────────────────────────────────────────────
 
-def maven_dependencies_from_raw(raw: Any) -> tuple[str, list[str], str]:
+def maven_dependencies_from_raw(raw: Any) -> tuple[str, list[str], str, str, str]:
     """
-    Extract <dependency>...</dependency> blocks from a raw tool result.
-    Returns (full_xml_joined, list_of_blocks, raw_text).
+    Parse the mapping_server's get_maven_dependencies response.
+
+    The MCP tool returns a JSON dict {dependencies_xml, properties_xml, repositories_xml}.
+    After MCP serialisation we receive the JSON-encoded string — we must parse it before
+    the embedded newlines are escaped as \\n in our outputs.
+
+    Returns:
+        (deps_xml, dep_blocks, properties_xml, repositories_xml, raw_text)
     """
     raw_text = unwrap(raw)
-    blocks   = re.findall(r"<dependency>.*?</dependency>", raw_text, re.DOTALL)
+    deps_xml, props_xml, repos_xml = "", "", ""
+
+    if raw_text.lstrip().startswith("{"):
+        try:
+            parsed = json.loads(raw_text)
+            if isinstance(parsed, dict):
+                deps_xml  = str(parsed.get("dependencies_xml")  or "")
+                props_xml = str(parsed.get("properties_xml")    or "")
+                repos_xml = str(parsed.get("repositories_xml")  or "")
+        except json.JSONDecodeError:
+            pass
+
+    if not deps_xml:
+        # Fallback: regex against the raw text (legacy format).
+        deps_xml = raw_text
+
+    blocks = re.findall(r"<dependency>.*?</dependency>", deps_xml, re.DOTALL)
     full_xml = "\n".join(blocks)
-    return full_xml, blocks, raw_text
+    return full_xml, blocks, props_xml, repos_xml, raw_text
 
 
 # ── Prompt helpers ────────────────────────────────────────────────────────────
@@ -362,12 +576,12 @@ async def read_cdm_snippet(field_path: str) -> str:
 
 # ── Java skeleton generation ──────────────────────────────────────────────────
 
-def build_skeleton(method_specs: list[dict]) -> tuple[str, str]:
+def build_skeleton(method_specs: list[dict]) -> tuple[str, str, str]:
     """
-    Generate IrsTransformer.java and FpmlToCdmApp.java from method specs.
-    Returns (transformer_src, app_src).
+    Generate the 3 source files of the project from method specs.
+    Returns (transformer_src, app_src, semantic_diff_src).
     """
-    return _build_transformer(method_specs), _build_app()
+    return _build_transformer(method_specs), _build_app(), _build_semantic_diff()
 
 
 def _build_transformer(specs: list[dict]) -> str:
@@ -398,7 +612,31 @@ def _build_transformer(specs: list[dict]) -> str:
         import javax.xml.parsers.*;
         import java.io.*;
         import java.math.BigDecimal;
-        import java.util.*;
+        import java.util.ArrayList;
+        import java.util.Collections;
+        import java.util.HashMap;
+        import java.util.List;
+        import java.util.Map;
+        import java.util.Optional;
+
+        // CDM model (org.finos.cdm:cdm-java:6.19.0)
+        import cdm.base.datetime.*;
+        import cdm.base.math.*;
+        import cdm.base.staticdata.asset.common.*;
+        import cdm.base.staticdata.party.*;
+        import cdm.event.common.*;
+        import cdm.legaldocumentation.common.*;
+        import cdm.observable.asset.*;
+        import cdm.observable.common.*;
+        import cdm.product.asset.*;
+        import cdm.product.common.schedule.*;
+        import cdm.product.common.settlement.*;
+        import cdm.product.template.*;
+
+        // Rosetta meta types
+        import com.rosetta.model.lib.records.Date;       // CDM date \u2014 NOT java.util.Date
+        import com.rosetta.model.metafields.FieldWithMetaString;
+        import com.rosetta.model.metafields.MetaFields;
 
         /**
          * FpML 5.x \u2192 CDM 6.x IRS transformer.
@@ -453,24 +691,244 @@ def _build_app() -> str:
     return textwrap.dedent(f"""\
         package {_PACKAGE};
 
+        import com.fasterxml.jackson.databind.JsonNode;
         import com.fasterxml.jackson.databind.ObjectMapper;
         import com.fasterxml.jackson.databind.SerializationFeature;
 
+        import java.nio.file.Files;
+        import java.nio.file.Paths;
+
         /**
-         * CLI entry point: reads an FpML file, transforms to CDM JSON, prints to stdout.
-         * Usage: java -jar target/*-jar-with-dependencies.jar <fpml.xml>
+         * CLI entry point.
+         *
+         * Two modes:
+         *   transform: java -jar app.jar <fpml.xml>
+         *      → prints CDM JSON to stdout, exit 0.
+         *   compare:   java -jar app.jar <fpml.xml> --expected <expected-cdm.json>
+         *      → also runs SemanticDiff vs expected. Exit 0 if equal, 2 if diffs,
+         *        1 on hard error. Prints "===EQUAL===" or "===DIFFS===\\n<diff lines>".
          */
         public class FpmlToCdmApp {{
             public static void main(String[] args) throws Exception {{
                 if (args.length < 1) {{
-                    System.err.println("Usage: FpmlToCdmApp <fpml-file.xml>");
+                    System.err.println("Usage: FpmlToCdmApp <fpml.xml> [--expected <expected.json>]");
                     System.exit(1);
                 }}
+                String fpmlPath = args[0];
+                String expectedPath = null;
+                for (int i = 1; i < args.length - 1; i++) {{
+                    if ("--expected".equals(args[i])) {{
+                        expectedPath = args[i + 1];
+                        break;
+                    }}
+                }}
+
                 {_TRANSFORMER_CLASS} transformer = new {_TRANSFORMER_CLASS}();
-                Object result = transformer.transform(args[0]);
+                Object result = transformer.transform(fpmlPath);
+
                 ObjectMapper mapper = new ObjectMapper()
                     .enable(SerializationFeature.INDENT_OUTPUT);
-                System.out.println(mapper.writeValueAsString(result));
+                String actualJson = mapper.writeValueAsString(result);
+                System.out.println(actualJson);
+
+                if (expectedPath == null) {{
+                    System.exit(0);
+                }}
+
+                String expectedJson = new String(Files.readAllBytes(Paths.get(expectedPath)));
+                JsonNode actualTree   = mapper.readTree(actualJson);
+                JsonNode expectedTree = mapper.readTree(expectedJson);
+                SemanticDiff.Result diff = SemanticDiff.compare(expectedTree, actualTree);
+
+                if (diff.isEqual()) {{
+                    System.out.println("===EQUAL===");
+                    System.exit(0);
+                }} else {{
+                    System.out.println("===DIFFS===");
+                    System.out.println(diff);
+                    System.exit(2);
+                }}
+            }}
+        }}
+        """)
+
+
+def _build_semantic_diff() -> str:
+    """SemanticDiff.java — ported from main branch (io.fpmlcdm.report → com.example)."""
+    return textwrap.dedent(f"""\
+        package {_PACKAGE};
+
+        import com.fasterxml.jackson.databind.JsonNode;
+        import com.fasterxml.jackson.databind.ObjectMapper;
+        import com.fasterxml.jackson.databind.node.ArrayNode;
+        import com.fasterxml.jackson.databind.node.ObjectNode;
+
+        import java.math.BigDecimal;
+        import java.util.ArrayList;
+        import java.util.Iterator;
+        import java.util.LinkedHashSet;
+        import java.util.List;
+        import java.util.Map;
+        import java.util.Set;
+        import java.util.TreeMap;
+
+        /**
+         * Compares two CDM JSON documents semantically. Ported from main branch.
+         * Normalisation:
+         *   - drop globalKey / globalReference / assetType / securityType / priceSubType
+         *   - drop meta objects that empty out after the above
+         *   - object key order irrelevant
+         *   - numeric compare via BigDecimal.compareTo (0.025 == 0.0250)
+         *   - field aliases for CDM typos: notionalReference → notionaReference, barrier → knock
+         *   - hoist unscheduledTransfer wrapper
+         */
+        public final class SemanticDiff {{
+
+            private static final ObjectMapper MAPPER = new ObjectMapper();
+            private static final Set<String> DROPPED_META_KEYS = Set.of("globalKey");
+            private static final Set<String> DROPPED_ANYWHERE = Set.of(
+                "globalReference", "assetType", "securityType", "priceSubType"
+            );
+            private static final Set<String> UNWRAP_SINGLE_ARRAY = Set.of("stubPeriodType");
+            private static final Map<String, String> FIELD_ALIASES = Map.of(
+                "notionalReference", "notionaReference",
+                "barrier", "knock"
+            );
+            private static final Set<String> HOIST_WRAPPER = Set.of("unscheduledTransfer");
+
+            private SemanticDiff() {{}}
+
+            public static Result compare(JsonNode expected, JsonNode actual) {{
+                List<String> diffs = new ArrayList<>();
+                JsonNode normExpected = normalise(expected.deepCopy());
+                JsonNode normActual   = normalise(actual.deepCopy());
+                walk("", normExpected, normActual, diffs);
+                return new Result(diffs);
+            }}
+
+            public static Result compare(String expectedJson, String actualJson) throws Exception {{
+                return compare(MAPPER.readTree(expectedJson), MAPPER.readTree(actualJson));
+            }}
+
+            static JsonNode normalise(JsonNode node) {{
+                if (node.isObject()) {{
+                    ObjectNode obj = (ObjectNode) node;
+                    Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
+                    while (it.hasNext()) {{
+                        Map.Entry<String, JsonNode> e = it.next();
+                        if (DROPPED_ANYWHERE.contains(e.getKey())) {{
+                            it.remove();
+                        }} else if (e.getKey().equals("meta")) {{
+                            JsonNode cleaned = stripDroppedKeys(e.getValue().deepCopy());
+                            if (cleaned == null || (cleaned.isObject() && cleaned.size() == 0)) {{
+                                it.remove();
+                            }} else {{
+                                e.setValue(normalise(cleaned));
+                            }}
+                        }} else if (UNWRAP_SINGLE_ARRAY.contains(e.getKey())
+                                && e.getValue().isArray() && e.getValue().size() == 1) {{
+                            e.setValue(normalise(e.getValue().get(0)));
+                        }} else {{
+                            e.setValue(normalise(e.getValue()));
+                        }}
+                    }}
+                    for (Map.Entry<String, String> alias : FIELD_ALIASES.entrySet()) {{
+                        JsonNode val = obj.get(alias.getKey());
+                        if (val != null) {{
+                            obj.remove(alias.getKey());
+                            obj.set(alias.getValue(), val);
+                        }}
+                    }}
+                    for (String wrapper : HOIST_WRAPPER) {{
+                        JsonNode child = obj.get(wrapper);
+                        if (child != null && child.isObject()) {{
+                            obj.remove(wrapper);
+                            child.fields().forEachRemaining(f -> obj.set(f.getKey(), f.getValue()));
+                        }}
+                    }}
+                }} else if (node.isArray()) {{
+                    ArrayNode arr = (ArrayNode) node;
+                    for (int i = 0; i < arr.size(); i++) {{
+                        arr.set(i, normalise(arr.get(i)));
+                    }}
+                }}
+                return node;
+            }}
+
+            private static JsonNode stripDroppedKeys(JsonNode node) {{
+                if (!node.isObject()) return node;
+                ObjectNode obj = (ObjectNode) node;
+                for (String dropped : DROPPED_META_KEYS) {{
+                    obj.remove(dropped);
+                }}
+                return obj;
+            }}
+
+            private static void walk(String path, JsonNode expected, JsonNode actual, List<String> diffs) {{
+                if (expected.isObject() && actual.isObject()) {{
+                    walkObject(path, (ObjectNode) expected, (ObjectNode) actual, diffs);
+                }} else if (expected.isArray() && actual.isArray()) {{
+                    walkArray(path, (ArrayNode) expected, (ArrayNode) actual, diffs);
+                }} else if (expected.isNumber() && actual.isNumber()) {{
+                    BigDecimal a = new BigDecimal(expected.asText());
+                    BigDecimal b = new BigDecimal(actual.asText());
+                    if (a.compareTo(b) != 0) {{
+                        diffs.add("~ " + path + " : " + a + " -> " + b);
+                    }}
+                }} else if (!expected.equals(actual)) {{
+                    diffs.add("~ " + path + " : " + safeRender(expected) + " -> " + safeRender(actual));
+                }}
+            }}
+
+            private static void walkObject(String path, ObjectNode expected, ObjectNode actual, List<String> diffs) {{
+                Map<String, JsonNode> e = sortFields(expected);
+                Map<String, JsonNode> a = sortFields(actual);
+                Set<String> all = new LinkedHashSet<>();
+                all.addAll(e.keySet());
+                all.addAll(a.keySet());
+                for (String k : all) {{
+                    String childPath = path.isEmpty() ? k : path + "." + k;
+                    if (!e.containsKey(k)) {{
+                        diffs.add("+ " + childPath + " : " + safeRender(a.get(k)));
+                    }} else if (!a.containsKey(k)) {{
+                        diffs.add("- " + childPath + " : " + safeRender(e.get(k)));
+                    }} else {{
+                        walk(childPath, e.get(k), a.get(k), diffs);
+                    }}
+                }}
+            }}
+
+            private static void walkArray(String path, ArrayNode expected, ArrayNode actual, List<String> diffs) {{
+                int n = Math.max(expected.size(), actual.size());
+                for (int i = 0; i < n; i++) {{
+                    String childPath = path + "[" + i + "]";
+                    if (i >= expected.size()) {{
+                        diffs.add("+ " + childPath + " : " + safeRender(actual.get(i)));
+                    }} else if (i >= actual.size()) {{
+                        diffs.add("- " + childPath + " : " + safeRender(expected.get(i)));
+                    }} else {{
+                        walk(childPath, expected.get(i), actual.get(i), diffs);
+                    }}
+                }}
+            }}
+
+            private static Map<String, JsonNode> sortFields(ObjectNode node) {{
+                Map<String, JsonNode> m = new TreeMap<>();
+                node.fields().forEachRemaining(e -> m.put(e.getKey(), e.getValue()));
+                return m;
+            }}
+
+            private static String safeRender(JsonNode node) {{
+                String s = node.toString();
+                return s.length() > 120 ? s.substring(0, 117) + "..." : s;
+            }}
+
+            public record Result(List<String> diffs) {{
+                public boolean isEqual() {{ return diffs.isEmpty(); }}
+                public int size() {{ return diffs.size(); }}
+                @Override public String toString() {{
+                    return diffs.isEmpty() ? "<equal>" : String.join("\\n", diffs);
+                }}
             }}
         }}
         """)
@@ -491,10 +949,15 @@ _POM_TEMPLATE = """\
   <packaging>jar</packaging>
 
   <properties>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+{properties}
   </properties>
+
+  <repositories>
+{repositories}
+  </repositories>
 
   <dependencies>
     <!-- Jackson for JSON serialisation -->
@@ -503,7 +966,6 @@ _POM_TEMPLATE = """\
       <artifactId>jackson-databind</artifactId>
       <version>2.17.0</version>
     </dependency>
-    <!-- CDM Java dependencies (injected by the knowledge server) -->
 {deps}
   </dependencies>
 
@@ -537,16 +999,25 @@ _POM_TEMPLATE = """\
 """
 
 
-def build_pom(maven_xml: str) -> str:
-    """
-    Build a pom.xml string.
-    `maven_xml` is the raw <dependency>...</dependency> blocks from the knowledge server.
-    """
-    indented = "\n".join(
-        "    " + line if line.strip() else ""
-        for line in maven_xml.strip().splitlines()
+def _indent_block(xml: str, indent: str = "    ") -> str:
+    return "\n".join(
+        indent + line if line.strip() else ""
+        for line in xml.strip().splitlines()
     )
-    return _POM_TEMPLATE.format(deps=indented)
+
+
+def build_pom(deps_xml: str, properties_xml: str = "", repositories_xml: str = "") -> str:
+    """
+    Build a pom.xml string from the 3 XML chunks returned by mapping_server.
+
+    All inputs are raw (un-indented). Empty `repositories_xml` keeps the
+    <repositories/> element empty — Maven Central is the only source.
+    """
+    return _POM_TEMPLATE.format(
+        deps=_indent_block(deps_xml, "    "),
+        properties=_indent_block(properties_xml, "    "),
+        repositories=_indent_block(repositories_xml, "    "),
+    )
 
 
 # ── Method body replacement ───────────────────────────────────────────────────

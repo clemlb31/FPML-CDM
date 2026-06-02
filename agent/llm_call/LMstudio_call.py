@@ -1,7 +1,9 @@
-from LLM_interface import LLM
 import lmstudio as lms
 
-class LMstudio_call(LLM):
+from agent.llm_call.LLM_interface import BaseLLM
+
+
+class LMstudio_call(BaseLLM):
     """LMStudio-specific LLM subclass. Overrides generate to strip <think> tags
     emitted by reasoning models (e.g. Qwen3)."""
 

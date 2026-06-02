@@ -8,9 +8,16 @@
 #   max_files_per_dir: (optional) limit the number of files per directory
 #   exclude_files:     (optional) list of filenames to skip (e.g. known broken cases)
 
-active_suite: equity_5_13_with_incomplete
+active_suite: fra_only
 
 suites:
+
+  # ── Phase 1 hello world: single FRA case ───────────────────────────────────
+  fra_only:
+    dirs:
+      - rates-5-10
+    include_files:
+      - ird-ex08-fra.xml
 
   # ── Quick sanity check (2 files per product, latest versions) ──────────────
   smoke:

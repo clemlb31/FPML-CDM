@@ -277,12 +277,17 @@ def triage_compile_error(
     if not errors:
         raise ValueError("triage_compile_error requires at least one compile error")
 
-    first = errors[0]
+    # Prefer errors that carry a real (file, line) — Maven output also contains
+    # generic "[ERROR] BUILD FAILURE" lines without source coordinates which
+    # cannot be triaged to a method.
+    structured = [e for e in errors if e.get("line", 0) and e.get("file")]
+    first = structured[0] if structured else errors[0]
     msg = first.get("message", "")
     line = first.get("line", 0)
 
-    # Locate guilty method from line number
-    target = _locate_method_for_line(java_source, line)
+    # Locate guilty method from line number; fall back to first spec
+    # (better to patch *something* than to halt the loop).
+    target = _locate_method_for_line(java_source, line) if line else None
 
     # Classify error
     problem_label = "unknown error"
@@ -299,6 +304,9 @@ def triage_compile_error(
             reference_tools = tools
             break
 
+    if not target and method_specs:
+        # Fallback: blame the first method. Patch loop will iterate.
+        target = method_specs[0].get("method_name") or method_specs[0].get("name")
     if not target:
         raise ValueError(f"Unable to locate method for compile error line {line}")
 

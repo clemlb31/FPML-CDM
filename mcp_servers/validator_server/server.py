@@ -38,6 +38,8 @@ try:
     from _internals import (
         WORKSPACE_CONTAINER,
         DATA_CONTAINER,
+        WORKSPACE_HOST,
+        DATA_HOST,
         container_to_host,
         container_running,
         start_container,
@@ -56,6 +58,8 @@ except ImportError:
     from ._internals import (
         WORKSPACE_CONTAINER,
         DATA_CONTAINER,
+        WORKSPACE_HOST,
+        DATA_HOST,
         container_to_host,
         container_running,
         start_container,
@@ -111,59 +115,127 @@ mcp = FastMCP(
 
 # ── 1. Compile ────────────────────────────────────────────────────────────────
 
-@mcp.tool()
-def compile_project() -> dict:
+def _resolve_pom_container_path(project_dir: str | None) -> str:
+    """Translate an optional host project dir into the container pom.xml path.
+
+    Accepts None (legacy: /workspace/pom.xml), a container path (/workspace/...),
+    or a host path under workspaces/ (translated via host_to_container).
     """
-    Run `mvn clean compile` in the container and return structured compilation errors.
-    Each error includes file (container path), line, column, message, and a source snippet.
+    if not project_dir:
+        return f"{WORKSPACE_CONTAINER}/pom.xml"
+    if project_dir.startswith(WORKSPACE_CONTAINER):
+        base = project_dir.rstrip("/")
+    else:
+        from pathlib import Path as _P
+        host_p = _P(project_dir).resolve()
+        try:
+            rel = host_p.relative_to(WORKSPACE_HOST)
+            base = f"{WORKSPACE_CONTAINER}/{rel.as_posix()}".rstrip("/")
+        except ValueError:
+            base = f"{WORKSPACE_CONTAINER}/pom.xml"
+            return base
+    return f"{base}/pom.xml" if not base.endswith("/pom.xml") else base
+
+
+@mcp.tool()
+def compile_project(project_dir: str = "") -> dict:
+    """
+    Run `mvn clean compile` for the given project (default: /workspace/pom.xml).
+    Returns structured compilation errors with source snippets when present.
+
+    Args:
+        project_dir: optional. Container path (/workspace/test-fra) or host path
+                     (workspaces/test-fra). If empty, compiles /workspace/pom.xml.
 
     Returns:
         { ok: bool, errors: list[{file, line, column, message, snippet}], raw_tail: str }
     """
-    r = docker_exec(["mvn", "clean", "compile", "-f", f"{WORKSPACE_CONTAINER}/pom.xml"])
+    pom_path = _resolve_pom_container_path(project_dir)
+    r = docker_exec(["mvn", "clean", "compile", "-f", pom_path])
     output = r["stdout"] + r["stderr"]
+    parsed_errors = parse_compile_errors(output)
+    # docker_exec ok already reflects returncode == 0. Also surface mvn-level
+    # failures (POM parse errors, dependency resolution) when parse_compile_errors
+    # misses them: anything with [ERROR] in stderr but no parsed errors → record
+    # a synthetic error so the caller doesn't see "ok=False errors=[]".
+    if not r["ok"] and not parsed_errors:
+        tail = (r["stderr"] or output)[-1500:].strip()
+        if tail:
+            parsed_errors = [{
+                "file":    pom_path,
+                "line":    0,
+                "column":  0,
+                "message": tail.splitlines()[0][:200] if tail else "mvn failed",
+                "snippet": tail,
+            }]
     return {
         "ok":       r["ok"],
-        "errors":   parse_compile_errors(output),
+        "errors":   parsed_errors,
         "raw_tail": output[-3000:],
     }
 
 
 # ── 2. Single test ────────────────────────────────────────────────────────────
 
+def _to_container_data_path(p: str) -> str:
+    """Convert a host path under data/test/ to its /data/... container path.
+
+    Pass-through for paths already starting with /data/ or /workspace/.
+    """
+    if p.startswith(DATA_CONTAINER + "/") or p.startswith(WORKSPACE_CONTAINER + "/"):
+        return p
+    from pathlib import Path as _P
+    host_p = _P(p).resolve()
+    try:
+        rel = host_p.relative_to(DATA_HOST)
+        return f"{DATA_CONTAINER}/{rel.as_posix()}"
+    except ValueError:
+        return p  # leave as-is; caller will report not-found if it doesn't resolve
+
+
 @mcp.tool()
-def run_test(fpml_file: str, expected_json_file: str) -> dict:
+def run_test(fpml_file: str, expected_json_file: str, project_dir: str = "") -> dict:
     """
     Package the project, run the JAR on one FpML file, diff output vs expected CDM JSON.
-    Use container-internal paths. Call get_test_cases to discover valid paths.
 
-    Args:
-        fpml_file:          Container path to the FpML XML  (e.g. /data/equity-5-13/fpml/eq-swap-001.xml)
-        expected_json_file: Container path to the expected CDM JSON (e.g. /data/equity-5-13/cdm/eq-swap-001.json)
+    Args (host or container paths both accepted):
+        fpml_file:          FpML XML (host or /data/...)
+        expected_json_file: Expected CDM JSON (host or /data/...)
+        project_dir:        optional. Path to the Maven project (host or /workspace/...).
+                            If empty, packages /workspace/pom.xml.
 
     Returns:
         { ok: bool, match: bool, crash: {...}|null, differences: list[str], actual_json: str }
     """
+    pom_path = _resolve_pom_container_path(project_dir)
     pkg = docker_exec(
-        ["mvn", "package", "-DskipTests", "-q", "-f", f"{WORKSPACE_CONTAINER}/pom.xml"],
+        ["mvn", "package", "-DskipTests", "-q", "-f", pom_path],
         timeout=600,
     )
     if not pkg["ok"]:
         return {"ok": False, "match": False, "crash": None,
-                "differences": ["Package failed: " + pkg["stderr"][-500:]], "actual_json": ""}
-
-    jar = resolve_jar_container()
-    if not jar:
-        return {"ok": False, "match": False, "crash": None,
-                "differences": ["No jar-with-dependencies found in /workspace/target/"],
+                "differences": ["Package failed: " + (pkg["stderr"] or pkg["stdout"])[-500:]],
                 "actual_json": ""}
 
-    cdm_host = container_to_host(expected_json_file)
+    # Find the jar in the project's target/ dir (not the workspace root).
+    project_target = pom_path.rsplit("/pom.xml", 1)[0] + "/target"
+    jar_search = docker_exec([
+        "find", project_target, "-name", "*-jar-with-dependencies.jar", "-type", "f",
+    ])
+    jars = [j for j in (jar_search.get("stdout") or "").strip().splitlines() if j]
+    if not jars:
+        return {"ok": False, "match": False, "crash": None,
+                "differences": [f"No jar-with-dependencies found in {project_target}/"],
+                "actual_json": ""}
+    jar = sorted(jars)[-1]
+
+    fpml_container = _to_container_data_path(fpml_file)
+    cdm_host = container_to_host(_to_container_data_path(expected_json_file))
     if cdm_host is None or not cdm_host.exists():
         return {"ok": False, "match": False, "crash": None,
                 "differences": [f"CDM file not found: {expected_json_file}"], "actual_json": ""}
 
-    return run_jar_and_diff(jar, fpml_file, str(cdm_host))
+    return run_jar_and_diff(jar, fpml_container, str(cdm_host))
 
 
 # ── 3. Full regression suite ──────────────────────────────────────────────────

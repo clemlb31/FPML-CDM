@@ -1,12 +1,12 @@
 openai
 python-dotenv
 requests
-mcp
+httpx
 mcp[cli]
 langgraph
 langchain
 langchain-openai
 langchain-mcp-adapters
 pyyaml
-lmstudio-client
-lmstudio 
+lmstudio
+google-genai

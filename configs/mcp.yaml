@@ -38,10 +38,14 @@ servers:
     transport: streamable_http
     url: "http://localhost:8080/mcp"
 
-  # ── Training examples (read-only data/train/) ────────────────────────────────
-  examples:
-    transport: streamable_http
-    url: "http://localhost:8081/mcp"
+  # ── Training examples (DISABLED — redundant: filesystem-8080 already exposes data/train) ──
+  # Was: a 2nd filesystem MCP on data/train only. MultiServerMCPClient flattens
+  # tools by name, so it shadowed filesystem-8080's write_file with a read-only
+  # one rooted at data/train, blocking writes to workspaces/. Re-enable only if
+  # we move to namespaced tools.
+  # examples:
+  #   transport: streamable_http
+  #   url: "http://localhost:8081/mcp"
 
   # ── Mapping / human-in-the-loop + Maven dependencies ────────────────────────
   mapping:

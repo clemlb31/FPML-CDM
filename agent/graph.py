@@ -212,7 +212,7 @@ async def plan_node(state: AgentState, tools_by_name: dict) -> AgentState:
         project_dir=state["project_dir"],
         label="plan/synth",
         prompt=[HumanMessage(content=spec_prompt)],
-        max_tokens=4000,
+        max_tokens=8000,
         strip_fences=True,
     )
     specs: list[MethodSpec] = _json_list_or_raise(raw, label="plan/synth")
@@ -232,28 +232,34 @@ async def skeleton_node(state: AgentState, tools_by_name: dict) -> AgentState:
     dep_tool = tools_by_name.get("get_maven_dependencies")
     if dep_tool:
         raw = await dep_tool.ainvoke({})
-        maven_xml, dep_blocks, raw_text = _maven_dependencies_from_raw(raw)
+        deps_xml, dep_blocks, props_xml, repos_xml, raw_text = _maven_dependencies_from_raw(raw)
     else:
         print("[skeleton] WARNING: get_maven_dependencies tool not available, using static pom.xml")
-        maven_xml, dep_blocks, raw_text = "", [], ""
-    
+        deps_xml, dep_blocks, props_xml, repos_xml, raw_text = "", [], "", "", ""
+
     print(f"[skeleton] Extracted {len(dep_blocks)} dependency blocks for pom.xml")
     if not dep_blocks:
         print(f"[skeleton] WARNING: No dependencies found! Raw response length: {len(raw_text)}")
         print(f"[skeleton] First 500 chars of raw: {raw_text[:500]}")
 
-    transformer_src, app_src = _build_skeleton(state["method_specs"])
-    pom_src = _build_pom(maven_xml)
+    transformer_src, app_src, semantic_diff_src = _build_skeleton(state["method_specs"])
+    pom_src = _build_pom(deps_xml, properties_xml=props_xml, repositories_xml=repos_xml)
 
     pkg_path = _PACKAGE.replace(".", "/")
     write = tools_by_name["write_file"]
+
+    # MCP create_directory does not auto-create parents; just mkdir on host.
+    # write_file (MCP) only requires the parent dir to exist beforehand.
+    project_dir = Path(state["project_dir"])
+    (project_dir / "src" / "main" / "java" / pkg_path).mkdir(parents=True, exist_ok=True)
 
     for rel_path, content in [
         ("pom.xml",                                                    pom_src),
         (f"src/main/java/{pkg_path}/{_TRANSFORMER_CLASS}.java",        transformer_src),
         (f"src/main/java/{pkg_path}/FpmlToCdmApp.java",                app_src),
+        (f"src/main/java/{pkg_path}/SemanticDiff.java",                semantic_diff_src),
     ]:
-        full_path = str(Path(state["project_dir"]) / rel_path)
+        full_path = str(project_dir / rel_path)
         await write.ainvoke({"path": full_path, "content": content})
         print(f"[skeleton] wrote {rel_path}")
 
@@ -886,7 +892,8 @@ async def main():
         return
 
     graph = build_graph(tools_by_name, checkpointer=checkpointer)
-    await graph.ainvoke(state)
+    thread_id = f"{Path(args.fpml).stem}-{state['mode']}"
+    await graph.ainvoke(state, config={"configurable": {"thread_id": thread_id}})
 
 
 if __name__ == "__main__":
