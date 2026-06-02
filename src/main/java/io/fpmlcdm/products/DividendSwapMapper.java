@@ -32,6 +32,42 @@ import java.util.Map;
  */
 public class DividendSwapMapper implements ProductMapper {
 
+    /** Public result for use by DividendSwapOptionMapper. */
+    public static final class ProductResult {
+        public final NonTransferableProduct product;
+        public final List<PriceQuantity> priceQuantities;
+        public ProductResult(NonTransferableProduct product, List<PriceQuantity> pqs) {
+            this.product = product;
+            this.priceQuantities = pqs;
+        }
+    }
+
+    /** Build the dividend-swap NonTransferableProduct + TradeLot price quantities
+     *  using the given context (party ordering is left as-is). */
+    public ProductResult buildProduct(Element trade, MappingContext ctx) {
+        Element product = XmlUtils.child(trade, "dividendSwapTransactionSupplement");
+        if (product == null) {
+            Element divOpt = XmlUtils.child(trade, "dividendSwapOptionTransactionSupplement");
+            if (divOpt != null) product = XmlUtils.child(divOpt, "dividendSwapTransactionSupplement");
+        }
+        if (product == null) return null;
+
+        Element dividendLeg = XmlUtils.child(product, "dividendLeg");
+        Element fixedLeg = XmlUtils.child(product, "fixedLeg");
+
+        EconomicTerms.EconomicTermsBuilder econ = EconomicTerms.builder();
+        econ.addPayout(buildPerformancePayout(dividendLeg, ctx));
+        if (fixedLeg != null) {
+            econ.addPayout(buildFixedPricePayout(fixedLeg, ctx));
+        }
+        NonTransferableProduct.NonTransferableProductBuilder ntp = NonTransferableProduct.builder()
+                .setEconomicTerms(econ.build());
+        buildTaxonomy(dividendLeg).forEach(ntp::addTaxonomy);
+
+        List<PriceQuantity> priceQuantities = buildTradeLotPriceQuantities(dividendLeg, fixedLeg);
+        return new ProductResult(ntp.build(), priceQuantities);
+    }
+
     @Override
     public TradeState map(Document doc, Element trade) {
         MappingContext ctx = new MappingContext();
@@ -41,6 +77,14 @@ public class DividendSwapMapper implements ProductMapper {
         parties = SwapMapper.applyPartyTradeInformation(parties, tradeHeader);
 
         Element product = XmlUtils.child(trade, "dividendSwapTransactionSupplement");
+        if (product == null) {
+            // Inside a dividendSwapOptionTransactionSupplement wrapper
+            Element divOpt = XmlUtils.child(trade, "dividendSwapOptionTransactionSupplement");
+            if (divOpt != null) {
+                product = XmlUtils.child(divOpt, "dividendSwapTransactionSupplement");
+            }
+        }
+        if (product == null) return null;
 
         Element dividendLeg = XmlUtils.child(product, "dividendLeg");
         Element fixedLeg = XmlUtils.child(product, "fixedLeg");
@@ -121,7 +165,8 @@ public class DividendSwapMapper implements ProductMapper {
         // Settlement terms
         String settlementType = XmlUtils.childText(dividendLeg, "settlementType");
         String settlementCurrency = XmlUtils.childText(dividendLeg, "settlementCurrency");
-        if (settlementType != null || settlementCurrency != null) {
+        Element settlementDate = XmlUtils.child(dividendLeg, "settlementDate");
+        if (settlementType != null || settlementCurrency != null || settlementDate != null) {
             SettlementTerms.SettlementTermsBuilder stb = SettlementTerms.builder();
             if (settlementType != null) {
                 if ("Cash".equals(settlementType)) stb.setSettlementType(SettlementTypeEnum.CASH);
@@ -129,6 +174,13 @@ public class DividendSwapMapper implements ProductMapper {
             }
             if (settlementCurrency != null) {
                 stb.setSettlementCurrency(FieldWithMetaString.builder().setValue(settlementCurrency).build());
+            }
+            if (settlementDate != null) {
+                AdjustableOrAdjustedOrRelativeDate aaord = buildSettlementDate(settlementDate);
+                if (aaord != null) {
+                    stb.setSettlementDate(SettlementDate.builder()
+                            .setAdjustableOrRelativeDate(aaord).build());
+                }
             }
             ppb.setSettlementTerms(stb.build());
         }
@@ -398,6 +450,32 @@ public class DividendSwapMapper implements ProductMapper {
                 .build());
 
         return out;
+    }
+
+    private AdjustableOrAdjustedOrRelativeDate buildSettlementDate(Element settlementDate) {
+        if (settlementDate == null) return null;
+        Element relDate = XmlUtils.child(settlementDate, "relativeDate");
+        if (relDate != null) {
+            AdjustedRelativeDateOffset.AdjustedRelativeDateOffsetBuilder rdb =
+                    AdjustedRelativeDateOffset.builder();
+            String pm = XmlUtils.childText(relDate, "periodMultiplier");
+            if (pm != null) rdb.setPeriodMultiplier(Integer.parseInt(pm));
+            String period = XmlUtils.childText(relDate, "period");
+            if (period != null) rdb.setPeriod(EnumMappers.period(period));
+            String dayType = XmlUtils.childText(relDate, "dayType");
+            if (dayType != null) rdb.setDayType(EquityOptionMapper.mapDayType(dayType));
+            String bdc = XmlUtils.childText(relDate, "businessDayConvention");
+            if (bdc != null) rdb.setBusinessDayConvention(EnumMappers.bdc(bdc));
+            Element drt = XmlUtils.child(relDate, "dateRelativeTo");
+            if (drt != null) {
+                rdb.setDateRelativeTo(com.rosetta.model.metafields.ReferenceWithMetaDate.builder()
+                        .setExternalReference(drt.getAttribute("href")).build());
+            }
+            Element bcs = XmlUtils.child(relDate, "businessCenters");
+            if (bcs != null) rdb.setBusinessCenters(DateMapper.buildBusinessCenters(bcs));
+            return AdjustableOrAdjustedOrRelativeDate.builder().setRelativeDate(rdb.build()).build();
+        }
+        return null;
     }
 
     private PayerReceiver buildPayerReceiver(Element payerRef, Element receiverRef, MappingContext ctx) {

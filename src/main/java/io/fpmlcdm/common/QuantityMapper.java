@@ -204,12 +204,31 @@ public final class QuantityMapper {
         Element frs = XmlUtils.child(calc, "fixedRateSchedule");
         BigDecimal rate = decimalText(frs, "initialValue");
 
-        // Currency from notional (same currency for unit and perUnitOf)
-        Element notional = XmlUtils.path(stream, "calculationPeriodAmount", "calculation",
-                "notionalSchedule", "notionalStepSchedule");
-        Element ccyEl = XmlUtils.child(notional, "currency");
-        UnitType unit = currencyUnit(ccyEl);
-        UnitType perUnit = currencyUnit(ccyEl);
+        // Currency + notional amount: fxLinkedNotionalSchedule wins over normal notionalSchedule.
+        // This handles CLP inflation swaps where the fixed leg notional is denominated in CLF.
+        Element fxLinked = XmlUtils.child(calc, "fxLinkedNotionalSchedule");
+        UnitType unit;
+        UnitType perUnit;
+        BigDecimal amount;
+        Element notional;
+        if (fxLinked != null) {
+            String varCcy = XmlUtils.childText(fxLinked, "varyingNotionalCurrency");
+            unit = UnitType.builder()
+                    .setCurrency(FieldWithMetaString.builder().setValue(varCcy).build())
+                    .build();
+            perUnit = UnitType.builder()
+                    .setCurrency(FieldWithMetaString.builder().setValue(varCcy).build())
+                    .build();
+            amount = decimalText(fxLinked, "initialValue");
+            notional = fxLinked;
+        } else {
+            notional = XmlUtils.path(stream, "calculationPeriodAmount", "calculation",
+                    "notionalSchedule", "notionalStepSchedule");
+            Element ccyEl = XmlUtils.child(notional, "currency");
+            unit = currencyUnit(ccyEl);
+            perUnit = currencyUnit(ccyEl);
+            amount = decimalText(notional, "initialValue");
+        }
 
         PriceSchedule.PriceScheduleBuilder psb = PriceSchedule.builder()
                 .setValue(rate)
@@ -224,9 +243,8 @@ public final class QuantityMapper {
         b.addPrice(price);
 
         // Quantity
-        BigDecimal amount = decimalText(notional, "initialValue");
         NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qsb = NonNegativeQuantitySchedule.builder()
-                .setValue(amount).setUnit(currencyUnit(ccyEl));
+                .setValue(amount).setUnit(unit);
         addDatedValues(qsb, notional);
         FieldWithMetaNonNegativeQuantitySchedule qty = FieldWithMetaNonNegativeQuantitySchedule.builder()
                 .setValue(qsb.build())

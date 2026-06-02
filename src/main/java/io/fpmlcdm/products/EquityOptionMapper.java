@@ -561,11 +561,15 @@ public class EquityOptionMapper implements ProductMapper {
             Element eq = XmlUtils.child(bcEl, "equity");
             Element ix = XmlUtils.child(bcEl, "index");
             Element bd = XmlUtils.child(bcEl, "bond");
+            Element cm = XmlUtils.child(bcEl, "commodity");
             if (eq != null) {
                 Observable inner = buildStockObservable(eq);
                 if (inner != null && inner.getAsset() != null) cb.setAsset(inner.getAsset());
             } else if (bd != null) {
                 Observable inner = buildBondObservable(bd);
+                if (inner != null && inner.getAsset() != null) cb.setAsset(inner.getAsset());
+            } else if (cm != null) {
+                Observable inner = CommodityOptionMapper.buildCommodityObservable(cm);
                 if (inner != null && inner.getAsset() != null) cb.setAsset(inner.getAsset());
             } else if (ix != null) {
                 Observable inner = buildIndexObservable(ix);

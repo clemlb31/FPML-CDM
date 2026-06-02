@@ -72,10 +72,39 @@ public final class PartyMapper {
             b.addPerson(buildPerson(personEl));
         }
 
+        // contactInfo → contactInformation
+        Element contactInfo = XmlUtils.child(p, "contactInfo");
+        if (contactInfo != null) {
+            cdm.base.staticdata.party.ContactInformation ci = buildContactInformation(contactInfo);
+            if (ci != null) b.setContactInformation(ci);
+        }
+
         if (externalKey != null && !externalKey.isEmpty()) {
             b.setMeta(MetaFields.builder().setExternalKey(externalKey).build());
         }
         return b.build();
+    }
+
+    private static cdm.base.staticdata.party.ContactInformation buildContactInformation(Element contactInfo) {
+        cdm.base.staticdata.party.ContactInformation.ContactInformationBuilder b =
+                cdm.base.staticdata.party.ContactInformation.builder();
+        boolean any = false;
+        for (Element addr : XmlUtils.children(contactInfo, "address")) {
+            cdm.base.staticdata.party.Address.AddressBuilder ab = cdm.base.staticdata.party.Address.builder();
+            String country = XmlUtils.childText(addr, "country");
+            if (country != null) {
+                ab.setCountry(FieldWithMetaString.builder().setValue(country).build());
+                any = true;
+            }
+            String city = XmlUtils.childText(addr, "city");
+            if (city != null) { ab.setCity(city); any = true; }
+            for (Element street : XmlUtils.children(addr, "street")) {
+                String s = street.getTextContent().trim();
+                if (!s.isEmpty()) { ab.addStreet(s); any = true; }
+            }
+            b.addAddress(ab.build());
+        }
+        return any ? b.build() : null;
     }
 
     private static NaturalPerson buildPerson(Element personEl) {
@@ -84,6 +113,24 @@ public final class PartyMapper {
         if (firstName != null) pb.setFirstName(firstName);
         String surname = XmlUtils.childText(personEl, "surname");
         if (surname != null) pb.setSurname(surname);
+
+        // personId children → personId[]
+        for (Element pidEl : XmlUtils.children(personEl, "personId")) {
+            String value = pidEl.getTextContent().trim();
+            String scheme = pidEl.getAttribute("personIdScheme");
+            com.rosetta.model.metafields.FieldWithMetaString.FieldWithMetaStringBuilder fms =
+                    com.rosetta.model.metafields.FieldWithMetaString.builder().setValue(value);
+            if (scheme != null && !scheme.isEmpty()) {
+                fms.setMeta(MetaFields.builder().setScheme(scheme).build());
+            }
+            cdm.base.staticdata.party.PersonIdentifier piEl = cdm.base.staticdata.party.PersonIdentifier.builder()
+                    .setIdentifier(fms.build())
+                    .build();
+            pb.addPersonId(cdm.base.staticdata.party.metafields.FieldWithMetaPersonIdentifier.builder()
+                    .setValue(piEl)
+                    .build());
+        }
+
         String pid = personEl.getAttribute("id");
         if (pid != null && !pid.isEmpty()) {
             pb.setMeta(MetaFields.builder().setExternalKey(pid).build());

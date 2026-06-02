@@ -31,13 +31,33 @@ import java.util.List;
 import java.util.Map;
 
 public class CommoditySwapMapper implements ProductMapper {
+
     @Override
     public TradeState map(Document doc, Element trade) {
-        MappingContext ctx = new MappingContext();
-        List<Party> parties = PartyMapper.map(doc, ctx);
+        return map(doc, trade, null);
+    }
+
+    /** Like {@link #map(Document, Element)} but reuses a caller-supplied context.
+     *  When ctx is non-null and {@code ctx.partyOrderLocked} is true, the inner party
+     *  ordering is preserved exactly (used by CommoditySwaptionMapper for inner products). */
+    public TradeState map(Document doc, Element trade, MappingContext externalCtx) {
+        MappingContext ctx = externalCtx != null ? externalCtx : new MappingContext();
+        List<Party> parties;
+        if (externalCtx == null) {
+            parties = PartyMapper.map(doc, ctx);
+        } else {
+            // ctx already has parties — rebuild Party list from ctx
+            parties = new ArrayList<>(ctx.parties.values());
+        }
         Element tradeHeader = XmlUtils.child(trade, "tradeHeader");
         parties = SwapMapper.applyPartyTradeInformation(parties, tradeHeader);
         Element comSwap = XmlUtils.child(trade, "commoditySwap");
+        if (comSwap == null) {
+            // Inside a commoditySwaption wrapper
+            Element swaption = XmlUtils.child(trade, "commoditySwaption");
+            if (swaption != null) comSwap = XmlUtils.child(swaption, "commoditySwap");
+        }
+        if (comSwap == null) return null;
         List<Element> fixedLegs = XmlUtils.children(comSwap, "fixedLeg");
         List<Element> allFloatLike = new ArrayList<>(XmlUtils.children(comSwap, "floatingLeg"));
         allFloatLike.addAll(XmlUtils.children(comSwap, "coalPhysicalLeg"));
@@ -45,27 +65,49 @@ public class CommoditySwapMapper implements ProductMapper {
         allFloatLike.addAll(XmlUtils.children(comSwap, "oilPhysicalLeg"));
         allFloatLike.addAll(XmlUtils.children(comSwap, "electricityPhysicalLeg"));
         Element firstLeg = !allFloatLike.isEmpty() ? allFloatLike.get(0) : (!fixedLegs.isEmpty() ? fixedLegs.get(0) : null);
-        if (firstLeg != null) assignCounterpartyRoles(firstLeg, ctx);
+        if (firstLeg != null && !ctx.partyOrderLocked) assignCounterpartyRoles(firstLeg, ctx);
         String settlementCurrency = XmlUtils.childText(comSwap, "settlementCurrency");
         // Label layout (1-fixed-1-float case observed in commodity-5-10 references):
         //   payout[0] CommodityPayout       -> quantity-1 (float total), observable-1
-        //   payout[1] FixedPricePayout      -> quantity-2 (fixed total), price-1
-        //   priceQuantity[0] (Fixed PQ)     -> price-1 + quantity-3 (per-day) + quantity-2 (total)
-        //   priceQuantity[1] (Float PQ)     -> price-2 (Asset/empty) + quantity-4 (per-day) + quantity-1 (total) + observable-1
+        //   payout[1] FixedPricePayout      -> quantity-2 (fixed total), price-N (fixed-price label)
+        //   priceQuantity[0] (Fixed PQ)     -> price-N + quantity-3 (per-day) + quantity-2 (total)
+        //   priceQuantity[1] (Float PQ)     -> price-K (Asset/empty) + quantity-4 (per-day) + quantity-1 (total) + observable-1
         // For N float legs and M fixed legs we generalise: float-i total = quantity-i, fixed-j total = quantity-(N+j);
-        // per-day labels are appended after totals. Prices: fixed-j -> price-j, float-i -> price-(M+i).
+        // per-day labels are appended after totals.
+        // Price labels are assigned in this order: first the float legs that carry a spread
+        // (price-1..price-S), then the fixed legs (price-(S+1)..price-(S+M)).
         List<Payout> payouts = new ArrayList<>();
         List<PriceQuantity> priceQuantities = new ArrayList<>();
         int nFloat = allFloatLike.size();
         int nFixed = fixedLegs.size();
         int floatPerDayBase = nFloat + nFixed; // first per-day quantity index for float legs starts at nFloat+nFixed+1
+
+        // Pre-count which floats carry a spread.
+        // Convention observed in references: when ANY float carries a spread, all floats
+        // get a leading price slot (price-1..price-nFloat), and fixed legs follow
+        // (price-(nFloat+1)..). When NO float carries a spread, fixed legs come first
+        // (price-1..price-nFixed) followed by float slots (price-(nFixed+1)..).
+        boolean anyFloatSpread = false;
+        for (int i = 0; i < nFloat; i++) {
+            Element fleg = allFloatLike.get(i);
+            Element calcEl = XmlUtils.child(fleg, "calculation");
+            if (calcEl != null && XmlUtils.child(calcEl, "spread") != null) {
+                anyFloatSpread = true;
+                break;
+            }
+        }
+        // floatPriceOffset is added to (i+1) to get the float's price label.
+        // fixedPriceOffset is added to (j+1) to get the fixed's price label.
+        final int floatPriceOffset = anyFloatSpread ? 0 : nFixed;
+        final int fixedPriceOffset = anyFloatSpread ? nFloat : 0;
+
         // Build CommodityPayouts first (these are the float legs)
         for (int i = 0; i < nFloat; i++) {
             Element fleg = allFloatLike.get(i);
             String floatTotalLabel = "quantity-" + (i + 1); // float total -> quantity-(i+1)
             String floatPerDayLabel = "quantity-" + (floatPerDayBase + nFixed + i + 1); // float per-day comes after fixed per-days
             String obsLabel = "observable-" + (i + 1);
-            String floatPriceLabel = "price-" + (nFixed + i + 1);
+            String floatPriceLabel = "price-" + (floatPriceOffset + i + 1);
             CommodityPayout.CommodityPayoutBuilder cpb = CommodityPayout.builder();
             cpb.setPayerReceiver(buildPayerReceiver(fleg, ctx));
             cpb.setPriceQuantity(ResolvablePriceQuantity.builder().setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder().setReference(Reference.builder().setScope("DOCUMENT").setReference(floatTotalLabel).build()).build()).build());
@@ -114,7 +156,7 @@ public class CommoditySwapMapper implements ProductMapper {
             Element fxleg = fixedLegs.get(j);
             String fixedTotalLabel = "quantity-" + (nFloat + j + 1); // fixed total -> quantity-(nFloat+j+1)
             String fixedPerDayLabel = "quantity-" + (floatPerDayBase + j + 1); // fixed per-day
-            String fixedPriceLabel = "price-" + (j + 1);
+            String fixedPriceLabel = "price-" + (fixedPriceOffset + j + 1);
             FixedPricePayout.FixedPricePayoutBuilder fpb = FixedPricePayout.builder();
             fpb.setPayerReceiver(buildPayerReceiver(fxleg, ctx));
             fpb.setPriceQuantity(ResolvablePriceQuantity.builder().setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder().setReference(Reference.builder().setScope("DOCUMENT").setReference(fixedTotalLabel).build()).build()).build());
@@ -133,7 +175,7 @@ public class CommoditySwapMapper implements ProductMapper {
             String floatTotalLabel = "quantity-" + (i + 1);
             String floatPerDayLabel = "quantity-" + (floatPerDayBase + nFixed + i + 1);
             String obsLabel = "observable-" + (i + 1);
-            String floatPriceLabel = "price-" + (nFixed + i + 1);
+            String floatPriceLabel = "price-" + (floatPriceOffset + i + 1);
             PriceQuantity.PriceQuantityBuilder pqb = PriceQuantity.builder();
             addFloatingPQ(pqb, fleg, floatTotalLabel, floatPerDayLabel, obsLabel, floatPriceLabel);
             priceQuantities.add(pqb.build());

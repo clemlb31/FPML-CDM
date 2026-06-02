@@ -18,19 +18,23 @@ public class ProductDetector {
         if (XmlUtils.child(trade, "equityOptionTransactionSupplement") != null) return new EquityOptionMapper();
         if (XmlUtils.child(trade, "returnSwap") != null) return new ReturnSwapMapper();
         if (XmlUtils.child(trade, "equitySwapTransactionSupplement") != null) return new ReturnSwapMapper();
+        if (XmlUtils.child(trade, "dividendSwapOptionTransactionSupplement") != null) return new DividendSwapOptionMapper();
         if (XmlUtils.child(trade, "dividendSwapTransactionSupplement") != null) return new DividendSwapMapper();
         if (XmlUtils.child(trade, "commoditySwap") != null) return new CommoditySwapMapper();
         if (XmlUtils.child(trade, "commodityOption") != null) return new CommodityOptionMapper();
-        if (XmlUtils.child(trade, "commoditySwaption") != null) return new CommodityOptionMapper();
+        if (XmlUtils.child(trade, "commoditySwaption") != null) return new CommoditySwaptionMapper();
+        if (XmlUtils.child(trade, "commodityBasketOption") != null) return new CommodityBasketOptionMapper();
         if (XmlUtils.child(trade, "varianceSwap") != null) return new VarianceSwapMapper();
         if (XmlUtils.child(trade, "varianceSwapTransactionSupplement") != null) return new VarianceSwapMapper();
-        if (XmlUtils.child(trade, "varianceOptionTransactionSupplement") != null) return new VarianceSwapMapper();
+        if (XmlUtils.child(trade, "varianceOptionTransactionSupplement") != null) return new VarianceOptionMapper();
         if (XmlUtils.child(trade, "correlationSwap") != null) return new VarianceSwapMapper();
         if (XmlUtils.child(trade, "volatilitySwap") != null) return new VarianceSwapMapper();
         if (XmlUtils.child(trade, "volatilitySwapTransactionSupplement") != null) return new VarianceSwapMapper();
         if (XmlUtils.child(trade, "securityLending") != null) return new SecurityLendingMapper();
         if (XmlUtils.child(trade, "bulletPayment") != null) return new BulletPaymentMapper();
         if (XmlUtils.child(trade, "bondOption") != null) return new BondOptionMapper();
+        if (XmlUtils.child(trade, "genericProduct") != null) return new GenericProductMapper();
+        if (XmlUtils.child(trade, "fxVolatilitySwap") != null) return new FxVolatilitySwapMapper();
         return null;
     }
 }

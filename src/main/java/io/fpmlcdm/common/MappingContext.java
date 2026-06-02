@@ -20,4 +20,10 @@ public class MappingContext {
      * The dataset confirms parties' insertion order is the CounterpartyRoleEnum mapping.
      */
     public final Map<String, Integer> partyOrder = new LinkedHashMap<>();
+
+    /**
+     * When set, mappers MUST NOT re-assign PARTY_1 via their normal heuristics — the caller has
+     * already chosen the ordering (e.g. outer trade is a swaption, so PARTY_1 = buyer).
+     */
+    public boolean partyOrderLocked = false;
 }

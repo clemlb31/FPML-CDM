@@ -112,12 +112,14 @@ public final class TransferMapper {
 
         Element payDate = XmlUtils.child(fpml, "paymentDate");
         Element relDateForSettlement = null;
+        boolean fromAdditionalPaymentDate = false;
         if (payDate == null) {
             // returnSwap additionalPayment uses <additionalPaymentDate>/<adjustableDate or relativeDate>
             Element addDate = XmlUtils.child(fpml, "additionalPaymentDate");
             if (addDate != null) {
                 payDate = XmlUtils.child(addDate, "adjustableDate");
                 if (payDate == null) relDateForSettlement = XmlUtils.child(addDate, "relativeDate");
+                else fromAdditionalPaymentDate = true;
             }
         }
         if (relDateForSettlement != null) {
@@ -131,8 +133,10 @@ public final class TransferMapper {
                     AdjustableOrAdjustedOrRelativeDate.builder();
             // FpML <paymentDate> may have child <unadjustedDate>+<dateAdjustments>, OR child
             // <adjustedDate>, OR be a leaf element holding the adjusted date as text.
+            // For <additionalPaymentDate>/<adjustableDate> the reference CDM JSON omits
+            // unadjustedDate (only keeps dateAdjustments). Mirror that here.
             String unadj = XmlUtils.childText(payDate, "unadjustedDate");
-            if (unadj != null) sdb.setUnadjustedDate(DateMapper.parse(unadj));
+            if (unadj != null && !fromAdditionalPaymentDate) sdb.setUnadjustedDate(DateMapper.parse(unadj));
             String adj = XmlUtils.childText(payDate, "adjustedDate");
             if (adj != null) {
                 sdb.setAdjustedDate(com.rosetta.model.metafields.FieldWithMetaDate.builder()

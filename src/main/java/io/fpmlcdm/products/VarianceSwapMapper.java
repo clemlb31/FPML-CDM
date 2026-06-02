@@ -343,6 +343,30 @@ public class VarianceSwapMapper implements ProductMapper {
         String expN = XmlUtils.childText(variance, "expectedN");
         if (expN != null) vrtb.setExpectedN(Integer.parseInt(expN));
 
+        // varianceCap → varianceCapFloor.varianceCap (boolean)
+        String varCap = XmlUtils.childText(variance, "varianceCap");
+        if (varCap != null) {
+            vrtb.setVarianceCapFloor(cdm.product.asset.VarianceCapFloor.builder()
+                    .setVarianceCap(Boolean.parseBoolean(varCap))
+                    .build());
+        }
+
+        // vegaNotionalAmount → vegaNotionalAmount.value + unit.currency (from amount->varianceAmount->currency)
+        String vegaStr = XmlUtils.childText(variance, "vegaNotionalAmount");
+        if (vegaStr != null) {
+            String vegaCcy = null;
+            Element varAmt = XmlUtils.child(variance, "varianceAmount");
+            if (varAmt != null) vegaCcy = XmlUtils.childText(varAmt, "currency");
+            NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder vegaSchedule =
+                    NonNegativeQuantitySchedule.builder().setValue(new BigDecimal(vegaStr));
+            if (vegaCcy != null) {
+                vegaSchedule.setUnit(UnitType.builder()
+                        .setCurrency(FieldWithMetaString.builder().setValue(vegaCcy).build())
+                        .build());
+            }
+            vrtb.setVegaNotionalAmount(vegaSchedule.build());
+        }
+
         return vrtb.build();
     }
 

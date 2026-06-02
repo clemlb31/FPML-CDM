@@ -27,9 +27,15 @@ public final class ProductIdentifierMapper {
             if (scheme != null && !scheme.isEmpty()) {
                 fwms.setMeta(MetaFields.builder().setScheme(scheme).build());
             }
+            ProductIdTypeEnum source = ProductIdTypeEnum.OTHER;
+            if (scheme != null) {
+                String s = scheme.toLowerCase();
+                if (s.contains("isin")) source = ProductIdTypeEnum.ISIN;
+                else if (s.contains("cusip")) source = ProductIdTypeEnum.CUSIP;
+            }
             ProductIdentifier.ProductIdentifierBuilder b = ProductIdentifier.builder()
                     .setIdentifier(fwms.build())
-                    .setSource(ProductIdTypeEnum.OTHER);
+                    .setSource(source);
             out.add(b.build());
         }
         return out;

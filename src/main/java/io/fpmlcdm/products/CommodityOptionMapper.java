@@ -621,11 +621,12 @@ public class CommodityOptionMapper implements ProductMapper {
         return pqb.build();
     }
 
-    private Observable buildCommodityObservable(Element commodity) {
+    static Observable buildCommodityObservable(Element commodity) {
         if (commodity == null) return null;
         Commodity.CommodityBuilder cb = Commodity.builder();
 
-        // instrumentId -> AssetIdentifier with ISDACRP
+        // instrumentId -> AssetIdentifier. ISDACRP when the scheme is the ISDA commodity-
+        // reference-price scheme; otherwise OTHER.
         for (Element instId : XmlUtils.children(commodity, "instrumentId")) {
             String value = instId.getTextContent().trim();
             String scheme = instId.getAttribute("instrumentIdScheme");
@@ -633,9 +634,13 @@ public class CommodityOptionMapper implements ProductMapper {
             if (scheme != null && !scheme.isEmpty()) {
                 fms.setMeta(MetaFields.builder().setScheme(scheme).build());
             }
+            AssetIdTypeEnum idType = AssetIdTypeEnum.OTHER;
+            if (scheme != null && scheme.toLowerCase().contains("commodity-reference-price")) {
+                idType = AssetIdTypeEnum.ISDACRP;
+            }
             cb.addIdentifier(AssetIdentifier.builder()
                     .setIdentifier(fms.build())
-                    .setIdentifierType(AssetIdTypeEnum.ISDACRP)
+                    .setIdentifierType(idType)
                     .build());
         }
 
@@ -671,7 +676,7 @@ public class CommodityOptionMapper implements ProductMapper {
      * Maps FpML &lt;specifiedPrice&gt; text to CDM QuotationSideEnum.
      * Note: "Midpoint" -> MID; "Settlement" -> SETTLEMENT, etc.
      */
-    private QuotationSideEnum mapSpecifiedPrice(String text) {
+    static QuotationSideEnum mapSpecifiedPrice(String text) {
         if (text == null) return null;
         return switch (text) {
             case "Midpoint", "Mid" -> QuotationSideEnum.MID;
