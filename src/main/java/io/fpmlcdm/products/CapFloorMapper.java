@@ -3,9 +3,7 @@ package io.fpmlcdm.products;
 import cdm.base.staticdata.asset.common.ProductTaxonomy;
 import cdm.base.staticdata.asset.common.TaxonomySourceEnum;
 import cdm.base.staticdata.party.Counterparty;
-import cdm.base.staticdata.party.CounterpartyRoleEnum;
 import cdm.base.staticdata.party.Party;
-import cdm.base.staticdata.party.metafields.ReferenceWithMetaParty;
 import cdm.event.common.ContractDetails;
 import cdm.event.common.Trade;
 import cdm.event.common.TradeIdentifier;
@@ -77,7 +75,7 @@ public class CapFloorMapper implements ProductMapper {
         List<PriceQuantity> priceQuantities = QuantityMapper.map(streams, labels);
         TradeLot tradeLot = TradeLot.builder().setPriceQuantity(priceQuantities).build();
 
-        List<Counterparty> counterparties = buildCounterparties(ctx);
+        List<Counterparty> counterparties = SwapMapper.buildCounterparties(ctx);
 
         List<TradeIdentifier> identifiers = new ArrayList<>();
         Element header = XmlUtils.child(trade, "tradeHeader");
@@ -136,18 +134,4 @@ public class CapFloorMapper implements ProductMapper {
         ctx.partyOrder.putAll(newOrder);
     }
 
-    private static List<Counterparty> buildCounterparties(MappingContext ctx) {
-        List<Counterparty> out = new ArrayList<>();
-        for (var entry : ctx.partyOrder.entrySet()) {
-            int order = entry.getValue();
-            if (order > 1) continue;
-            CounterpartyRoleEnum role = order == 0 ? CounterpartyRoleEnum.PARTY_1 : CounterpartyRoleEnum.PARTY_2;
-            out.add(Counterparty.builder()
-                    .setRole(role)
-                    .setPartyReference(ReferenceWithMetaParty.builder()
-                            .setExternalReference(entry.getKey()).build())
-                    .build());
-        }
-        return out;
-    }
 }

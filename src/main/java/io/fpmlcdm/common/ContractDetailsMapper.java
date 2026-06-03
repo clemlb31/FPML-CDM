@@ -70,20 +70,17 @@ public final class ContractDetailsMapper {
         if (documentation == null && trade == null) return null;
 
         List<LegalAgreement> entries = new ArrayList<>();
-        boolean prev = SUPPRESS_PARTIES.get();
-        SUPPRESS_PARTIES.set(suppressContractualParty);
-        try {
 
         if (documentation != null) {
             // Master agreements
             for (Element ma : XmlUtils.children(documentation, "masterAgreement")) {
-                LegalAgreement la = buildMasterAgreement(ma, ctx);
+                LegalAgreement la = buildMasterAgreement(ma, ctx, suppressContractualParty);
                 if (la != null) entries.add(la);
             }
 
             // Master confirmations (CDS)
             for (Element mc : XmlUtils.children(documentation, "masterConfirmation")) {
-                LegalAgreement la = buildMasterConfirmation(mc, ctx);
+                LegalAgreement la = buildMasterConfirmation(mc, ctx, suppressContractualParty);
                 if (la != null) entries.add(la);
             }
 
@@ -93,12 +90,9 @@ public final class ContractDetailsMapper {
             List<Element> cms = XmlUtils.children(documentation, "contractualMatrix");
             List<Element> cts = XmlUtils.children(documentation, "contractualTermsSupplement");
             if (!cds.isEmpty() || !cms.isEmpty() || !cts.isEmpty()) {
-                LegalAgreement la = buildConfirmation(cds, cms, cts, ctx);
+                LegalAgreement la = buildConfirmation(cds, cms, cts, ctx, suppressContractualParty);
                 if (la != null) entries.add(la);
             }
-        }
-        } finally {
-            SUPPRESS_PARTIES.set(prev);
         }
 
         // Check for governingLaw
@@ -129,7 +123,7 @@ public final class ContractDetailsMapper {
         return b.build();
     }
 
-    private static LegalAgreement buildMasterConfirmation(Element mc, MappingContext ctx) {
+    private static LegalAgreement buildMasterConfirmation(Element mc, MappingContext ctx, boolean suppressContractualParty) {
         Element typeEl = XmlUtils.child(mc, "masterConfirmationType");
         String typeText = typeEl != null ? typeEl.getTextContent().trim() : null;
         String typeScheme = typeEl != null ? typeEl.getAttribute("masterConfirmationTypeScheme") : null;
@@ -163,7 +157,7 @@ public final class ContractDetailsMapper {
                 .setLegalAgreementIdentification(LegalAgreementIdentification.builder()
                         .setAgreementName(name.build()).build());
         if (dateText != null) la.setAgreementDate(DateMapper.parse(dateText));
-        for (ReferenceWithMetaParty p : partyRefs(ctx)) la.addContractualParty(p);
+        for (ReferenceWithMetaParty p : partyRefs(ctx, suppressContractualParty)) la.addContractualParty(p);
         return la.build();
     }
 
@@ -191,7 +185,7 @@ public final class ContractDetailsMapper {
         return null;
     }
 
-    private static LegalAgreement buildMasterAgreement(Element ma, MappingContext ctx) {
+    private static LegalAgreement buildMasterAgreement(Element ma, MappingContext ctx, boolean suppressContractualParty) {
         Element typeEl = XmlUtils.child(ma, "masterAgreementType");
         if (typeEl == null) return null;
         String value = typeEl.getTextContent().trim();
@@ -227,14 +221,15 @@ public final class ContractDetailsMapper {
         // masterAgreementDate → agreementDate
         String mad = XmlUtils.childText(ma, "masterAgreementDate");
         if (mad != null) b.setAgreementDate(DateMapper.parse(mad));
-        for (ReferenceWithMetaParty p : partyRefs(ctx)) {
+        for (ReferenceWithMetaParty p : partyRefs(ctx, suppressContractualParty)) {
             b.addContractualParty(p);
         }
         return b.build();
     }
 
     private static LegalAgreement buildConfirmation(List<Element> cds, List<Element> cms,
-                                                    List<Element> cts, MappingContext ctx) {
+                                                    List<Element> cts, MappingContext ctx,
+                                                    boolean suppressContractualParty) {
         AgreementName.AgreementNameBuilder nameB = AgreementName.builder()
                 .setAgreementType(LegalAgreementTypeEnum.CONFIRMATION);
         boolean any = false;
@@ -282,7 +277,7 @@ public final class ContractDetailsMapper {
                 .build();
         LegalAgreement.LegalAgreementBuilder b = LegalAgreement.builder()
                 .setLegalAgreementIdentification(id);
-        for (ReferenceWithMetaParty p : partyRefs(ctx)) {
+        for (ReferenceWithMetaParty p : partyRefs(ctx, suppressContractualParty)) {
             b.addContractualParty(p);
         }
         return b.build();
@@ -363,12 +358,9 @@ public final class ContractDetailsMapper {
         return any ? b.build() : null;
     }
 
-    /** Thread-local toggle to omit {@code contractualParty} from emitted {@code LegalAgreement}s. */
-    private static final ThreadLocal<Boolean> SUPPRESS_PARTIES = ThreadLocal.withInitial(() -> false);
-
     /** PARTY_1 and PARTY_2 (in role order) — additional parties are excluded. */
-    private static List<ReferenceWithMetaParty> partyRefs(MappingContext ctx) {
-        if (SUPPRESS_PARTIES.get()) return java.util.Collections.emptyList();
+    private static List<ReferenceWithMetaParty> partyRefs(MappingContext ctx, boolean suppressContractualParty) {
+        if (suppressContractualParty) return java.util.Collections.emptyList();
         return ctx.partyOrder.entrySet().stream()
                 .filter(e -> e.getValue() < 2)
                 .sorted(java.util.Map.Entry.comparingByValue())

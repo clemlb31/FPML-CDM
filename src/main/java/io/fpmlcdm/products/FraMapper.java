@@ -21,7 +21,6 @@ import cdm.base.staticdata.party.Counterparty;
 import cdm.base.staticdata.party.CounterpartyRoleEnum;
 import cdm.base.staticdata.party.Party;
 import cdm.base.staticdata.party.PayerReceiver;
-import cdm.base.staticdata.party.metafields.ReferenceWithMetaParty;
 import cdm.event.common.ContractDetails;
 import cdm.event.common.Trade;
 import cdm.event.common.TradeIdentifier;
@@ -124,7 +123,7 @@ public class FraMapper implements ProductMapper {
         ProductIdentifierMapper.map(fra).forEach(ntp::addIdentifier);
         buildFraTaxonomy(fra).forEach(ntp::addTaxonomy);
 
-        List<Counterparty> counterparties = buildCounterparties(ctx);
+        List<Counterparty> counterparties = SwapMapper.buildCounterparties(ctx);
 
         // tradeIdentifier
         List<TradeIdentifier> identifiers = new ArrayList<>();
@@ -423,21 +422,6 @@ public class FraMapper implements ProductMapper {
         }
         ctx.partyOrder.clear();
         ctx.partyOrder.putAll(newOrder);
-    }
-
-    private static List<Counterparty> buildCounterparties(MappingContext ctx) {
-        List<Counterparty> out = new ArrayList<>();
-        for (var entry : ctx.partyOrder.entrySet()) {
-            int order = entry.getValue();
-            if (order > 1) continue;
-            CounterpartyRoleEnum role = order == 0 ? CounterpartyRoleEnum.PARTY_1 : CounterpartyRoleEnum.PARTY_2;
-            out.add(Counterparty.builder()
-                    .setRole(role)
-                    .setPartyReference(ReferenceWithMetaParty.builder()
-                            .setExternalReference(entry.getKey()).build())
-                    .build());
-        }
-        return out;
     }
 
     private static CounterpartyRoleEnum roleFor(String partyHref, MappingContext ctx) {
