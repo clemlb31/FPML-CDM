@@ -92,6 +92,10 @@ start validator-8003 \
 start mapping-8004 \
   "$PYTHON" -m mcp_servers.mapping_server.server --transport streamable-http --port 8004
 
+# 6. Grep server (ripgrep wrapper — content search)
+start grep-8005 \
+  "$PYTHON" -m mcp_servers.grep_server.server --transport streamable-http --port 8005
+
 sleep 2
 
 echo ""
@@ -112,6 +116,7 @@ echo "  examples      http://localhost:8081/mcp"
 echo "  triage        http://localhost:8002/mcp"
 echo "  validator     http://localhost:8003/mcp  (requires Docker daemon)"
 echo "  mapping       http://localhost:8004/mcp"
+echo "  grep          http://localhost:8005/mcp"
 echo ""
 echo "Tail logs:  tail -f $LOG_DIR/<name>.log"
 echo "Stop all:   bash scripts/start_servers.sh --stop"

@@ -170,6 +170,70 @@ async def tool_text(tools_by_name: dict, tool_name: str, **kwargs) -> str:
 
 # ── LLM call ──────────────────────────────────────────────────────────────────
 
+async def llm_call(
+    *,
+    label: str,
+    prompt: list,
+    max_tokens: int = 6000,
+    tools: list[dict] | None = None,
+):
+    """Call the configured LLM and return an `LLMResponse` (text + tool_calls + done).
+
+    Single entry point used by the autonomous agent. Tool-call extraction is
+    backend-aware: native APIs (OpenAI/Anthropic/Gemini) parse structured
+    tool_use blocks; the `manual` backend falls back to XML parsing on the
+    operator's reply.
+
+    Pass `tools=None` to disable native tool_use and use XML-in-text instead
+    (still the only path supported for `manual`).
+    """
+    from agent.protocol import (
+        LLMResponse,
+        extract_anthropic_tool_calls,
+        extract_gemini_tool_calls,
+        extract_openai_tool_calls,
+        parse_xml_response,
+        tools_to_anthropic,
+        tools_to_gemini,
+        tools_to_openai,
+    )
+
+    backend = (os.getenv("LLM_BACKEND") or "gemini").lower()
+
+    # ── manual ────────────────────────────────────────────────────────────────
+    if backend == "manual":
+        text = await _manual_llm_call(label, prompt, max_tokens, strip_fences=False)
+        return parse_xml_response(text)
+
+    # ── anthropic (native tool_use, if anthropic SDK installed) ───────────────
+    if backend == "anthropic":
+        return await _anthropic_call(
+            label=label, prompt=prompt, max_tokens=max_tokens,
+            tools_payload=tools_to_anthropic({t["function"]["name"]: {
+                "description": t["function"]["description"],
+                "input_schema": t["function"]["parameters"],
+            } for t in (tools or [])}) if tools else None,
+            extractor=extract_anthropic_tool_calls,
+        )
+
+    # ── gemini (native tool_use via google-genai) ─────────────────────────────
+    if backend == "gemini":
+        return await _gemini_call(
+            label=label, prompt=prompt, max_tokens=max_tokens,
+            tools_payload=tools_to_gemini({t["function"]["name"]: {
+                "description": t["function"]["description"],
+                "input_schema": t["function"]["parameters"],
+            } for t in (tools or [])}) if tools else None,
+            extractor=extract_gemini_tool_calls,
+        )
+
+    # ── OpenAI-compatible (groq / ollama / vllm / lmstudio / openai) ──────────
+    return await _openai_compat_call(
+        label=label, backend=backend, prompt=prompt, max_tokens=max_tokens,
+        tools=tools, extractor=extract_openai_tool_calls,
+    )
+
+
 async def llm_text_or_raise(
     project_dir: str,
     label: str,
@@ -177,131 +241,251 @@ async def llm_text_or_raise(
     max_tokens: int = 2000,
     strip_fences: bool = False,
 ) -> str:
-    """
-    Call the configured LLM backend with a list of LangChain messages.
+    """Legacy text-only interface — kept for back-compat (graph.py callers, etc.).
 
-    Backend selected by $LLM_BACKEND (default: gemini). Supported:
-      gemini    — Google AI Studio (OpenAI-compatible endpoint)
-      groq      — Groq Cloud (OpenAI-compatible endpoint)
-      ollama    — Local Ollama server (OpenAI-compatible endpoint)
-      vllm      — local/remote vLLM server
-      manual    — Writes prompt to .llm_io/inbox/, polls .llm_io/outbox/ for a
-                  text response. Use when an external operator (Claude in chat,
-                  human, separate process) answers each prompt.
-
-    All non-manual backends are spoken via the OpenAI async client.
-    Raises RuntimeError if the LLM returns an empty response.
+    New code should use `llm_call(...)` which returns a structured LLMResponse.
     """
     backend = (os.getenv("LLM_BACKEND") or "gemini").lower()
 
     if backend == "manual":
         return await _manual_llm_call(label, prompt, max_tokens, strip_fences)
 
-    from openai import AsyncOpenAI
+    # Delegate to the shared OpenAI-compat path, but discard tool_calls and
+    # return text only.
+    resp = await _openai_compat_call(
+        label=label, backend=backend, prompt=prompt,
+        max_tokens=max_tokens, tools=None, extractor=None,
+    )
+    text = resp if isinstance(resp, str) else resp.text
+    return _strip_code_fences(text) if strip_fences else text
 
-    if backend == "gemini":
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            raise RuntimeError("GEMINI_API_KEY not set (check .env)")
-        base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
-        model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-        extra_body: dict | None = None
-    elif backend == "groq":
-        api_key = os.getenv("GROQ_API_KEY")
-        if not api_key:
-            raise RuntimeError("GROQ_API_KEY not set (check .env)")
-        base_url = "https://api.groq.com/openai/v1"
-        model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
-        extra_body = None
-    elif backend == "ollama":
-        api_key = "ollama"  # any non-empty string; ollama ignores auth
-        base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
-        model = os.getenv("OLLAMA_MODEL", "qwen3.5:4b")
-        # Ollama's OpenAI-compat forwards `think` as a native option.
-        # `think: false` disables Qwen3's thinking mode at the API level —
-        # belt-and-braces alongside the `/no_think` suffix on the user message.
-        extra_body = {"think": False}
-    elif backend == "vllm":
-        api_key = "dummy"
-        base_url = os.getenv("VLLM_BASE_URL", "http://10.27.40.184:8000/v1")
-        model    = os.getenv("VLLM_MODEL",    "/models/qwen3.6-27b-fp8")
-        extra_body = {"chat_template_kwargs": {"enable_thinking": False}}
-    else:
+
+# ── Per-backend dispatchers ───────────────────────────────────────────────────
+
+_OPENAI_BACKEND_CONFIG: dict[str, dict] = {
+    "openai": {
+        "base_url_env":  None,                                             # default = openai.com
+        "api_key_env":   "OPENAI_API_KEY",
+        "default_model": "gpt-4o-mini",
+        "model_env":     "OPENAI_MODEL",
+    },
+    "gemini-openai": {                                                     # gemini via openai-compat fallback
+        "base_url":      "https://generativelanguage.googleapis.com/v1beta/openai/",
+        "api_key_env":   "GEMINI_API_KEY",
+        "default_model": "gemini-2.5-flash",
+        "model_env":     "GEMINI_MODEL",
+    },
+    "groq": {
+        "base_url":      "https://api.groq.com/openai/v1",
+        "api_key_env":   "GROQ_API_KEY",
+        "default_model": "llama-3.3-70b-versatile",
+        "model_env":     "GROQ_MODEL",
+    },
+    "ollama": {
+        "base_url_env":  "OLLAMA_BASE_URL",
+        "base_url":      "http://localhost:11434/v1",
+        "api_key":       "ollama",
+        "default_model": "qwen3.5:4b",
+        "model_env":     "OLLAMA_MODEL",
+        "extra_body":    {"think": False},
+    },
+    "vllm": {
+        "base_url_env":  "VLLM_BASE_URL",
+        "base_url":      "http://10.27.40.184:8000/v1",
+        "api_key":       "dummy",
+        "default_model": "/models/qwen3.6-27b-fp8",
+        "model_env":     "VLLM_MODEL",
+        "extra_body":    {"chat_template_kwargs": {"enable_thinking": False}},
+    },
+    "lmstudio": {
+        "base_url_env":  "LMSTUDIO_BASE_URL",
+        "base_url":      "http://localhost:1234/v1",
+        "api_key":       "lmstudio",
+        "default_model": "local-model",
+        "model_env":     "LMSTUDIO_MODEL",
+    },
+}
+
+
+async def _openai_compat_call(
+    *,
+    label: str,
+    backend: str,
+    prompt: list,
+    max_tokens: int,
+    tools: list[dict] | None,
+    extractor,
+):
+    """Single async path for every OpenAI-compatible backend (groq/ollama/vllm/openai/lmstudio).
+
+    If `tools` is provided AND `extractor` is provided, returns an LLMResponse with
+    structured tool_calls. Otherwise returns raw text (used by llm_text_or_raise).
+    """
+    from openai import AsyncOpenAI, APIConnectionError, APIError, APITimeoutError, RateLimitError
+
+    cfg_key = backend
+    if backend not in _OPENAI_BACKEND_CONFIG:
         raise RuntimeError(
-            f"Unsupported LLM_BACKEND={backend!r} for llm_text_or_raise. "
-            f"Expected one of: gemini, groq, ollama, vllm."
+            f"Unsupported OpenAI-compat backend={backend!r}. "
+            f"Known: {list(_OPENAI_BACKEND_CONFIG.keys())}."
         )
+    cfg = _OPENAI_BACKEND_CONFIG[cfg_key]
 
-    # Convert LangChain message types to OpenAI wire format
-    messages = []
-    for m in prompt:
-        if isinstance(m, SystemMessage):
-            messages.append({"role": "system",    "content": m.content})
-        elif isinstance(m, HumanMessage):
-            messages.append({"role": "user",      "content": m.content})
-        elif isinstance(m, AIMessage):
-            messages.append({"role": "assistant", "content": m.content})
-        elif isinstance(m, dict):
-            messages.append(m)
-        else:
-            messages.append({"role": "user", "content": str(m)})
+    base_url = (
+        (cfg.get("base_url_env") and os.getenv(cfg["base_url_env"]))
+        or cfg.get("base_url")
+    )
+    api_key = (
+        cfg.get("api_key")
+        or (cfg.get("api_key_env") and os.getenv(cfg["api_key_env"]))
+    )
+    if not api_key:
+        raise RuntimeError(
+            f"{cfg.get('api_key_env') or 'API key'} not set for backend={backend!r} (check .env)"
+        )
+    model = os.getenv(cfg.get("model_env", ""), "") or cfg["default_model"]
+    extra_body = cfg.get("extra_body")
 
-    # Qwen3 defaults to thinking mode which loops on small (4B) checkpoints and
-    # leaves `content` empty. The /no_think token disables it for that turn.
+    # Convert messages to OpenAI wire format
+    messages = _messages_to_openai_wire(prompt)
+
+    # Qwen3 /no_think nudge for Ollama
     if backend == "ollama" and "qwen3" in model.lower():
         for m in reversed(messages):
-            if m["role"] == "user" and "/no_think" not in m["content"]:
-                m["content"] = m["content"].rstrip() + "\n\n/no_think"
+            if m["role"] == "user" and "/no_think" not in (m.get("content") or ""):
+                m["content"] = (m["content"] or "").rstrip() + "\n\n/no_think"
                 break
 
     client = AsyncOpenAI(
-        base_url=base_url,
-        api_key=api_key,
+        base_url=base_url, api_key=api_key,
         http_client=httpx.AsyncClient(
             timeout=httpx.Timeout(connect=30.0, read=1800.0, write=30.0, pool=30.0)
         ),
     )
     create_kwargs: dict = dict(
-        model=model,
-        messages=messages,
-        max_tokens=max_tokens,
-        temperature=0.2,
+        model=model, messages=messages, max_tokens=max_tokens, temperature=0.2,
     )
+    if tools:
+        create_kwargs["tools"]       = tools
+        create_kwargs["tool_choice"] = "auto"
     if extra_body is not None:
         create_kwargs["extra_body"] = extra_body
 
-    # Retry transient errors (overloaded / rate-limited / network)
+    response = await _with_retry(
+        label=label,
+        call=lambda: client.chat.completions.create(**create_kwargs),
+    )
+    if extractor is None:
+        msg = response.choices[0].message
+        text = (msg.content or "").strip() or (getattr(msg, "reasoning", "") or "").strip()
+        if not text:
+            raise RuntimeError(f"[{label}] LLM returned empty response")
+        return text
+    return extractor(response)
+
+
+async def _gemini_call(*, label, prompt, max_tokens, tools_payload, extractor):
+    """Native gemini call via google-genai SDK. Falls back to openai-compat if SDK missing."""
+    try:
+        from google import genai
+        from google.genai import types
+    except ImportError:
+        # Fall back to openai-compatibility endpoint (no native tools support there yet)
+        return await _openai_compat_call(
+            label=label, backend="gemini-openai", prompt=prompt,
+            max_tokens=max_tokens, tools=None, extractor=extractor,
+        )
+
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY not set (check .env)")
+    model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    client = genai.Client(api_key=api_key)
+
+    contents, system_instruction = _messages_to_gemini(prompt)
+
+    cfg_kwargs: dict = {"max_output_tokens": max_tokens, "temperature": 0.2}
+    if system_instruction:
+        cfg_kwargs["system_instruction"] = system_instruction
+    if tools_payload:
+        cfg_kwargs["tools"] = tools_payload
+    config = types.GenerateContentConfig(**cfg_kwargs)
+
+    response = await _with_retry(
+        label=label,
+        call=lambda: asyncio.to_thread(
+            client.models.generate_content,
+            model=model_name, contents=contents, config=config,
+        ),
+    )
+    return extractor(response)
+
+
+async def _anthropic_call(*, label, prompt, max_tokens, tools_payload, extractor):
+    """Native anthropic call via anthropic SDK."""
+    try:
+        from anthropic import AsyncAnthropic
+    except ImportError:
+        raise RuntimeError(
+            "anthropic SDK not installed. pip install anthropic, or pick another backend."
+        )
+
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise RuntimeError("ANTHROPIC_API_KEY not set (check .env)")
+    model_name = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
+    client = AsyncAnthropic(api_key=api_key)
+
+    messages, system_instruction = _messages_to_anthropic(prompt)
+    create_kwargs: dict = dict(
+        model=model_name, messages=messages,
+        max_tokens=max_tokens, temperature=0.2,
+    )
+    if system_instruction:
+        create_kwargs["system"] = system_instruction
+    if tools_payload:
+        create_kwargs["tools"] = tools_payload
+
+    response = await _with_retry(
+        label=label,
+        call=lambda: client.messages.create(**create_kwargs),
+    )
+    return extractor(response)
+
+
+# ── Retry / backoff ───────────────────────────────────────────────────────────
+
+async def _with_retry(*, label: str, call):
+    """Retry an async callable on transient HTTP errors with backoff."""
     from openai import APIConnectionError, APIError, APITimeoutError, RateLimitError
     last_exc: Exception | None = None
+    status = None
     for attempt in range(6):
         try:
-            response = await client.chat.completions.create(**create_kwargs)
-            msg = response.choices[0].message
-            text = (msg.content or "").strip()
-            # Some backends (Ollama with Qwen3 thinking-mode) put output in
-            # `reasoning` instead of `content` when the model never escapes
-            # its thinking loop. Fall back so we don't lose the run entirely.
-            if not text:
-                reasoning = getattr(msg, "reasoning", None) or ""
-                text = reasoning.strip()
-            if not text:
-                raise RuntimeError(f"[{label}] LLM returned empty response")
-            return _strip_code_fences(text) if strip_fences else text
+            return await call()
         except (RateLimitError, APIConnectionError, APITimeoutError) as e:
             last_exc = e
             status = getattr(e, "status_code", None) or 429
         except APIError as e:
             last_exc = e
             status = getattr(e, "status_code", None)
-            # 413 = Groq TPM exceeded (not a real payload error), 429 = RPM
             if status not in (413, 429, 500, 502, 503, 504):
+                raise
+        except Exception as e:
+            # Catch SDK-specific errors (anthropic, google) that don't inherit openai.APIError.
+            # We treat status hinted in the message as 429 by default.
+            msg = str(e).lower()
+            if any(s in msg for s in ("429", "rate limit", "resource_exhausted",
+                                       "overload", "503", "502", "504", "timeout")):
+                last_exc = e
+                status = 429
+            else:
                 raise
         if attempt == 5:
             break
         msg_text = str(last_exc)
         m = re.search(r"retry(?:Delay|-after)?[\":\s]+(\d+(?:\.\d+)?)\s*s", msg_text, re.IGNORECASE)
         hint = float(m.group(1)) if m else 0.0
-        # Per-minute quota windows need >60s to fully clear
         if status in (413, 429):
             delay = max(hint + 2.0, 65.0)
         else:
@@ -313,6 +497,71 @@ async def llm_text_or_raise(
         await asyncio.sleep(delay)
 
     raise RuntimeError(f"[{label}] LLM failed after retries: {last_exc}")
+
+
+# ── Message converters ────────────────────────────────────────────────────────
+
+def _messages_to_openai_wire(prompt: list) -> list[dict]:
+    out: list[dict] = []
+    for m in prompt:
+        if isinstance(m, SystemMessage):
+            out.append({"role": "system",    "content": m.content})
+        elif isinstance(m, HumanMessage):
+            out.append({"role": "user",      "content": m.content})
+        elif isinstance(m, AIMessage):
+            out.append({"role": "assistant", "content": m.content})
+        elif isinstance(m, dict):
+            out.append(m)
+        else:
+            out.append({"role": "user", "content": str(m)})
+    return out
+
+
+def _messages_to_anthropic(prompt: list) -> tuple[list[dict], str | None]:
+    """Anthropic expects `system` as a separate kwarg, not in the messages list."""
+    system_parts: list[str] = []
+    messages: list[dict] = []
+    for m in prompt:
+        if isinstance(m, SystemMessage):
+            system_parts.append(m.content)
+        elif isinstance(m, HumanMessage):
+            messages.append({"role": "user",      "content": m.content})
+        elif isinstance(m, AIMessage):
+            messages.append({"role": "assistant", "content": m.content})
+        elif isinstance(m, dict):
+            role = m.get("role", "user")
+            content = m.get("content", "")
+            if role == "system":
+                system_parts.append(content)
+            else:
+                messages.append({"role": role, "content": content})
+        else:
+            messages.append({"role": "user", "content": str(m)})
+    return messages, ("\n\n".join(system_parts) or None)
+
+
+def _messages_to_gemini(prompt: list) -> tuple[list[dict], str | None]:
+    """Gemini Contents API: roles `user` / `model`; system goes into config.system_instruction."""
+    system_parts: list[str] = []
+    contents: list[dict] = []
+    for m in prompt:
+        if isinstance(m, SystemMessage):
+            system_parts.append(m.content)
+            continue
+        role = "user"
+        text = ""
+        if isinstance(m, HumanMessage):
+            role, text = "user", m.content
+        elif isinstance(m, AIMessage):
+            role, text = "model", m.content
+        elif isinstance(m, dict):
+            r = m.get("role", "user")
+            role = "model" if r == "assistant" else r
+            text = m.get("content", "")
+        else:
+            text = str(m)
+        contents.append({"role": role, "parts": [{"text": text}]})
+    return contents, ("\n\n".join(system_parts) or None)
 
 
 def _strip_code_fences(text: str) -> str:

@@ -52,6 +52,11 @@ servers:
     transport: streamable_http
     url: "http://localhost:8004/mcp"
 
+  # ── Grep (ripgrep wrapper — content search across workspaces) ───────────────
+  grep:
+    transport: streamable_http
+    url: "http://localhost:8005/mcp"
+
   # ── Internet search (Tavily — optional, for CDM/FpML spec lookups) ───────────
   tavily:
     transport: streamable_http
