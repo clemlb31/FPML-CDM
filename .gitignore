@@ -14,3 +14,7 @@ runs/
 
 # Generated Maven projects produced by the agent on each run
 workspaces/test-fra*/
+workspaces/test-usd-*/
+
+# Claude Code local state
+.claude/

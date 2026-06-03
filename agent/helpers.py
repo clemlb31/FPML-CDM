@@ -271,7 +271,6 @@ async def llm_text_or_raise(
         create_kwargs["extra_body"] = extra_body
 
     # Retry transient errors (overloaded / rate-limited / network)
-    # 5 retries, exponential backoff with jitter: 1, 2, 4, 8, 16 s (max ~30s total wait)
     from openai import APIConnectionError, APIError, APITimeoutError, RateLimitError
     last_exc: Exception | None = None
     for attempt in range(6):
@@ -290,18 +289,25 @@ async def llm_text_or_raise(
             return _strip_code_fences(text) if strip_fences else text
         except (RateLimitError, APIConnectionError, APITimeoutError) as e:
             last_exc = e
-            transient = True
+            status = getattr(e, "status_code", None) or 429
         except APIError as e:
             last_exc = e
             status = getattr(e, "status_code", None)
-            transient = status in (429, 500, 502, 503, 504)
-            if not transient:
+            # 413 = Groq TPM exceeded (not a real payload error), 429 = RPM
+            if status not in (413, 429, 500, 502, 503, 504):
                 raise
         if attempt == 5:
             break
-        delay = (2 ** attempt) + random.uniform(0, 1)
+        msg_text = str(last_exc)
+        m = re.search(r"retry(?:Delay|-after)?[\":\s]+(\d+(?:\.\d+)?)\s*s", msg_text, re.IGNORECASE)
+        hint = float(m.group(1)) if m else 0.0
+        # Per-minute quota windows need >60s to fully clear
+        if status in (413, 429):
+            delay = max(hint + 2.0, 65.0)
+        else:
+            delay = (2 ** attempt) + random.uniform(0, 1)
         print(
-            f"[{label}] LLM transient error ({type(last_exc).__name__}); "
+            f"[{label}] LLM transient error ({type(last_exc).__name__} {status}); "
             f"retry {attempt + 1}/5 in {delay:.1f}s"
         )
         await asyncio.sleep(delay)
