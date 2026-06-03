@@ -1512,27 +1512,37 @@ public class ReturnSwapMapper implements ProductMapper {
                         intCcyScheme = notionalCcyScheme;
                     }
 
-                    // Spread price
-                    Element spreadSchedule = XmlUtils.child(frc, "spreadSchedule");
-                    if (spreadSchedule != null) {
+                    // Spread price — emit one PriceSchedule per <spreadSchedule>.
+                    // Each schedule has <initialValue> + optional <step> children with
+                    // <stepDate>/<stepValue> that map to PriceSchedule.datedValue[].
+                    List<Element> spreadSchedules = XmlUtils.children(frc, "spreadSchedule");
+                    for (Element spreadSchedule : spreadSchedules) {
                         String spreadVal = XmlUtils.childText(spreadSchedule, "initialValue");
-                        if (spreadVal != null) {
-                            PriceSchedule.PriceScheduleBuilder psb = PriceSchedule.builder()
-                                    .setValue(new BigDecimal(spreadVal))
-                                    .setPriceType(PriceTypeEnum.INTEREST_RATE)
-                                    .setArithmeticOperator(ArithmeticOperationEnum.ADD);
-                            if (intCcy != null) {
-                                UnitType ccyUnit = UnitType.builder()
-                                        .setCurrency(buildCcyField(intCcy, intCcyScheme))
-                                        .build();
-                                psb.setUnit(ccyUnit);
-                                psb.setPerUnitOf(ccyUnit);
-                            }
-                            pq2.addPrice(FieldWithMetaPriceSchedule.builder()
-                                    .setValue(psb.build())
-                                    .setMeta(QuantityMapper.locationMeta("price-1"))
+                        if (spreadVal == null) continue;
+                        PriceSchedule.PriceScheduleBuilder psb = PriceSchedule.builder()
+                                .setValue(new BigDecimal(spreadVal))
+                                .setPriceType(PriceTypeEnum.INTEREST_RATE)
+                                .setArithmeticOperator(ArithmeticOperationEnum.ADD);
+                        if (intCcy != null) {
+                            UnitType ccyUnit = UnitType.builder()
+                                    .setCurrency(buildCcyField(intCcy, intCcyScheme))
+                                    .build();
+                            psb.setUnit(ccyUnit);
+                            psb.setPerUnitOf(ccyUnit);
+                        }
+                        for (Element step : XmlUtils.children(spreadSchedule, "step")) {
+                            String stepDate = XmlUtils.childText(step, "stepDate");
+                            String stepValue = XmlUtils.childText(step, "stepValue");
+                            if (stepDate == null || stepValue == null) continue;
+                            psb.addDatedValue(cdm.base.math.DatedValue.builder()
+                                    .setDate(DateMapper.parse(stepDate))
+                                    .setValue(new BigDecimal(stepValue))
                                     .build());
                         }
+                        pq2.addPrice(FieldWithMetaPriceSchedule.builder()
+                                .setValue(psb.build())
+                                .setMeta(QuantityMapper.locationMeta("price-1"))
+                                .build());
                     }
 
                     if (intAmt != null) {

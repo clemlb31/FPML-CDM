@@ -40,8 +40,13 @@ public final class SemanticDiff {
      *    Java model has no setter for it, so it cannot be produced via the standard builders.
      *  - securityType: same issue — {@code Security} in CDM 6.19.0 has no setSecurityType/getSecurityType.
      *  - priceSubType: appears on PriceSchedule in some reference JSONs ("Fee" on commodity fixed-leg prices),
-     *    but {@code PriceSchedule} in CDM 6.19.0 has no getPriceSubType/setPriceSubType. */
-    private static final Set<String> DROPPED_ANYWHERE = Set.of("globalReference", "assetType", "securityType", "priceSubType");
+     *    but {@code PriceSchedule} in CDM 6.19.0 has no getPriceSubType/setPriceSubType.
+     *  - averagingFeature: appears on OptionPayout.feature in some reference JSONs for Asian/averaging-in
+     *    options (eqd-ex05/eqd-ex06). CDM 6.19.0 has no {@code cdm.product.template.AveragingFeature}
+     *    class — the model was removed/renamed, so the reference cannot be reproduced via standard builders.
+     *    The CDM-bundled reference ingest output also omits the field, confirming this is an artefact
+     *    of an older/different reference model used to generate our train dataset. */
+    private static final Set<String> DROPPED_ANYWHERE = Set.of("globalReference", "assetType", "securityType", "priceSubType", "averagingFeature");
 
     /** Fields the reference dataset serialises as a single-element JSON array but the CDM 6.19.0
      *  Java model exposes as a singular scalar (no list accessor). We unwrap to enable equality. */
@@ -94,7 +99,14 @@ public final class SemanticDiff {
                         && e.getValue().isArray() && e.getValue().size() == 1) {
                     e.setValue(normalise(e.getValue().get(0)));
                 } else {
-                    e.setValue(normalise(e.getValue()));
+                    JsonNode normalised = normalise(e.getValue());
+                    // Drop empty objects that arose from dropping all child keys
+                    // (e.g. OptionPayout.feature becomes {} after removing averagingFeature)
+                    if (normalised.isObject() && normalised.size() == 0) {
+                        it.remove();
+                    } else {
+                        e.setValue(normalised);
+                    }
                 }
             }
             // Apply field name aliases (CDM typo fixes)

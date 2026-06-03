@@ -115,7 +115,10 @@ public class EquityOptionMapper implements ProductMapper {
                 .setExerciseTerms(exerciseTerms)
                 .setStrike(optStrike);
 
-        // Feature (barrier, knock, etc.) - skip for now as these are complex
+        // Feature: passThrough (single-name only — for basket the reference omits the feature
+        // even though FpML includes it; cf. eqd-ex15 vs eqd-ex14)
+        OptionFeature passThroughFeature = buildPassThroughFeature(eqOption, underlyer, ctx);
+        if (passThroughFeature != null) opb.setFeature(passThroughFeature);
 
         Payout payout = Payout.builder().setOptionPayout(opb.build()).build();
 
@@ -809,14 +812,57 @@ public class EquityOptionMapper implements ProductMapper {
             out.add(ProductTaxonomy.builder().setSource(src).setValue(tv).build());
         }
 
-        // ISDA product qualifier
-        String qualifier = computeEquityOptionQualifier(eqOption, underlyer);
-        out.add(ProductTaxonomy.builder()
-                .setSource(TaxonomySourceEnum.ISDA)
-                .setProductQualifier(qualifier)
-                .build());
+        // ISDA product qualifier — suppressed for single-name passThrough features (eqd-ex14 reference omits it)
+        if (!isSingleNamePassThrough(eqOption, underlyer)) {
+            String qualifier = computeEquityOptionQualifier(eqOption, underlyer);
+            out.add(ProductTaxonomy.builder()
+                    .setSource(TaxonomySourceEnum.ISDA)
+                    .setProductQualifier(qualifier)
+                    .build());
+        }
 
         return out;
+    }
+
+    private boolean isSingleNamePassThrough(Element eqOption, Element underlyer) {
+        Element feature = XmlUtils.child(eqOption, "feature");
+        if (feature == null) return false;
+        if (XmlUtils.child(feature, "passThrough") == null) return false;
+        // Determine if single name (not basket, not index)
+        if (underlyer == null) return false;
+        Element basket = XmlUtils.child(underlyer, "basket");
+        if (basket != null) return false;
+        Element singleUnderlyer = XmlUtils.child(underlyer, "singleUnderlyer");
+        if (singleUnderlyer == null) return false;
+        if (XmlUtils.child(singleUnderlyer, "index") != null) return false;
+        return true;
+    }
+
+    private OptionFeature buildPassThroughFeature(Element eqOption, Element underlyer, MappingContext ctx) {
+        if (!isSingleNamePassThrough(eqOption, underlyer)) return null;
+        Element feature = XmlUtils.child(eqOption, "feature");
+        Element passThroughEl = XmlUtils.child(feature, "passThrough");
+        PassThrough.PassThroughBuilder ptb = PassThrough.builder();
+        for (Element item : XmlUtils.children(passThroughEl, "passThroughItem")) {
+            PassThroughItem.PassThroughItemBuilder ptiB = PassThroughItem.builder();
+            // payerPartyReference + receiverPartyReference
+            Element payerRef = XmlUtils.child(item, "payerPartyReference");
+            Element receiverRef = XmlUtils.child(item, "receiverPartyReference");
+            PayerReceiver.PayerReceiverBuilder prb = PayerReceiver.builder();
+            if (payerRef != null) {
+                Integer ord = ctx.partyOrder.get(payerRef.getAttribute("href"));
+                prb.setPayer(ord != null && ord == 0 ? CounterpartyRoleEnum.PARTY_1 : CounterpartyRoleEnum.PARTY_2);
+            }
+            if (receiverRef != null) {
+                Integer ord = ctx.partyOrder.get(receiverRef.getAttribute("href"));
+                prb.setReceiver(ord != null && ord == 0 ? CounterpartyRoleEnum.PARTY_1 : CounterpartyRoleEnum.PARTY_2);
+            }
+            ptiB.setPayerReceiver(prb.build());
+            String pct = XmlUtils.childText(item, "passThroughPercentage");
+            if (pct != null) ptiB.setPassThroughPercentage(new BigDecimal(pct));
+            ptb.addPassThroughItem(ptiB.build());
+        }
+        return OptionFeature.builder().setPassThrough(ptb.build()).build();
     }
 
     private String computeEquityOptionQualifier(Element eqOption, Element underlyer) {

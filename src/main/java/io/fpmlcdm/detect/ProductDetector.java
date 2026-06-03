@@ -34,6 +34,7 @@ public class ProductDetector {
         if (XmlUtils.child(trade, "bulletPayment") != null) return new BulletPaymentMapper();
         if (XmlUtils.child(trade, "bondOption") != null) return new BondOptionMapper();
         if (XmlUtils.child(trade, "genericProduct") != null) return new GenericProductMapper();
+        if (XmlUtils.child(trade, "fxVarianceSwap") != null) return new FxVarianceSwapMapper();
         if (XmlUtils.child(trade, "fxVolatilitySwap") != null) return new FxVolatilitySwapMapper();
         if (XmlUtils.child(trade, "fxDigitalOption") != null) return new FxDigitalOptionMapper();
         // Product types whose reference CDM JSON carries only trade-level metadata
