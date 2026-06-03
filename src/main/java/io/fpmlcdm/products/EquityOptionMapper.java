@@ -85,7 +85,8 @@ public class EquityOptionMapper implements ProductMapper {
 
         // Strike
         Element strikeEl = XmlUtils.child(eqOption, "strike");
-        OptionStrike optStrike = buildStrike(strikeEl, underlyer, equityExercise);
+        boolean isSupplement = "equityOptionTransactionSupplement".equals(eqOption.getLocalName());
+        OptionStrike optStrike = buildStrike(strikeEl, underlyer, equityExercise, isSupplement);
 
         // Build OptionPayout
         ResolvablePriceQuantity rpq = ResolvablePriceQuantity.builder()
@@ -238,6 +239,39 @@ public class EquityOptionMapper implements ProductMapper {
         } else if (bermudanEx != null) {
             etb.setStyle(OptionExerciseStyleEnum.BERMUDA);
             buildExerciseDates(etb, bermudanEx);
+            // commencementDate
+            Element commencementDate = XmlUtils.child(bermudanEx, "commencementDate");
+            if (commencementDate != null) {
+                Element adjDate = XmlUtils.child(commencementDate, "adjustableDate");
+                if (adjDate != null) {
+                    etb.setCommencementDate(DateMapper.adjustableOrRelative(adjDate));
+                }
+            }
+            // bermudaExerciseDates → AdjustableOrRelativeDates with adjustedDate[]
+            Element bermudaDatesEl = XmlUtils.child(bermudanEx, "bermudaExerciseDates");
+            if (bermudaDatesEl != null) {
+                cdm.base.datetime.AdjustableDates.AdjustableDatesBuilder adb =
+                        cdm.base.datetime.AdjustableDates.builder();
+                for (Element d : XmlUtils.children(bermudaDatesEl, "date")) {
+                    adb.addAdjustedDate(com.rosetta.model.metafields.FieldWithMetaDate.builder()
+                            .setValue(DateMapper.parse(d.getTextContent().trim()))
+                            .build());
+                }
+                etb.setExerciseDates(cdm.base.datetime.AdjustableOrRelativeDates.builder()
+                        .setAdjustableDates(adb.build()).build());
+            }
+            // equityMultipleExercise
+            Element multipleExercise = XmlUtils.child(bermudanEx, "equityMultipleExercise");
+            if (multipleExercise != null) {
+                MultipleExercise.MultipleExerciseBuilder meb = MultipleExercise.builder();
+                String integral = XmlUtils.childText(multipleExercise, "integralMultipleExercise");
+                if (integral != null) meb.setIntegralMultipleAmount(new BigDecimal(integral));
+                String minOptions = XmlUtils.childText(multipleExercise, "minimumNumberOfOptions");
+                if (minOptions != null) meb.setMinimumNumberOfOptions(Integer.parseInt(minOptions));
+                String maxOptions = XmlUtils.childText(multipleExercise, "maximumNumberOfOptions");
+                if (maxOptions != null) meb.setMaximumNumberOfOptions(Integer.parseInt(maxOptions));
+                etb.setMultipleExercise(meb.build());
+            }
         }
 
         // Automatic exercise
@@ -389,7 +423,8 @@ public class EquityOptionMapper implements ProductMapper {
         };
     }
 
-    private OptionStrike buildStrike(Element strikeEl, Element underlyer, Element equityExercise) {
+    private OptionStrike buildStrike(Element strikeEl, Element underlyer, Element equityExercise,
+                                     boolean isSupplement) {
         if (strikeEl == null) return null;
         String strikePriceStr = XmlUtils.childText(strikeEl, "strikePrice");
         String strikePercentageStr = XmlUtils.childText(strikeEl, "strikePercentage");
@@ -398,15 +433,6 @@ public class EquityOptionMapper implements ProductMapper {
 
         BigDecimal strikeValue = new BigDecimal(strikePriceStr);
 
-        // Determine currency and perUnitOf based on underlyer type
-        String currency = null;
-        String perUnitOfType = null;
-
-        // Get settlement currency from exercise
-        if (equityExercise != null) {
-            currency = XmlUtils.childText(equityExercise, "settlementCurrency");
-        }
-
         // Determine if underlyer is index or equity
         boolean isIndex = false;
         if (underlyer != null) {
@@ -414,6 +440,16 @@ public class EquityOptionMapper implements ProductMapper {
             if (singleUnderlyer != null) {
                 isIndex = XmlUtils.child(singleUnderlyer, "index") != null;
             }
+        }
+
+        // Currency precedence: explicit <strike><currency> (used for ND-share with
+        // local-currency strike) > settlementCurrency. For equityOptionTransactionSupplement
+        // the FINOS reference omits the currency unit entirely unless an explicit
+        // <strike><currency> overrides — the settlement currency from equityExercise is
+        // not promoted into the strike.
+        String currency = XmlUtils.childText(strikeEl, "currency");
+        if (currency == null && equityExercise != null && !isSupplement) {
+            currency = XmlUtils.childText(equityExercise, "settlementCurrency");
         }
 
         Price.PriceBuilder pb = Price.builder()
@@ -442,11 +478,32 @@ public class EquityOptionMapper implements ProductMapper {
     private PriceQuantity buildTradeLotPriceQuantity(Element eqOption, Element underlyer) {
         PriceQuantity.PriceQuantityBuilder pqb = PriceQuantity.builder();
 
-        // Number of options OR notional amount
+        // Number of options OR notional amount. When both are present (typical for
+        // equityOptionTransactionSupplement index/cliquet examples), emit notional as
+        // quantity-1 and numberOfOptions as quantity-2 to match the FINOS reference.
         String numberOfOptions = XmlUtils.childText(eqOption, "numberOfOptions");
         String optionEntitlement = XmlUtils.childText(eqOption, "optionEntitlement");
         Element notionalEl = XmlUtils.child(eqOption, "notional");
 
+        int qIdx = 1;
+        if (notionalEl != null) {
+            String notionalCcy = XmlUtils.childText(notionalEl, "currency");
+            String notionalAmt = XmlUtils.childText(notionalEl, "amount");
+            if (notionalAmt != null) {
+                NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qsb =
+                        NonNegativeQuantitySchedule.builder()
+                                .setValue(new BigDecimal(notionalAmt));
+                if (notionalCcy != null) {
+                    qsb.setUnit(UnitType.builder()
+                            .setCurrency(FieldWithMetaString.builder().setValue(notionalCcy).build())
+                            .build());
+                }
+                pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder()
+                        .setValue(qsb.build())
+                        .setMeta(QuantityMapper.locationMeta("quantity-" + (qIdx++)))
+                        .build());
+            }
+        }
         if (numberOfOptions != null) {
             NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qsb =
                     NonNegativeQuantitySchedule.builder()
@@ -464,26 +521,8 @@ public class EquityOptionMapper implements ProductMapper {
             }
             pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder()
                     .setValue(qsb.build())
-                    .setMeta(QuantityMapper.locationMeta("quantity-1"))
+                    .setMeta(QuantityMapper.locationMeta("quantity-" + (qIdx++)))
                     .build());
-        } else if (notionalEl != null) {
-            // Notional-based quantity (e.g. binary/barrier options)
-            String notionalCcy = XmlUtils.childText(notionalEl, "currency");
-            String notionalAmt = XmlUtils.childText(notionalEl, "amount");
-            if (notionalAmt != null) {
-                NonNegativeQuantitySchedule.NonNegativeQuantityScheduleBuilder qsb =
-                        NonNegativeQuantitySchedule.builder()
-                                .setValue(new BigDecimal(notionalAmt));
-                if (notionalCcy != null) {
-                    qsb.setUnit(UnitType.builder()
-                            .setCurrency(FieldWithMetaString.builder().setValue(notionalCcy).build())
-                            .build());
-                }
-                pqb.addQuantity(FieldWithMetaNonNegativeQuantitySchedule.builder()
-                        .setValue(qsb.build())
-                        .setMeta(QuantityMapper.locationMeta("quantity-1"))
-                        .build());
-            }
         }
 
         // Observable: equity or index
@@ -574,6 +613,23 @@ public class EquityOptionMapper implements ProductMapper {
             } else if (ix != null) {
                 Observable inner = buildIndexObservable(ix);
                 if (inner != null && inner.getIndex() != null) cb.setIndex(inner.getIndex());
+            }
+            // constituentWeight/basketPercentage → quantity[0] with financialUnit=Weight
+            Element weight = XmlUtils.child(bcEl, "constituentWeight");
+            if (weight != null) {
+                String pct = XmlUtils.childText(weight, "basketPercentage");
+                if (pct != null) {
+                    cdm.base.math.NonNegativeQuantitySchedule qs =
+                            cdm.base.math.NonNegativeQuantitySchedule.builder()
+                                    .setValue(new BigDecimal(pct))
+                                    .setUnit(UnitType.builder()
+                                            .setFinancialUnit(cdm.base.math.FinancialUnitEnum.WEIGHT)
+                                            .build())
+                                    .build();
+                    cb.addQuantity(cdm.base.math.metafields.ReferenceWithMetaNonNegativeQuantitySchedule.builder()
+                            .setValue(qs)
+                            .build());
+                }
             }
             cdm.observable.asset.metafields.FieldWithMetaBasketConstituent fwm =
                     cdm.observable.asset.metafields.FieldWithMetaBasketConstituent.builder()
@@ -801,11 +857,16 @@ public class EquityOptionMapper implements ProductMapper {
         Element amtEl = XmlUtils.child(premium, "paymentAmount");
         String ccy = XmlUtils.childText(amtEl, "currency");
         String amount = XmlUtils.childText(amtEl, "amount");
+        Element ccyEl = amtEl == null ? null : XmlUtils.child(amtEl, "currency");
+        String ccyScheme = ccyEl == null ? null : ccyEl.getAttribute("currencyScheme");
         if (amount != null && ccy != null) {
+            FieldWithMetaString.FieldWithMetaStringBuilder ccyField = FieldWithMetaString.builder().setValue(ccy);
+            if (ccyScheme != null && !ccyScheme.isEmpty()) {
+                ccyField.setMeta(MetaFields.builder().setScheme(ccyScheme).build());
+            }
             tb.setQuantity(cdm.base.math.NonNegativeQuantity.builder()
                     .setValue(new BigDecimal(amount))
-                    .setUnit(UnitType.builder()
-                            .setCurrency(FieldWithMetaString.builder().setValue(ccy).build()).build())
+                    .setUnit(UnitType.builder().setCurrency(ccyField.build()).build())
                     .build());
             tb.setAsset(Asset.builder()
                     .setCash(Cash.builder()

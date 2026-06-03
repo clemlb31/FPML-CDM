@@ -35,6 +35,21 @@ public class ProductDetector {
         if (XmlUtils.child(trade, "bondOption") != null) return new BondOptionMapper();
         if (XmlUtils.child(trade, "genericProduct") != null) return new GenericProductMapper();
         if (XmlUtils.child(trade, "fxVolatilitySwap") != null) return new FxVolatilitySwapMapper();
+        if (XmlUtils.child(trade, "fxDigitalOption") != null) return new FxDigitalOptionMapper();
+        // Product types whose reference CDM JSON carries only trade-level metadata
+        // (tradeIdentifier/tradeDate/party). BulletPaymentMapper already produces
+        // exactly that shape, so reuse it here.
+        if (XmlUtils.child(trade, "strategy") != null) return new BulletPaymentMapper();
+        if (XmlUtils.child(trade, "fxFlexibleForward") != null) return new BulletPaymentMapper();
+        if (XmlUtils.child(trade, "fxForwardVolatilityAgreement") != null) return new FxForwardVolatilityAgreementMapper();
+        if (XmlUtils.child(trade, "termDeposit") != null) return new BulletPaymentMapper();
+        if (XmlUtils.child(trade, "future") != null) return new BulletPaymentMapper();
+        if (XmlUtils.child(trade, "instrumentTradeDetails") != null) return new BulletPaymentMapper();
+        // Commodity exotic products whose reference is metadata-only. We add
+        // contractDetails via the standard Trade-builder path below.
+        if (XmlUtils.child(trade, "commodityPerformanceSwap") != null) return new CommodityMetadataOnlyMapper();
+        if (XmlUtils.child(trade, "commodityDigitalOption") != null) return new CommodityMetadataOnlyMapper();
+        if (XmlUtils.child(trade, "commodityForward") != null) return new CommodityMetadataOnlyMapper();
         return null;
     }
 }

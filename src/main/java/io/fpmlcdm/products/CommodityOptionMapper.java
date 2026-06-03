@@ -94,32 +94,38 @@ public class CommodityOptionMapper implements ProductMapper {
         Element notionalQuantityEl = XmlUtils.child(comOption, "notionalQuantity");
         OptionStrike optStrike = buildStrike(strikeEl, notionalQuantityEl);
 
-        // Build OptionPayout
-        ResolvablePriceQuantity rpq = ResolvablePriceQuantity.builder()
-                .setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder()
-                        .setReference(Reference.builder().setScope("DOCUMENT").setReference("quantity-1").build())
-                        .build())
-                .build();
+        // Weather-index option salvage: no priceQuantity ref, no observable underlier,
+        // no tradeLot, only primaryAssetClass taxonomy. The FpML uses weatherIndexData /
+        // weatherNotionalAmount instead of a commodity underlier.
+        boolean isWeatherIndex = XmlUtils.child(comOption, "weatherIndexData") != null;
 
+        // Build OptionPayout
         OptionPayout.OptionPayoutBuilder opb = OptionPayout.builder()
                 .setPayerReceiver(PayerReceiver.builder()
                         .setPayer(payerRole)
                         .setReceiver(receiverRole)
                         .build())
-                .setPriceQuantity(rpq)
                 .setSettlementTerms(settlementTerms)
                 .setBuyerSeller(BuyerSeller.builder()
                         .setBuyer(buyerRole)
                         .setSeller(sellerRole)
                         .build())
-                .setUnderlier(Underlier.builder()
-                        .setObservable(ReferenceWithMetaObservable.builder()
-                                .setReference(Reference.builder().setScope("DOCUMENT").setReference("observable-1").build())
-                                .build())
-                        .build())
                 .setOptionType(optionType)
                 .setExerciseTerms(exerciseTerms)
                 .setStrike(optStrike);
+        if (!isWeatherIndex) {
+            ResolvablePriceQuantity rpq = ResolvablePriceQuantity.builder()
+                    .setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder()
+                            .setReference(Reference.builder().setScope("DOCUMENT").setReference("quantity-1").build())
+                            .build())
+                    .build();
+            opb.setPriceQuantity(rpq);
+            opb.setUnderlier(Underlier.builder()
+                    .setObservable(ReferenceWithMetaObservable.builder()
+                            .setReference(Reference.builder().setScope("DOCUMENT").setReference("observable-1").build())
+                            .build())
+                    .build());
+        }
 
         if (observationTerms != null) {
             opb.setObservationTerms(observationTerms);
@@ -182,20 +188,26 @@ public class CommodityOptionMapper implements ProductMapper {
             taxonomies.add(ProductTaxonomy.builder().setSource(src).setValue(tv).build());
         }
 
-        // [last] ISDA productQualifier
-        taxonomies.add(ProductTaxonomy.builder()
-                .setSource(TaxonomySourceEnum.ISDA)
-                .setProductQualifier("Commodity_Option")
-                .build());
+        // [last] ISDA productQualifier — suppressed for weather-index salvage form
+        if (!isWeatherIndex) {
+            taxonomies.add(ProductTaxonomy.builder()
+                    .setSource(TaxonomySourceEnum.ISDA)
+                    .setProductQualifier("Commodity_Option")
+                    .build());
+        }
 
         NonTransferableProduct.NonTransferableProductBuilder ntp = NonTransferableProduct.builder()
                 .setEconomicTerms(econ.build());
         for (ProductTaxonomy t : taxonomies) ntp.addTaxonomy(t);
         ProductIdentifierMapper.map(comOption).forEach(ntp::addIdentifier);
 
-        // TradeLot with quantity (perDay + totalNotional) + observable (commodity)
-        PriceQuantity pq = buildTradeLotPriceQuantity(comOption);
-        TradeLot tradeLot = TradeLot.builder().addPriceQuantity(pq).build();
+        // TradeLot with quantity (perDay + totalNotional) + observable (commodity).
+        // Skipped entirely for weather-index salvage form.
+        TradeLot tradeLot = null;
+        if (!isWeatherIndex) {
+            PriceQuantity pq = buildTradeLotPriceQuantity(comOption);
+            tradeLot = TradeLot.builder().addPriceQuantity(pq).build();
+        }
 
         // Counterparties
         List<Counterparty> counterparties = SwapMapper.buildCounterparties(ctx);
@@ -229,9 +241,8 @@ public class CommodityOptionMapper implements ProductMapper {
 
         List<PartyRole> partyRoles = PartyRoleMapper.map(trade);
 
-        Trade.TradeBuilder t = Trade.builder()
-                .setProduct(ntp.build())
-                .addTradeLot(tradeLot);
+        Trade.TradeBuilder t = Trade.builder().setProduct(ntp.build());
+        if (tradeLot != null) t.addTradeLot(tradeLot);
         counterparties.forEach(t::addCounterparty);
         for (AncillaryParty ap : ca.ancillaryParties()) t.addAncillaryParty(ap);
         partyRoles.forEach(t::addPartyRole);

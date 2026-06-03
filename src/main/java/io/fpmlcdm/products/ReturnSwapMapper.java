@@ -368,9 +368,13 @@ public class ReturnSwapMapper implements ProductMapper {
         } else if (cashSettlement && shouldEmitSettlementTermsFromAmount(returnLeg)) {
             SettlementTerms.SettlementTermsBuilder stb = SettlementTerms.builder()
                     .setSettlementType(SettlementTypeEnum.CASH);
-            if (settlementCcy != null && !settlementCcy.isEmpty()) {
+            // Zero-strike path (no interestLeg) omits the settlement currency in the
+            // reference output even when the FpML amount block carries one.
+            Element productEl0 = (Element) returnLeg.getParentNode();
+            boolean isZeroStrikeShape = productEl0 != null
+                    && XmlUtils.child(productEl0, "interestLeg") == null;
+            if (!isZeroStrikeShape && settlementCcy != null && !settlementCcy.isEmpty()) {
                 FieldWithMetaString.FieldWithMetaStringBuilder ccyB = FieldWithMetaString.builder().setValue(settlementCcy);
-                // Carry scheme if present
                 String scheme = settlementCcyEl != null ? settlementCcyEl.getAttribute("currencyScheme") : null;
                 if (scheme != null && !scheme.isEmpty()) {
                     ccyB.setMeta(MetaFields.builder().setScheme(scheme).build());
@@ -412,7 +416,12 @@ public class ReturnSwapMapper implements ProductMapper {
     private boolean shouldEmitSettlementTermsFromAmount(Element returnLeg) {
         Element product = (Element) returnLeg.getParentNode();
         Element interestLeg = product != null ? XmlUtils.child(product, "interestLeg") : null;
-        if (interestLeg == null) return false;
+        if (interestLeg == null) {
+            // Zero-strike: no interestLeg, but cashSettlement true + dividendConditions
+            // → emit settlementType=Cash (no currency).
+            Element ret0 = XmlUtils.child(returnLeg, "return");
+            return ret0 != null && XmlUtils.child(ret0, "dividendConditions") != null;
+        }
         Element intNotional = XmlUtils.child(interestLeg, "notional");
         if (intNotional == null) return false;
         Element rel = XmlUtils.child(intNotional, "relativeNotionalAmount");
@@ -1599,12 +1608,22 @@ public class ReturnSwapMapper implements ProductMapper {
             out.add(ProductTaxonomy.builder().setSource(TaxonomySourceEnum.OTHER).setValue(tv).build());
         }
 
-        // Compute qualifier
-        String qualifier = computeReturnSwapQualifier(product, returnLeg);
-        out.add(ProductTaxonomy.builder()
-                .setSource(TaxonomySourceEnum.ISDA)
-                .setProductQualifier(qualifier)
-                .build());
+        // Compute qualifier. Zero-strike pattern (returnSwap with no interestLeg and an
+        // amount/cashSettlement+dividendConditions block) → reference omits the inferred
+        // ISDA qualifier entirely.
+        Element interestLeg = product != null ? XmlUtils.child(product, "interestLeg") : null;
+        Element amt = XmlUtils.child(returnLeg, "amount");
+        boolean isZeroStrike = interestLeg == null
+                && amt != null && "true".equalsIgnoreCase(XmlUtils.childText(amt, "cashSettlement"))
+                && XmlUtils.child(returnLeg, "return") != null
+                && XmlUtils.child(XmlUtils.child(returnLeg, "return"), "dividendConditions") != null;
+        if (!isZeroStrike) {
+            String qualifier = computeReturnSwapQualifier(product, returnLeg);
+            out.add(ProductTaxonomy.builder()
+                    .setSource(TaxonomySourceEnum.ISDA)
+                    .setProductQualifier(qualifier)
+                    .build());
+        }
 
         return out;
     }

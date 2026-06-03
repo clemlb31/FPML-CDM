@@ -50,16 +50,29 @@ public final class ContractDetailsMapper {
     private ContractDetailsMapper() {}
 
     public static ContractDetails map(Element documentation, List<Party> parties, MappingContext ctx) {
-        return map(documentation, parties, ctx, null);
+        return map(documentation, parties, ctx, null, false);
     }
 
     /**
      * Extended version that also accepts the trade element to extract {@code governingLaw}.
      */
     public static ContractDetails map(Element documentation, List<Party> parties, MappingContext ctx, Element trade) {
+        return map(documentation, parties, ctx, trade, false);
+    }
+
+    /**
+     * Full-fidelity variant. When {@code suppressContractualParty} is true, the per-document
+     * {@code contractualParty} list is omitted — used by metadata-only commodity products
+     * whose FINOS reference carries documentation entries without contractualParty.
+     */
+    public static ContractDetails map(Element documentation, List<Party> parties, MappingContext ctx,
+                                      Element trade, boolean suppressContractualParty) {
         if (documentation == null && trade == null) return null;
 
         List<LegalAgreement> entries = new ArrayList<>();
+        boolean prev = SUPPRESS_PARTIES.get();
+        SUPPRESS_PARTIES.set(suppressContractualParty);
+        try {
 
         if (documentation != null) {
             // Master agreements
@@ -83,6 +96,9 @@ public final class ContractDetailsMapper {
                 LegalAgreement la = buildConfirmation(cds, cms, cts, ctx);
                 if (la != null) entries.add(la);
             }
+        }
+        } finally {
+            SUPPRESS_PARTIES.set(prev);
         }
 
         // Check for governingLaw
@@ -347,8 +363,12 @@ public final class ContractDetailsMapper {
         return any ? b.build() : null;
     }
 
+    /** Thread-local toggle to omit {@code contractualParty} from emitted {@code LegalAgreement}s. */
+    private static final ThreadLocal<Boolean> SUPPRESS_PARTIES = ThreadLocal.withInitial(() -> false);
+
     /** PARTY_1 and PARTY_2 (in role order) — additional parties are excluded. */
     private static List<ReferenceWithMetaParty> partyRefs(MappingContext ctx) {
+        if (SUPPRESS_PARTIES.get()) return java.util.Collections.emptyList();
         return ctx.partyOrder.entrySet().stream()
                 .filter(e -> e.getValue() < 2)
                 .sorted(java.util.Map.Entry.comparingByValue())
@@ -386,6 +406,7 @@ public final class ContractDetailsMapper {
             case "ISDA2005Commodity" -> ContractualDefinitionsEnum.ISDA_2005_COMMODITY;
             case "ISDA2006Inflation" -> ContractualDefinitionsEnum.ISDA_2006_INFLATION_DERIVATIVES;
             case "ISDA2008Inflation" -> ContractualDefinitionsEnum.ISDA_2008_INFLATION_DERIVATIVES;
+            case "ISDA1998FX" -> ContractualDefinitionsEnum.ISDA_1998_FX_AND_CURRENCY_OPTION;
             default -> null;
         };
         if (mapped != null) return mapped;

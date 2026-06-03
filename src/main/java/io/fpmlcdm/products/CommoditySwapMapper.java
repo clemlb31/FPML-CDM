@@ -59,12 +59,43 @@ public class CommoditySwapMapper implements ProductMapper {
         }
         if (comSwap == null) return null;
         List<Element> fixedLegs = XmlUtils.children(comSwap, "fixedLeg");
-        List<Element> allFloatLike = new ArrayList<>(XmlUtils.children(comSwap, "floatingLeg"));
-        allFloatLike.addAll(XmlUtils.children(comSwap, "coalPhysicalLeg"));
-        allFloatLike.addAll(XmlUtils.children(comSwap, "gasPhysicalLeg"));
-        allFloatLike.addAll(XmlUtils.children(comSwap, "oilPhysicalLeg"));
-        allFloatLike.addAll(XmlUtils.children(comSwap, "electricityPhysicalLeg"));
-        Element firstLeg = !allFloatLike.isEmpty() ? allFloatLike.get(0) : (!fixedLegs.isEmpty() ? fixedLegs.get(0) : null);
+        List<Element> floatingLegs = XmlUtils.children(comSwap, "floatingLeg");
+        List<Element> physicalLegs = new ArrayList<>();
+        physicalLegs.addAll(XmlUtils.children(comSwap, "coalPhysicalLeg"));
+        physicalLegs.addAll(XmlUtils.children(comSwap, "gasPhysicalLeg"));
+        physicalLegs.addAll(XmlUtils.children(comSwap, "oilPhysicalLeg"));
+        physicalLegs.addAll(XmlUtils.children(comSwap, "electricityPhysicalLeg"));
+        physicalLegs.addAll(XmlUtils.children(comSwap, "environmentalPhysicalLeg"));
+        // Weather-index leg has no CDM mapping target; treat as salvage trigger so that
+        // the reference's minimal output (only effective/termination dates) is produced.
+        List<Element> weatherLegs = XmlUtils.children(comSwap, "weatherLeg");
+        boolean hasWeatherLeg = !weatherLegs.isEmpty();
+
+        // Physical-leg salvage path: when there are NO floating legs but there is a physical
+        // leg OR an environmental fixedLeg, the FINOS reference produces a minimal shape
+        // (SettlementPayout for the physical side + FixedPricePayout(price-1) for the fixed,
+        // tradeLot with just the fixed price). We emit that here and skip the richer build.
+        boolean fixedHasEnvironmental = false;
+        for (Element fl : fixedLegs) {
+            if (XmlUtils.child(fl, "environmental") != null) { fixedHasEnvironmental = true; break; }
+        }
+        if (floatingLegs.isEmpty() && (!physicalLegs.isEmpty() || fixedHasEnvironmental)) {
+            return buildPhysicalSalvage(doc, trade, ctx, comSwap, tradeHeader, parties,
+                    physicalLegs, fixedLegs);
+        }
+        // Weather-index swap: only effective/termination dates make it into the reference.
+        if (hasWeatherLeg) {
+            return buildWeatherSalvage(doc, trade, ctx, comSwap, tradeHeader, parties);
+        }
+
+        // When physical legs coexist with floating legs (basis-swap with a physical side),
+        // we treat physical legs as SettlementPayouts appended after the regular flow.
+        List<Element> allFloatLike = new ArrayList<>(floatingLegs);
+        // Anchor party order from the physical leg when present (reference convention) —
+        // otherwise from the first floating/fixed leg in document order.
+        Element firstLeg = !physicalLegs.isEmpty() ? physicalLegs.get(0)
+                : (!allFloatLike.isEmpty() ? allFloatLike.get(0)
+                : (!fixedLegs.isEmpty() ? fixedLegs.get(0) : null));
         if (firstLeg != null && !ctx.partyOrderLocked) assignCounterpartyRoles(firstLeg, ctx);
         String settlementCurrency = XmlUtils.childText(comSwap, "settlementCurrency");
         // Label layout (1-fixed-1-float case observed in commodity-5-10 references):
@@ -110,7 +141,11 @@ public class CommoditySwapMapper implements ProductMapper {
             String floatPriceLabel = "price-" + (floatPriceOffset + i + 1);
             CommodityPayout.CommodityPayoutBuilder cpb = CommodityPayout.builder();
             cpb.setPayerReceiver(buildPayerReceiver(fleg, ctx));
-            cpb.setPriceQuantity(ResolvablePriceQuantity.builder().setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder().setReference(Reference.builder().setScope("DOCUMENT").setReference(floatTotalLabel).build()).build()).build());
+            // In basis-with-physical mode the reference suppresses priceQuantity on the
+            // float leg (the document's only resolvable totals belong to the physical side).
+            if (physicalLegs.isEmpty()) {
+                cpb.setPriceQuantity(ResolvablePriceQuantity.builder().setQuantitySchedule(ReferenceWithMetaNonNegativeQuantitySchedule.builder().setReference(Reference.builder().setScope("DOCUMENT").setReference(floatTotalLabel).build()).build()).build());
+            }
             if (settlementCurrency != null) cpb.setSettlementTerms(SettlementTerms.builder().setSettlementType(SettlementTypeEnum.CASH).setSettlementCurrency(FieldWithMetaString.builder().setValue(settlementCurrency).build()).build());
             Element pricingDates = XmlUtils.child(fleg, "pricingDates");
             Element calcEl = XmlUtils.child(fleg, "calculation");
@@ -182,12 +217,44 @@ public class CommoditySwapMapper implements ProductMapper {
         }
         // Payout order: [CommodityPayout(s), FixedPricePayout(s)]
         payouts.addAll(fixedPayouts);
+        // Physical legs (basis-with-physical) → trailing SettlementPayout entries.
+        for (Element physLeg : physicalLegs) {
+            payouts.add(Payout.builder()
+                    .setSettlementPayout(SettlementPayout.builder()
+                            .setPayerReceiver(buildPayerReceiver(physLeg, ctx))
+                            .build())
+                    .build());
+        }
         EconomicTerms.EconomicTermsBuilder econ = EconomicTerms.builder();
         for (Payout p : payouts) econ.addPayout(p);
         Element effectiveDateEl = XmlUtils.child(comSwap, "effectiveDate");
-        if (effectiveDateEl != null) { Element adjDate = XmlUtils.child(effectiveDateEl, "adjustableDate"); if (adjDate != null) econ.setEffectiveDate(AdjustableOrRelativeDate.builder().setAdjustableDate(DateMapper.adjustable(adjDate)).build()); }
+        if (effectiveDateEl != null) {
+            Element adjDate = XmlUtils.child(effectiveDateEl, "adjustableDate");
+            if (adjDate != null) {
+                AdjustableOrRelativeDate.AdjustableOrRelativeDateBuilder ardb =
+                        AdjustableOrRelativeDate.builder()
+                                .setAdjustableDate(DateMapper.adjustable(adjDate));
+                String eid = effectiveDateEl.getAttribute("id");
+                if (eid != null && !eid.isEmpty()) {
+                    ardb.setMeta(MetaFields.builder().setExternalKey(eid).build());
+                }
+                econ.setEffectiveDate(ardb.build());
+            }
+        }
         Element terminationDateEl = XmlUtils.child(comSwap, "terminationDate");
-        if (terminationDateEl != null) { Element adjDate = XmlUtils.child(terminationDateEl, "adjustableDate"); if (adjDate != null) econ.setTerminationDate(AdjustableOrRelativeDate.builder().setAdjustableDate(DateMapper.adjustable(adjDate)).build()); }
+        if (terminationDateEl != null) {
+            Element adjDate = XmlUtils.child(terminationDateEl, "adjustableDate");
+            if (adjDate != null) {
+                AdjustableOrRelativeDate.AdjustableOrRelativeDateBuilder ardb =
+                        AdjustableOrRelativeDate.builder()
+                                .setAdjustableDate(DateMapper.adjustable(adjDate));
+                String tid = terminationDateEl.getAttribute("id");
+                if (tid != null && !tid.isEmpty()) {
+                    ardb.setMeta(MetaFields.builder().setExternalKey(tid).build());
+                }
+                econ.setTerminationDate(ardb.build());
+            }
+        }
         CalculationAgentMapper.Result ca = CalculationAgentMapper.map(trade);
         if (ca.calculationAgent() != null) econ.setCalculationAgent(ca.calculationAgent());
         String qualifier = determineCommoditySwapQualifier(comSwap);
@@ -205,7 +272,11 @@ public class CommoditySwapMapper implements ProductMapper {
                     cdm.base.staticdata.asset.common.TaxonomyValue.builder().setName(name.build()).build();
             ntp.addTaxonomy(ProductTaxonomy.builder().setSource(TaxonomySourceEnum.OTHER).setValue(tv).build());
         }
-        ntp.addTaxonomy(ProductTaxonomy.builder().setSource(TaxonomySourceEnum.ISDA).setProductQualifier(qualifier).build());
+        // Suppress ISDA qualifier when a physical leg is paired with floating legs — the
+        // FINOS reference omits the inferred Commodity_Swap_Basis tag in that case.
+        if (physicalLegs.isEmpty()) {
+            ntp.addTaxonomy(ProductTaxonomy.builder().setSource(TaxonomySourceEnum.ISDA).setProductQualifier(qualifier).build());
+        }
         TradeLot tradeLot = TradeLot.builder().setPriceQuantity(priceQuantities).build();
         List<Counterparty> counterparties = SwapMapper.buildCounterparties(ctx);
         List<TradeIdentifier> identifiers = new ArrayList<>();
@@ -377,11 +448,250 @@ public class CommoditySwapMapper implements ProductMapper {
     }
     private String determineCommoditySwapQualifier(Element comSwap) {
         int fixedCount = XmlUtils.children(comSwap, "fixedLeg").size();
-        int floatCount = XmlUtils.children(comSwap, "floatingLeg").size() + XmlUtils.children(comSwap, "coalPhysicalLeg").size() + XmlUtils.children(comSwap, "gasPhysicalLeg").size() + XmlUtils.children(comSwap, "oilPhysicalLeg").size() + XmlUtils.children(comSwap, "electricityPhysicalLeg").size();
+        int floatCount = XmlUtils.children(comSwap, "floatingLeg").size() + XmlUtils.children(comSwap, "coalPhysicalLeg").size() + XmlUtils.children(comSwap, "gasPhysicalLeg").size() + XmlUtils.children(comSwap, "oilPhysicalLeg").size() + XmlUtils.children(comSwap, "electricityPhysicalLeg").size() + XmlUtils.children(comSwap, "environmentalPhysicalLeg").size();
         if (fixedCount > 0 && floatCount > 0) return "Commodity_Swap_FixedFloat";
         if (floatCount >= 2) return "Commodity_Swap_Basis";
         return "Commodity_Swap_FixedFloat";
     }
+    /**
+     * Salvage form for physical commodity swaps/forwards. Produces:
+     *   payout[0] = SettlementPayout (payerReceiver from physical leg, or fixedLeg seller view)
+     *   payout[1] = FixedPricePayout (payerReceiver from fixedLeg + price-1 ref)
+     *   tradeLot[0].priceQuantity[0] = price-1 (CashPrice / Fee) with value+currency+perUnitOf
+     *   product.taxonomy[0] = primaryAssetClass=Commodity (no ISDA qualifier)
+     */
+    private TradeState buildPhysicalSalvage(Document doc, Element trade, MappingContext ctx,
+                                            Element comSwap, Element tradeHeader, List<Party> parties,
+                                            List<Element> physicalLegs, List<Element> fixedLegs) {
+        // Anchor counterparty role from the physical leg's payer (or fixedLeg payer if none).
+        Element anchorLeg = !physicalLegs.isEmpty() ? physicalLegs.get(0)
+                : (!fixedLegs.isEmpty() ? fixedLegs.get(0) : null);
+        if (anchorLeg != null && !ctx.partyOrderLocked) assignCounterpartyRoles(anchorLeg, ctx);
+
+        List<Payout> payouts = new ArrayList<>();
+        // SettlementPayout for the physical side (payerReceiver mirrors the physical leg
+        // when present, otherwise mirrors the fixed leg — emissions forwards have only fixedLeg).
+        Element settlementSourceLeg = !physicalLegs.isEmpty() ? physicalLegs.get(0)
+                : (!fixedLegs.isEmpty() ? fixedLegs.get(0) : null);
+        if (settlementSourceLeg != null) {
+            SettlementPayout sp = SettlementPayout.builder()
+                    .setPayerReceiver(buildPayerReceiver(settlementSourceLeg, ctx))
+                    .build();
+            payouts.add(Payout.builder().setSettlementPayout(sp).build());
+        }
+
+        // FixedPricePayout per fixedLeg. When the FpML fixedLeg carries a <fixedPrice>
+        // OR <fixedPriceSchedule> block we reference it via "price-1" and emit a matching
+        // tradeLot priceQuantity. For exotic forms (settlementPeriodsPrice, totalPrice,
+        // etc.) we just emit a bare FixedPricePayout with no price ref and no tradeLot.
+        boolean anyFixedPriceBlock = false;
+        boolean anyFixedPriceWithValue = false;
+        for (Element fxleg : fixedLegs) {
+            if (XmlUtils.child(fxleg, "fixedPrice") != null) {
+                anyFixedPriceBlock = true;
+                anyFixedPriceWithValue = true;
+                break;
+            }
+            if (XmlUtils.child(fxleg, "fixedPriceSchedule") != null) {
+                anyFixedPriceBlock = true;
+            }
+        }
+        for (Element fxleg : fixedLegs) {
+            FixedPricePayout.FixedPricePayoutBuilder fpb = FixedPricePayout.builder()
+                    .setPayerReceiver(buildPayerReceiver(fxleg, ctx));
+            if (anyFixedPriceBlock) {
+                fpb.setFixedPrice(FixedPrice.builder()
+                        .setPrice(ReferenceWithMetaPriceSchedule.builder()
+                                .setReference(Reference.builder().setScope("DOCUMENT").setReference("price-1").build())
+                                .build())
+                        .build());
+            }
+            payouts.add(Payout.builder().setFixedPricePayout(fpb.build()).build());
+        }
+
+        // tradeLot priceQuantity[0]: just the fixed price (CashPrice). Skipped entirely
+        // when no fixedLeg uses any fixed-price block.
+        TradeLot tradeLot = null;
+        if (anyFixedPriceBlock) {
+            PriceQuantity pq = anyFixedPriceWithValue
+                    ? buildSalvageFixedPriceQuantity(fixedLegs)
+                    : buildBarePriceLocation();
+            tradeLot = TradeLot.builder().addPriceQuantity(pq).build();
+        }
+
+        EconomicTerms.EconomicTermsBuilder econ = EconomicTerms.builder();
+        for (Payout p : payouts) econ.addPayout(p);
+
+        Element effectiveDateEl = XmlUtils.child(comSwap, "effectiveDate");
+        if (effectiveDateEl != null) {
+            Element adjDate = XmlUtils.child(effectiveDateEl, "adjustableDate");
+            if (adjDate != null) {
+                AdjustableOrRelativeDate.AdjustableOrRelativeDateBuilder ardb =
+                        AdjustableOrRelativeDate.builder()
+                                .setAdjustableDate(DateMapper.adjustable(adjDate));
+                String eid = effectiveDateEl.getAttribute("id");
+                if (eid != null && !eid.isEmpty()) {
+                    ardb.setMeta(MetaFields.builder().setExternalKey(eid).build());
+                }
+                econ.setEffectiveDate(ardb.build());
+            }
+        }
+        Element terminationDateEl = XmlUtils.child(comSwap, "terminationDate");
+        if (terminationDateEl != null) {
+            Element adjDate = XmlUtils.child(terminationDateEl, "adjustableDate");
+            if (adjDate != null) {
+                AdjustableOrRelativeDate.AdjustableOrRelativeDateBuilder ardb =
+                        AdjustableOrRelativeDate.builder()
+                                .setAdjustableDate(DateMapper.adjustable(adjDate));
+                String tid = terminationDateEl.getAttribute("id");
+                if (tid != null && !tid.isEmpty()) {
+                    ardb.setMeta(MetaFields.builder().setExternalKey(tid).build());
+                }
+                econ.setTerminationDate(ardb.build());
+            }
+        }
+        CalculationAgentMapper.Result ca = CalculationAgentMapper.map(trade);
+        if (ca.calculationAgent() != null) econ.setCalculationAgent(ca.calculationAgent());
+
+        NonTransferableProduct.NonTransferableProductBuilder ntp = NonTransferableProduct.builder()
+                .setEconomicTerms(econ.build());
+        // taxonomy: primaryAssetClass=Commodity only — no ISDA qualifier in salvage form.
+        Element primaryAssetClassEl = XmlUtils.child(comSwap, "primaryAssetClass");
+        if (primaryAssetClassEl != null) {
+            cdm.base.staticdata.asset.common.metafields.FieldWithMetaAssetClassEnum ac =
+                    cdm.base.staticdata.asset.common.metafields.FieldWithMetaAssetClassEnum.builder()
+                            .setValue(AssetClassEnum.COMMODITY).build();
+            ntp.addTaxonomy(ProductTaxonomy.builder().setPrimaryAssetClass(ac).build());
+        }
+
+        List<Counterparty> counterparties = SwapMapper.buildCounterparties(ctx);
+        List<TradeIdentifier> identifiers = new ArrayList<>();
+        if (tradeHeader != null) {
+            for (Element pti : XmlUtils.children(tradeHeader, "partyTradeIdentifier")) {
+                identifiers.addAll(IdentifierMapper.mapWithSplit(pti));
+            }
+        }
+        FieldWithMetaDate tradeDate = buildTradeDate(tradeHeader);
+        ContractDetails contractDetails = ContractDetailsMapper.map(
+                XmlUtils.child(trade, "documentation"), parties, ctx);
+        List<PartyRole> partyRoles = PartyRoleMapper.map(trade);
+
+        Trade.TradeBuilder t = Trade.builder().setProduct(ntp.build());
+        if (tradeLot != null) t.addTradeLot(tradeLot);
+        counterparties.forEach(t::addCounterparty);
+        for (AncillaryParty ap : ca.ancillaryParties()) t.addAncillaryParty(ap);
+        partyRoles.forEach(t::addPartyRole);
+        identifiers.forEach(t::addTradeIdentifier);
+        if (tradeDate != null) t.setTradeDate(tradeDate);
+        parties.forEach(t::addParty);
+        if (contractDetails != null) t.setContractDetails(contractDetails);
+        for (Account a : AccountMapper.map(doc)) t.addAccount(a);
+
+        TradeState.TradeStateBuilder tsBuilder = TradeState.builder().setTrade(t.build());
+        for (TransferState ts : TransferMapper.map(trade, comSwap)) tsBuilder.addTransferHistory(ts);
+        return tsBuilder.build();
+    }
+
+    /**
+     * Weather-index swap salvage form: only product.economicTerms.effectiveDate /
+     * terminationDate and trade-level metadata. No payouts, no tradeLot.
+     */
+    private TradeState buildWeatherSalvage(Document doc, Element trade, MappingContext ctx,
+                                           Element comSwap, Element tradeHeader, List<Party> parties) {
+        EconomicTerms.EconomicTermsBuilder econ = EconomicTerms.builder();
+        Element effectiveDateEl = XmlUtils.child(comSwap, "effectiveDate");
+        if (effectiveDateEl != null) {
+            Element adjDate = XmlUtils.child(effectiveDateEl, "adjustableDate");
+            if (adjDate != null) {
+                AdjustableOrRelativeDate.AdjustableOrRelativeDateBuilder ardb =
+                        AdjustableOrRelativeDate.builder().setAdjustableDate(DateMapper.adjustable(adjDate));
+                String eid = effectiveDateEl.getAttribute("id");
+                if (eid != null && !eid.isEmpty()) {
+                    ardb.setMeta(MetaFields.builder().setExternalKey(eid).build());
+                }
+                econ.setEffectiveDate(ardb.build());
+            }
+        }
+        Element terminationDateEl = XmlUtils.child(comSwap, "terminationDate");
+        if (terminationDateEl != null) {
+            Element adjDate = XmlUtils.child(terminationDateEl, "adjustableDate");
+            if (adjDate != null) {
+                AdjustableOrRelativeDate.AdjustableOrRelativeDateBuilder ardb =
+                        AdjustableOrRelativeDate.builder().setAdjustableDate(DateMapper.adjustable(adjDate));
+                String tid = terminationDateEl.getAttribute("id");
+                if (tid != null && !tid.isEmpty()) {
+                    ardb.setMeta(MetaFields.builder().setExternalKey(tid).build());
+                }
+                econ.setTerminationDate(ardb.build());
+            }
+        }
+        NonTransferableProduct ntp = NonTransferableProduct.builder().setEconomicTerms(econ.build()).build();
+
+        List<TradeIdentifier> identifiers = new ArrayList<>();
+        if (tradeHeader != null) {
+            for (Element pti : XmlUtils.children(tradeHeader, "partyTradeIdentifier")) {
+                identifiers.addAll(IdentifierMapper.mapWithSplit(pti));
+            }
+        }
+        FieldWithMetaDate tradeDate = buildTradeDate(tradeHeader);
+        ContractDetails contractDetails = ContractDetailsMapper.map(
+                XmlUtils.child(trade, "documentation"), parties, ctx, null, true);
+
+        Trade.TradeBuilder t = Trade.builder().setProduct(ntp);
+        // Empty-role counterparties (no partyReference) — matches FINOS weather-swap output.
+        t.addCounterparty(Counterparty.builder().setRole(CounterpartyRoleEnum.PARTY_1).build());
+        t.addCounterparty(Counterparty.builder().setRole(CounterpartyRoleEnum.PARTY_2).build());
+        identifiers.forEach(t::addTradeIdentifier);
+        if (tradeDate != null) t.setTradeDate(tradeDate);
+        parties.forEach(t::addParty);
+        if (contractDetails != null) t.setContractDetails(contractDetails);
+        return TradeState.builder().setTrade(t.build()).build();
+    }
+
+    /** Bare price-1 location with just priceType=CashPrice (used for shaped-volume legs). */
+    private PriceQuantity buildBarePriceLocation() {
+        PriceSchedule.PriceScheduleBuilder psb = PriceSchedule.builder()
+                .setPriceType(PriceTypeEnum.CASH_PRICE);
+        return PriceQuantity.builder()
+                .addPrice(FieldWithMetaPriceSchedule.builder()
+                        .setValue(psb.build())
+                        .setMeta(QuantityMapper.locationMeta("price-1"))
+                        .build())
+                .build();
+    }
+
+    private PriceQuantity buildSalvageFixedPriceQuantity(List<Element> fixedLegs) {
+        PriceQuantity.PriceQuantityBuilder pqb = PriceQuantity.builder();
+        if (fixedLegs.isEmpty()) return pqb.build();
+        Element fxleg = fixedLegs.get(0);
+        Element fixedPrice = XmlUtils.child(fxleg, "fixedPrice");
+        if (fixedPrice == null) return pqb.build();
+        String priceStr = XmlUtils.childText(fixedPrice, "price");
+        String priceCcy = XmlUtils.childText(fixedPrice, "priceCurrency");
+        String priceUnit = XmlUtils.childText(fixedPrice, "priceUnit");
+        // Note: the FINOS reference also carries priceSubType=Fee on this price, but
+        // CDM 6.19's PriceSchedule has no priceSubType attribute, so we cannot represent it.
+        PriceSchedule.PriceScheduleBuilder psb = PriceSchedule.builder()
+                .setPriceType(PriceTypeEnum.CASH_PRICE);
+        if (priceStr != null) psb.setValue(new BigDecimal(priceStr));
+        if (priceCcy != null) {
+            psb.setUnit(UnitType.builder()
+                    .setCurrency(FieldWithMetaString.builder().setValue(priceCcy).build())
+                    .build());
+        }
+        if (priceUnit != null) {
+            cdm.base.math.CapacityUnitEnum cu = mapCapacityUnit(priceUnit);
+            if (cu != null) {
+                psb.setPerUnitOf(UnitType.builder().setCapacityUnit(cu).build());
+            }
+        }
+        pqb.addPrice(FieldWithMetaPriceSchedule.builder()
+                .setValue(psb.build())
+                .setMeta(QuantityMapper.locationMeta("price-1"))
+                .build());
+        return pqb.build();
+    }
+
     static FieldWithMetaCommodityBusinessCalendarEnum mapCommodityBusinessCalendar(String name) {
         if (name == null) return null; String enumName = name.replace("-", "_").replace(" ", "_").toUpperCase();
         try { return FieldWithMetaCommodityBusinessCalendarEnum.builder().setValue(CommodityBusinessCalendarEnum.valueOf(enumName)).build(); } catch (IllegalArgumentException ignored) {}
@@ -396,6 +706,8 @@ public class CommoditySwapMapper implements ProductMapper {
         String upper = unit.toUpperCase();
         try { return cdm.base.math.CapacityUnitEnum.valueOf(upper); } catch (IllegalArgumentException ignored) {}
         try { return cdm.base.math.CapacityUnitEnum.fromDisplayName(upper); } catch (Exception ignored) {}
+        // Common aliases: FpML "GAL" → CDM USGAL (US gallon is the FpML default).
+        if ("GAL".equalsIgnoreCase(unit)) return cdm.base.math.CapacityUnitEnum.USGAL;
         return null;
     }
     static Frequency mapFrequency(String freq) {

@@ -350,6 +350,36 @@ public class VarianceSwapMapper implements ProductMapper {
                     .setVarianceCap(Boolean.parseBoolean(varCap))
                     .build());
         }
+        // boundedVariance (conditional variance swap) → varianceCapFloor.boundedVariance
+        Element bvEl = XmlUtils.child(variance, "boundedVariance");
+        if (bvEl != null) {
+            cdm.product.asset.BoundedVariance.BoundedVarianceBuilder bvb =
+                    cdm.product.asset.BoundedVariance.builder();
+            String rvm = XmlUtils.childText(bvEl, "realisedVarianceMethod");
+            if (rvm != null) {
+                cdm.product.asset.RealisedVarianceMethodEnum rvme = null;
+                try { rvme = cdm.product.asset.RealisedVarianceMethodEnum.valueOf(rvm); }
+                catch (IllegalArgumentException ignored) {}
+                if (rvme == null) {
+                    try { rvme = cdm.product.asset.RealisedVarianceMethodEnum.fromDisplayName(rvm); }
+                    catch (Exception ignored) {}
+                }
+                if (rvme == null) {
+                    try { rvme = cdm.product.asset.RealisedVarianceMethodEnum.valueOf(rvm.toUpperCase()); }
+                    catch (IllegalArgumentException ignored) {}
+                }
+                if (rvme != null) bvb.setRealisedVarianceMethod(rvme);
+            }
+            String dira = XmlUtils.childText(bvEl, "daysInRangeAdjustment");
+            if (dira != null) bvb.setDaysInRangeAdjustment(Boolean.parseBoolean(dira));
+            String upper = XmlUtils.childText(bvEl, "upperBarrier");
+            if (upper != null) bvb.setUpperBarrier(new BigDecimal(upper));
+            String lower = XmlUtils.childText(bvEl, "lowerBarrier");
+            if (lower != null) bvb.setLowerBarrier(new BigDecimal(lower));
+            vrtb.setVarianceCapFloor(cdm.product.asset.VarianceCapFloor.builder()
+                    .setBoundedVariance(bvb.build())
+                    .build());
+        }
 
         // vegaNotionalAmount → vegaNotionalAmount.value + unit.currency (from amount->varianceAmount->currency)
         String vegaStr = XmlUtils.childText(variance, "vegaNotionalAmount");

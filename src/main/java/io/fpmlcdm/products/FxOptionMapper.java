@@ -169,14 +169,19 @@ public class FxOptionMapper implements ProductMapper {
             strikePerUnitCcy = callCcy;
         }
 
-        OptionStrike optStrike = OptionStrike.builder()
-                .setStrikePrice(Price.builder()
-                        .setValue(new BigDecimal(strikeRate))
-                        .setUnit(UnitType.builder().setCurrency(FieldWithMetaString.builder().setValue(strikePriceCcy).build()).build())
-                        .setPerUnitOf(UnitType.builder().setCurrency(FieldWithMetaString.builder().setValue(strikePerUnitCcy).build()).build())
-                        .setPriceType(PriceTypeEnum.EXCHANGE_RATE)
-                        .build())
-                .build();
+        Price.PriceBuilder strikePriceBuilder = Price.builder()
+                .setValue(new BigDecimal(strikeRate))
+                .setUnit(UnitType.builder().setCurrency(FieldWithMetaString.builder().setValue(strikePriceCcy).build()).build())
+                .setPerUnitOf(UnitType.builder().setCurrency(FieldWithMetaString.builder().setValue(strikePerUnitCcy).build()).build())
+                .setPriceType(PriceTypeEnum.EXCHANGE_RATE);
+        // spotRate (when present on the option) → strikePrice.composite.baseValue.
+        String spotRate = XmlUtils.childText(fxOption, "spotRate");
+        if (spotRate != null) {
+            strikePriceBuilder.setComposite(cdm.observable.asset.PriceComposite.builder()
+                    .setBaseValue(new BigDecimal(spotRate))
+                    .build());
+        }
+        OptionStrike optStrike = OptionStrike.builder().setStrikePrice(strikePriceBuilder.build()).build();
 
         // Settlement terms
         SettlementTerms.SettlementTermsBuilder stb = SettlementTerms.builder();
@@ -348,7 +353,7 @@ public class FxOptionMapper implements ProductMapper {
         return tsBuilder.build();
     }
 
-    private TransferState buildPremiumTransfer(Element premium) {
+    static TransferState buildPremiumTransfer(Element premium) {
         Transfer.TransferBuilder tb = Transfer.builder();
 
         Element amtEl = XmlUtils.child(premium, "paymentAmount");
@@ -624,7 +629,7 @@ public class FxOptionMapper implements ProductMapper {
         return "ForeignExchange_VanillaOption";
     }
 
-    private void assignRoles(String buyerHref, MappingContext ctx) {
+    static void assignRoles(String buyerHref, MappingContext ctx) {
         if (buyerHref == null) return;
         Map<String, Integer> newOrder = new LinkedHashMap<>();
         newOrder.put(buyerHref, 0);

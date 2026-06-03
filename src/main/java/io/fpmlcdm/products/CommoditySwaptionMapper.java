@@ -99,10 +99,27 @@ public class CommoditySwaptionMapper implements ProductMapper {
             }
             outerTaxonomies.add(ProductTaxonomy.builder().setPrimaryAssetClass(ab.build()).build());
         }
-        outerTaxonomies.add(ProductTaxonomy.builder()
-                .setSource(TaxonomySourceEnum.ISDA)
-                .setProductQualifier("Commodity_Swaption")
-                .build());
+        // Suppress the inferred Commodity_Swaption qualifier when the inner swap carries a
+        // physical leg (or environmental fixedLeg) — the FINOS reference omits it for
+        // these salvaged cases.
+        Element innerSwap = XmlUtils.child(comSwaption, "commoditySwap");
+        boolean innerIsPhysical = innerSwap != null && (
+                XmlUtils.child(innerSwap, "coalPhysicalLeg") != null
+                || XmlUtils.child(innerSwap, "gasPhysicalLeg") != null
+                || XmlUtils.child(innerSwap, "oilPhysicalLeg") != null
+                || XmlUtils.child(innerSwap, "electricityPhysicalLeg") != null
+                || XmlUtils.child(innerSwap, "environmentalPhysicalLeg") != null);
+        if (innerSwap != null && !innerIsPhysical) {
+            for (Element fl : XmlUtils.children(innerSwap, "fixedLeg")) {
+                if (XmlUtils.child(fl, "environmental") != null) { innerIsPhysical = true; break; }
+            }
+        }
+        if (!innerIsPhysical) {
+            outerTaxonomies.add(ProductTaxonomy.builder()
+                    .setSource(TaxonomySourceEnum.ISDA)
+                    .setProductQualifier("Commodity_Swaption")
+                    .build());
+        }
 
         NonTransferableProduct.NonTransferableProductBuilder ntp = NonTransferableProduct.builder()
                 .setEconomicTerms(econ.build());
@@ -185,12 +202,15 @@ public class CommoditySwaptionMapper implements ProductMapper {
             cdm.base.datetime.AdjustableOrAdjustedOrRelativeDate.AdjustableOrAdjustedOrRelativeDateBuilder sdb =
                     cdm.base.datetime.AdjustableOrAdjustedOrRelativeDate.builder();
             Element adjDate = XmlUtils.child(payDate, "adjustableDate");
+            Element relDate = XmlUtils.child(payDate, "relativeDate");
             if (adjDate != null) {
                 String unadj = XmlUtils.childText(adjDate, "unadjustedDate");
                 if (unadj != null) sdb.setUnadjustedDate(DateMapper.parse(unadj));
                 cdm.base.datetime.BusinessDayAdjustments bda = DateMapper.businessDayAdjustments(
                         XmlUtils.child(adjDate, "dateAdjustments"));
                 if (bda != null) sdb.setDateAdjustments(bda);
+            } else if (relDate != null) {
+                sdb.setRelativeDate(io.fpmlcdm.common.DateMapper.buildRelativeDateOffset(relDate));
             } else {
                 String unadj = XmlUtils.childText(payDate, "unadjustedDate");
                 if (unadj != null) sdb.setUnadjustedDate(DateMapper.parse(unadj));

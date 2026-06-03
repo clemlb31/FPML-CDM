@@ -113,7 +113,17 @@ public final class TransferMapper {
         Element payDate = XmlUtils.child(fpml, "paymentDate");
         Element relDateForSettlement = null;
         boolean fromAdditionalPaymentDate = false;
-        if (payDate == null) {
+        if (payDate != null) {
+            // commodity option premium wraps <paymentDate><relativeDate>...</relativeDate></paymentDate>
+            Element nestedRel = XmlUtils.child(payDate, "relativeDate");
+            if (nestedRel != null && XmlUtils.child(payDate, "adjustableDate") == null
+                    && XmlUtils.childText(payDate, "unadjustedDate") == null
+                    && XmlUtils.childText(payDate, "adjustedDate") == null) {
+                relDateForSettlement = nestedRel;
+                payDate = null;
+            }
+        }
+        if (payDate == null && relDateForSettlement == null) {
             // returnSwap additionalPayment uses <additionalPaymentDate>/<adjustableDate or relativeDate>
             Element addDate = XmlUtils.child(fpml, "additionalPaymentDate");
             if (addDate != null) {
