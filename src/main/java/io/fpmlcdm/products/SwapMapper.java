@@ -231,13 +231,19 @@ public class SwapMapper implements ProductMapper {
         if (payerRef == null) return;
         String payerHref = payerRef.getAttribute("href");
         if (payerHref == null || payerHref.isEmpty()) return;
+        Element receiverRef = XmlUtils.child(first, "receiverPartyReference");
+        String receiverHref = receiverRef != null ? receiverRef.getAttribute("href") : null;
 
-        // Re-key partyOrder: payerHref → 0, others → 1, 2 …
+        // Re-key partyOrder: payerHref → 0, receiverHref → 1, then others → 2, 3 …
         Map<String, Integer> newOrder = new LinkedHashMap<>();
         newOrder.put(payerHref, 0);
-        int idx = 1;
+        if (receiverHref != null && !receiverHref.isEmpty()
+                && !receiverHref.equals(payerHref) && ctx.partyOrder.containsKey(receiverHref)) {
+            newOrder.put(receiverHref, 1);
+        }
+        int idx = newOrder.size();
         for (String pid : ctx.partyOrder.keySet()) {
-            if (!pid.equals(payerHref)) {
+            if (!newOrder.containsKey(pid)) {
                 newOrder.put(pid, idx++);
             }
         }
