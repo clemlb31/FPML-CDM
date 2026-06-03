@@ -88,14 +88,14 @@ class DataDrivenValidationTest {
             tradeStates = converter.convert(in);
         }
         assertEquals(1, tradeStates.size(),
-                "Single-trade dataset entry but got " + tradeStates.size());
+                () -> "[" + xml + "] Single-trade dataset entry but got " + tradeStates.size());
 
         String actual = JSON.writerWithDefaultPrettyPrinter().writeValueAsString(tradeStates.get(0));
         String expected = Files.readString(expectedJson);
 
         SemanticDiff.Result diff = SemanticDiff.compare(expected, actual);
         assertTrue(diff.isEqual(),
-                () -> "Diffs (" + diff.size() + "):\n" + diff);
+                () -> "[" + xml + "] Diffs (" + diff.size() + "):\n" + diff);
     }
 
     /**
