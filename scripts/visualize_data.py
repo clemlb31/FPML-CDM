@@ -25,8 +25,9 @@ from pathlib import Path
 
 # ── paths ──────────────────────────────────────────────────────────────────────
 ROOT       = Path(__file__).parent.parent
-FPML_DIR   = ROOT / "test_data" / "interest-rate-derivatives-5-13" / "fpml"
-CDM_DIR    = ROOT / "test_data" / "interest-rate-derivatives-5-13" / "cdm"
+_SUITE     = "interest-rate-derivatives-5-13"   # any dir under data/test/
+FPML_DIR   = ROOT / "data" / "test" / _SUITE / "fpml"
+CDM_DIR    = ROOT / "data" / "test" / _SUITE / "cdm"
 DEFAULT    = "ird-ex01a-vanilla-swap"
 
 # Fields we want to highlight in the FpML tree (case-insensitive suffix match)

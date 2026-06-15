@@ -1,63 +1,45 @@
 # MCP server configuration
 # Loaded by agent/helpers.py::get_servers() → MultiServerMCPClient
 #
-# Transport options:
-#   streamable_http  — HTTP server (FastMCP with --transport streamablehttp)
-#   sse              — HTTP server (FastMCP with --transport sse)
+# Every MCP is its own Python server under mcp_servers/ (see mcp_servers/README.md):
+#   filesystem       — read knowledge_base/ + data/, read-write workspaces/  (port 8080)
+#   validator        — compile + run_test feedback loop (Docker Maven)        (port 8003)
+#   grep             — ripgrep content search                                 (port 8005)
+#   cdm_lookup       — CDM 6.19 API introspection (javap)                     (port 8006)
+#   internet_search  — web search (Tavily wrapper; needs TAVILY_KEY in .env)  (port 8007)
 #
-# Start each server before launching the agent:
-#   python -m mcp_servers.knowledge_server.server --transport streamablehttp --port 8001
-#   python -m mcp_servers.triage_server.server    --transport streamablehttp --port 8002
-#   python -m mcp_servers.validator_server.server --transport streamablehttp --port 8003
+# Why only one filesystem server: MultiServerMCPClient flattens tools by NAME, so a
+# second filesystem instance would shadow write_file/read_file and silently break
+# writes. One server covering every needed directory avoids that entirely.
 #
-# Filesystem MCP (supergateway wrapping @modelcontextprotocol/server-filesystem).
-# Exposes workspaces/ (read-write), knowledge_base/ and data/train/ (read-only):
-#   npx -y supergateway --port 8080 --outputTransport streamableHttp ^
-#     --stdio "npx -y @modelcontextprotocol/server-filesystem ^
-#       .\workspaces .\knowledge_base .\data\train"
+# Transport: streamable_http (FastMCP --transport streamable-http).
+# Start all local servers with: bash mcp_servers/start_all.sh
 #
-# Tavily: set TAVILY_MCP=<url> in .env (e.g. https://mcp.tavily.com/mcp/?apiKey=...)
+# ${VAR} tokens in url values are expanded from the environment (see get_servers()).
 
 servers:
 
-  # ── Domain knowledge is read via filesystem MCP from knowledge_base/ ──────────
-  # Dedicated knowledge disabled for now, use filesystem MCP instead (more flexible, can edit files directly if needed).
-
-  # ── Deterministic failure analyser (triage_compile_error, triage_test_diff) ──
-  triage:
-    transport: streamable_http
-    url: "http://localhost:8002/mcp"
-
-  # ── Build & test feedback loop (compile, run_test, run_test_all, score) ──────
-  validator:
-    transport: streamable_http
-    url: "http://localhost:8003/mcp"
-
-  # ── Filesystem (write workspaces/, read knowledge_base/ + data/train/) ────────
+  # ── Filesystem: write workspaces/, read knowledge_base/ + data/ ──────────────
   filesystem:
     transport: streamable_http
     url: "http://localhost:8080/mcp"
 
-  # ── Training examples (DISABLED — redundant: filesystem-8080 already exposes data/train) ──
-  # Was: a 2nd filesystem MCP on data/train only. MultiServerMCPClient flattens
-  # tools by name, so it shadowed filesystem-8080's write_file with a read-only
-  # one rooted at data/train, blocking writes to workspaces/. Re-enable only if
-  # we move to namespaced tools.
-  # examples:
-  #   transport: streamable_http
-  #   url: "http://localhost:8081/mcp"
-
-  # ── Mapping / human-in-the-loop + Maven dependencies ────────────────────────
-  mapping:
+  # ── Build & test feedback loop (compile_project, run_test) — Docker Maven ────
+  validator:
     transport: streamable_http
-    url: "http://localhost:8004/mcp"
+    url: "http://localhost:8003/mcp"
 
-  # ── Grep (ripgrep wrapper — content search across workspaces) ───────────────
+  # ── Grep (ripgrep wrapper — content search; filesystem only matches names) ───
   grep:
     transport: streamable_http
     url: "http://localhost:8005/mcp"
 
-  # ── Internet search (Tavily — optional, for CDM/FpML spec lookups) ───────────
-  tavily:
+  # ── CDM API introspection (cdm_lookup — real builder/enum signatures via javap) ─
+  cdm_lookup:
     transport: streamable_http
-    url: "${TAVILY_MCP}"
+    url: "http://localhost:8006/mcp"
+
+  # ── Internet search (internet_search — our Tavily wrapper; key from .env) ────
+  internet_search:
+    transport: streamable_http
+    url: "http://localhost:8007/mcp"

@@ -12,9 +12,11 @@ runs/
 .mcp_pids/
 .mcp_logs/
 
-# Generated Maven projects produced by the agent on each run
-workspaces/test-fra*/
-workspaces/test-usd-*/
+# Generated Maven projects + run logs produced by the agent on each run
+# (regenerated every run, ~GBs of jars/classes — never commit; findings live in the reports)
+workspaces/
+# stray run logs at repo root
+*.launch.log
 
 # Claude Code local state
 .claude/

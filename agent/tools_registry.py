@@ -174,33 +174,43 @@ EXPOSED_TOOLS: dict[str, dict] = {
         },
     },
 
-    # ── mapping MCP ───────────────────────────────────────────────────────────
-    "get_maven_dependencies": {
+    # ── internet_search MCP (web search — Tavily wrapper) ─────────────────────
+    "internet_search": {
         "description": (
-            "Return the CDM + Jackson Maven dependency XML to drop into a pom.xml."
+            "Search the web. LAST resort during research — to look up CDM / FpML / "
+            "rosetta-model docs or the real 6.19 API when the cheat-sheet and "
+            "cdm_lookup don't cover a product or symbol. Returns an optional one-line "
+            "answer + ranked results (title, url, snippet)."
         ),
-        "input_schema": {"type": "object", "properties": {}},
-    },
-
-    # ── triage MCP ────────────────────────────────────────────────────────────
-    "triage_compile_error": {
-        "description": "Parse a Maven compile error log and propose hypotheses + fixes.",
         "input_schema": {
             "type": "object",
-            "required": ["error_log"],
-            "properties": {"error_log": {"type": "string"}},
-        },
-    },
-    "triage_test_diff": {
-        "description": "Parse a SemanticDiff result and propose targeted method fixes.",
-        "input_schema": {
-            "type": "object",
-            "required": ["diff_output"],
-            "properties": {"diff_output": {"type": "string"}},
+            "required": ["query"],
+            "properties": {
+                "query":       {"type": "string"},
+                "max_results": {"type": "integer", "default": 5},
+                "deep":        {"type": "boolean", "default": False,
+                                "description": "advanced (slower, broader) search depth"},
+            },
         },
     },
 
-    # ── Local-only (not MCP) ──────────────────────────────────────────────────
+    # ── cdm_lookup MCP (CDM 6.19 API introspection — mcp_servers/cdm_lookup_server) ─
+    "cdm_lookup": {
+        "description": (
+            "Look up the REAL CDM 6.19 API for a type by name. Returns the exact "
+            "builder set*/add* method signatures (or, for an enum, its real "
+            "constants) straight from the jar. Use this to VERIFY a method/enum name "
+            "before writing it, or whenever the compiler says 'cannot find symbol' — "
+            "do not guess. e.g. name='TradeLot' or name='DayCountFractionEnum'."
+        ),
+        "input_schema": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {"name": {"type": "string"}},
+        },
+    },
+
+    # ── Local-only (not MCP — manipulate the agent loop's own state) ───────────
     COMPACT_TOOL_NAME: {
         "description":  COMPACT_TOOL_DESCRIPTION,
         "input_schema": COMPACT_TOOL_INPUT_SCHEMA,

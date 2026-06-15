@@ -17,6 +17,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+
 
 # ── Data types ─────────────────────────────────────────────────────────────────
 
@@ -198,3 +200,74 @@ def extract_gemini_tool_calls(response: Any) -> LLMResponse:
     done_match = _DONE_RE.search(text)
     done = done_match.group(1).strip() if done_match else None
     return LLMResponse(text=text, tool_calls=calls, done=done, raw=response)
+
+
+# ── Message wire converters (neutral LangChain messages → provider wire) ───────
+#
+# The agent loop carries history as LangChain SystemMessage/HumanMessage/AIMessage
+# (or plain dicts). Each backend turns that into the shape its SDK expects. These
+# live here next to the tool-schema converters and response extractors so all
+# request/response wire-format conversion sits in one module.
+
+def messages_to_openai_wire(prompt: list) -> list[dict]:
+    """OpenAI chat format: a flat [{role, content}] list; system is a normal message."""
+    out: list[dict] = []
+    for m in prompt:
+        if isinstance(m, SystemMessage):
+            out.append({"role": "system",    "content": m.content})
+        elif isinstance(m, HumanMessage):
+            out.append({"role": "user",      "content": m.content})
+        elif isinstance(m, AIMessage):
+            out.append({"role": "assistant", "content": m.content})
+        elif isinstance(m, dict):
+            out.append(m)
+        else:
+            out.append({"role": "user", "content": str(m)})
+    return out
+
+
+def messages_to_anthropic(prompt: list) -> tuple[list[dict], str | None]:
+    """Anthropic expects `system` as a separate kwarg, not in the messages list."""
+    system_parts: list[str] = []
+    messages: list[dict] = []
+    for m in prompt:
+        if isinstance(m, SystemMessage):
+            system_parts.append(m.content)
+        elif isinstance(m, HumanMessage):
+            messages.append({"role": "user",      "content": m.content})
+        elif isinstance(m, AIMessage):
+            messages.append({"role": "assistant", "content": m.content})
+        elif isinstance(m, dict):
+            role = m.get("role", "user")
+            content = m.get("content", "")
+            if role == "system":
+                system_parts.append(content)
+            else:
+                messages.append({"role": role, "content": content})
+        else:
+            messages.append({"role": "user", "content": str(m)})
+    return messages, ("\n\n".join(system_parts) or None)
+
+
+def messages_to_gemini(prompt: list) -> tuple[list[dict], str | None]:
+    """Gemini Contents API: roles `user`/`model`; system goes into config.system_instruction."""
+    system_parts: list[str] = []
+    contents: list[dict] = []
+    for m in prompt:
+        if isinstance(m, SystemMessage):
+            system_parts.append(m.content)
+            continue
+        role = "user"
+        text = ""
+        if isinstance(m, HumanMessage):
+            role, text = "user", m.content
+        elif isinstance(m, AIMessage):
+            role, text = "model", m.content
+        elif isinstance(m, dict):
+            r = m.get("role", "user")
+            role = "model" if r == "assistant" else r
+            text = m.get("content", "")
+        else:
+            text = str(m)
+        contents.append({"role": role, "parts": [{"text": text}]})
+    return contents, ("\n\n".join(system_parts) or None)

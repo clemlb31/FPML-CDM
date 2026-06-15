@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Smoke test du backend LLM configuré.
+"""Smoke test for the configured LLM backend — the REAL path the agent uses.
 
-Usage:
-    python scripts/test_llm.py [--backend gemini|lmstudio|vllm]
-    python scripts/test_llm.py --via-helpers   # teste aussi helpers.llm_text_or_raise
+Exercises agent/llm_call (config-driven backends + llm_call façade), not any
+legacy code:
 
-Vérifie:
-  1. Que le backend factory répond
-  2. Que helpers.llm_text_or_raise répond (chemin utilisé par le graph)
-  3. Que le mode JSON marche (Gemini only)
+    python scripts/test_llm.py                 # test the backend selected in configs/agent.yaml
+    python scripts/test_llm.py --backend groq  # test another backend defined in agent.yaml
+    python scripts/test_llm.py --tools         # also send a 1-tool registry (native tool_use)
+
+Checks:
+  1. configs/agent.yaml resolves and the backend builds (prints name/kind/model).
+  2. llm_call() returns a non-empty LLMResponse (the live agent call path).
+  3. (--tools) the backend accepts a neutral tool registry and converts it.
 """
 from __future__ import annotations
 
@@ -21,76 +24,87 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from dotenv import load_dotenv
 
-def test_factory(backend: str | None) -> None:
-    from agent.llm_call.LLM_interface import LLM
+load_dotenv(ROOT / ".env")
 
-    print(f"\n[1/3] Factory LLM(backend={backend!r}) → generate()")
-    with LLM(backend=backend) as llm:
-        resp = llm.generate("In one short sentence, what model are you?")
-    print(f"     OK ({len(resp)} chars): {resp[:200]}")
+from agent.llm_call import build_backend, get_backend, llm_call
+from agent.llm_call.config import load_config, resolve_active
 
-
-def test_factory_json() -> None:
-    """Gemini-only: vérifie que response_mime_type=application/json marche."""
-    from agent.llm_call.gemini_call import GeminiCall
-
-    print("\n[2/3] GeminiCall.generate_json()")
-    llm = GeminiCall()
-    resp = llm.generate_json(
-        'Return a JSON object with keys "ok" (bool) and "model" (string). Nothing else.'
-    )
-    print(f"     OK ({len(resp)} chars): {resp[:200]}")
+# A trivial neutral tool registry (same shape as tools_registry.schema_registry()).
+_PING_TOOL = {
+    "ping": {
+        "description": "Reply to a ping. Call this with a short message.",
+        "input_schema": {
+            "type": "object",
+            "required": ["message"],
+            "properties": {"message": {"type": "string"}},
+        },
+    }
+}
 
 
-async def test_via_helpers() -> None:
-    """Chemin réel utilisé par le LangGraph (helpers.llm_text_or_raise)."""
+def _select_backend(name: str | None):
+    """get_backend() for the active YAML backend, or build a named one for testing."""
+    if not name:
+        return get_backend()
+    cfg = load_config()
+    backends = cfg.get("backends") or {}
+    if name not in backends:
+        raise SystemExit(f"backend {name!r} not in configs/agent.yaml (known: {list(backends)})")
+    params = {**(cfg.get("defaults") or {}), **(backends[name] or {})}
+    return build_backend(name, params)
+
+
+async def run(name: str | None, with_tools: bool) -> None:
+    backend = _select_backend(name)
+    print(f"\n[1/3] backend resolved: name={backend.name!r} "
+          f"kind={backend.params.get('kind')!r} model={backend.model!r} "
+          f"native_tools={backend.uses_native_tools}")
+
     from langchain_core.messages import HumanMessage, SystemMessage
+    prompt = [
+        SystemMessage(content="You answer in one short sentence."),
+        HumanMessage(content="What model are you?"),
+    ]
 
-    from agent.helpers import llm_text_or_raise
-
-    print("\n[3/3] helpers.llm_text_or_raise()  (= chemin utilisé par graph.py)")
-    text = await llm_text_or_raise(
-        project_dir=str(ROOT / "workspaces" / "current_project"),
-        label="smoke-test",
-        prompt=[
-            SystemMessage(content="You answer in one short sentence."),
-            HumanMessage(content="What model are you?"),
-        ],
-        max_tokens=100,
-    )
+    print("\n[2/3] llm_call() text round-trip")
+    resp = await backend.complete(label="smoke", prompt=prompt, max_tokens=200)
+    text = (resp.text or "").strip()
+    if not text:
+        raise RuntimeError("empty response text")
     print(f"     OK ({len(text)} chars): {text[:200]}")
+
+    if with_tools:
+        print("\n[3/3] llm_call() with a 1-tool registry (native tool_use)")
+        if not backend.uses_native_tools:
+            print("     skipped: backend has no native tool_use (manual/XML mode)")
+            return
+        tprompt = [
+            SystemMessage(content="Use the ping tool to reply."),
+            HumanMessage(content="Ping with the message 'hello'."),
+        ]
+        tresp = await backend.complete(label="smoke-tools", prompt=tprompt,
+                                       max_tokens=200, tools=_PING_TOOL)
+        if tresp.tool_calls:
+            tc = tresp.tool_calls[0]
+            print(f"     OK: model called {tc.name}({tc.args})")
+        else:
+            print(f"     no tool_call returned (model answered in text): {tresp.text[:120]!r}")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--backend",
-        default=None,
-        help="Override LLM_BACKEND for this test (gemini/lmstudio/vllm).",
-    )
-    parser.add_argument(
-        "--skip-json",
-        action="store_true",
-        help="Skip the JSON mode test (Gemini only).",
-    )
-    parser.add_argument(
-        "--skip-helpers",
-        action="store_true",
-        help="Skip the helpers.llm_text_or_raise test.",
-    )
+    parser.add_argument("--backend", default=None,
+                        help="Test a specific backend from agent.yaml (default: the active one).")
+    parser.add_argument("--tools", action="store_true",
+                        help="Also send a 1-tool registry to exercise native tool_use.")
     args = parser.parse_args()
-
     try:
-        test_factory(args.backend)
-        if not args.skip_json and (args.backend or "gemini") == "gemini":
-            test_factory_json()
-        if not args.skip_helpers:
-            asyncio.run(test_via_helpers())
+        asyncio.run(run(args.backend, args.tools))
     except Exception as exc:
         print(f"\n[FAIL] {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1
-
     print("\nAll smoke checks passed.")
     return 0
 

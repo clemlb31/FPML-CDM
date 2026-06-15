@@ -2,16 +2,17 @@
 
 Agent qui génère un convertisseur Java FpML 5.x → CDM 6.x. **Aucun nœud fixe** :
 le LLM décide tout — lire les fichiers, écrire le projet Maven, compiler,
-tester, patcher — via un protocole de `<tool_call>` XML-tag. Architecture
-ReAct simple plus sous-agents parallèles non-récursifs.
+tester, patcher — via le tool_use natif (fallback protocole `<tool_call>` XML).
+Architecture ReAct simple plus sous-agents parallèles non-récursifs.
 
-Backend par défaut : `manual` — l'« LLM » est Claude répondant dans le chat via
-fichiers `.llm_io/inbox/*.json` ↔ `.llm_io/outbox/*.txt`. Aucune clé API,
-qualité Claude full. Run prouvé sur `ird-ex08-fra` : **5 itérations → 100 %
-(92/92)** match avec le JSON CDM de référence.
+Backend par défaut : `qwopus` — **Qwopus3.5-9B-Coder** servi par Ollama sur la
+machine GPU du LAN (local, illimité, tool_use natif). Voir le tableau des backends
+pour les autres options, dont `manual` (l'« LLM » est Claude répondant dans le chat
+via `.llm_io/inbox` ↔ `outbox`). Run prouvé sur `ird-ex08-fra` en `manual` :
+**5 itérations → 100 % (92/92)** match avec le JSON CDM de référence.
 
-Entrée : `agent/autonomous.py`. L'ancien `agent/graph.py` (state machine
-LangGraph nodée) est conservé pour historique mais n'est plus utilisé.
+Entrée : `agent/autonomous.py`. L'ancienne state machine LangGraph nodée
+(`graph.py`/`react_graph.py`) a été supprimée — seule la boucle ReAct subsiste.
 
 ---
 
@@ -24,34 +25,32 @@ flowchart TB
     PROMPTS([Prompts / Skills]):::input
     SUBAGENT((SubAgent)):::actor
 
-    MOD[Modify code base]:::cap
-    KB[(Knowledge base<br/>Cookbook)]:::cap
-    TRAIN[Train exemples<br/>FpML → CDM]:::cap
+    MOD[Write workspace<br/>pom + Java]:::cap
+    KB[(Knowledge base + data<br/>read-only refs)]:::cap
+    GREP[Grep file contents]:::cap
 
     AGENT[Agent]:::agent
 
-    JAVAERR[Get Java / Maven<br/>errors]:::cap
-    TRIAGE[Triage Error]:::cap
-    TEST[Test Code<br/>on train set]:::cap
-    HUMAN[Questions to Human]:::cap
-    SEARCH[Internet Search]:::cap
+    COMPILE[Compile project<br/>mvn]:::cap
+    TEST[Run test<br/>diff vs expected CDM]:::cap
+    CDM[cdm_lookup<br/>CDM API via javap]:::cap
+    SEARCH[internet_search<br/>web]:::cap
 
     CONN[Test Connector<br/>on test set]:::test
     TESTEX([Test exemples<br/>FpML → CDM]):::input
     REPORT([Pipeline Score<br/>Report]):::output
 
     PROMPTS --> AGENT
-    SUBAGENT -. SubAgent meta-tool .-> AGENT
+    SUBAGENT -. spawn_subagent meta-tool .-> AGENT
 
     MOD <-->|Filesystem MCP| AGENT
     KB <-->|Filesystem MCP| AGENT
-    TRAIN <-->|Filesystem MCP| AGENT
-    JAVAERR <-->|Validator MCP| AGENT
+    GREP <-->|Grep MCP| AGENT
 
-    AGENT <-->|Triage MCP| TRIAGE
+    AGENT <-->|Validator MCP| COMPILE
     AGENT <-->|Validator MCP| TEST
-    AGENT <-->|Mapping MCP| HUMAN
-    AGENT <-->|Tavily MCP| SEARCH
+    AGENT <-->|cdm_lookup MCP| CDM
+    AGENT <-->|internet_search MCP| SEARCH
 
     AGENT --> CONN
     TESTEX --> CONN
@@ -79,7 +78,7 @@ flowchart TD
     START([CLI<br/>python -m agent.autonomous]):::terminal
     SETUP[setup<br/>MCP client + tools<br/>build prompts]:::pure
     LOOP{{run_loop<br/>iter &lt; max-iter}}:::router
-    LLM[llm_text_or_raise]:::llm
+    LLM[_llm_call_guarded<br/>→ agent.llm_call.llm_call]:::llm
     PARSE[parse_response<br/>regex tool_call + done]:::pure
     CHECK{contenu ?}:::router
     NUDGE[append nudge message]:::pure
@@ -108,7 +107,7 @@ dans `run_loop` avec `allow_subagents=False` (récursion bornée à 1 niveau).
 
 ```mermaid
 flowchart LR
-    AGENT[helpers.llm_text_or_raise<br/>backend=manual]:::llm
+    AGENT[ManualBackend.complete<br/>agent.llm_call, backend: manual]:::llm
     INBOX[write .llm_io/inbox/&lt;id&gt;.json<br/>prompt + label + max_tokens]:::tool
     POLL{poll outbox<br/>1s, max 30 min}:::router
     READ[read .llm_io/outbox/&lt;id&gt;.txt<br/>archive dans history/]:::tool
@@ -134,7 +133,7 @@ flowchart LR
 |---------|---------------|
 | 🟣 Violet | Entrée / sortie (CLI, return done) |
 | 🟡 Jaune | Routage conditionnel |
-| 🩷 Rose  | Appel LLM (`helpers.llm_text_or_raise`) |
+| 🩷 Rose  | Appel LLM (`agent.llm_call.llm_call`) |
 | 🔵 Bleu  | I/O fichier ou MCP |
 | 🟢 Vert  | Code Python pur |
 | 🟠 Orange| Mutation de l'état (liste `messages`) |
@@ -163,52 +162,79 @@ Chaque tour, le modèle émet un texte qui contient :
 
 | Step | Tour Python | Tool calls émis | Sortie |
 |------|-------------|------------------|--------|
-| 1 | Setup + 1er LLM call | `mkdir_p`, `read_file` ×3, `get_maven_dependencies` | exploration |
-| 2 | LLM voit FpML + CDM + deps | `write_file` ×4 (pom + 3 Java) | projet Maven écrit via MCP |
-| 3 | LLM voit confirmations | `compile_project` | `ok: true` |
-| 4 | LLM voit compile vert | `run_test` | `match: true, score: 100.0` |
-| 5 | LLM voit match | `<done>...</done>` | SUCCESS |
+| 1 | Setup + 1er LLM call | `read_file` (FpML, expected JSON, `knowledge_base/README.md`) | recherche |
+| 2 | LLM connaît la cible | `write_file` ×4 (pom + 3 Java) | projet Maven écrit via MCP |
+| 3 | Symbole CDM incertain | `cdm_lookup name=...` puis `edit_file` | vraie signature, pas d'hallucination |
+| 4 | LLM voit le code prêt | `compile_project` → `run_test` | `ok` → `match`, `score` + diff |
+| 5 | LLM voit match=true | `<done>...</done>` | SUCCESS |
 
-**5 itérations LLM** pour un FRA — l'agent décide le séquencement.
+L'agent décide le séquencement ; le nombre d'itérations dépend du produit (un FRA simple
+converge en quelques tours, un mapping plus riche en prend davantage).
 
 ---
 
 ## Backends LLM
 
-Configuré via `LLM_BACKEND` dans `.env`. Tous passent par `helpers.llm_text_or_raise`.
+**Sélectionnés dans [`configs/agent.yaml`](configs/agent.yaml)** (clé `backend:`) — il n'y a
+plus de variable `LLM_BACKEND`. Tous passent par `agent.llm_call.llm_call` (façade →
+`get_backend()`, mis en cache). Chaque backend est une sous-classe de `LLMBackend`
+([`agent/llm_call/`](agent/llm_call/)) : un tronc `OpenAICompatBackend` partagé + des feuilles
+à quirk (ex. `OllamaBackend`), et siblings `Anthropic`/`Gemini`/`Manual`. **Ajouter un endpoint
+OpenAI-compatible = une entrée YAML (`kind: openai_compat`), zéro code.** Les clés API restent
+dans `.env` (référencées par `api_key_env`) ; `*_BASE_URL`/`*_MODEL` y restent surchargeables.
 
-| Backend | URL / mécanisme | Variable modèle | Notes |
+| Backend | URL / mécanisme | Modèle (override `.env`) | Notes |
 |---------|------------------|------------------|-------|
-| `gemini` | `generativelanguage.googleapis.com/v1beta/openai/` | `GEMINI_MODEL` | Free tier capricieux : 20 RPD sur 2.5-flash, 0 sur 2.0-flash dans certains projets |
+| `qwopus` | `$QWOPUS_BASE_URL` (déf. `192.168.1.42:11434/v1`) | `QWOPUS_MODEL` | **Défaut projet.** Qwopus3.5-9B-Coder (Ollama, machine GPU du LAN). Raisonnement : `content` propre + `reasoning` séparé (fallback géré par l'extracteur OpenAI). Tool_use natif OK. Ne PAS forcer `think:false` |
+| `ollama` | `$OLLAMA_BASE_URL` (déf. `localhost:11434/v1`) | `OLLAMA_MODEL` | Local, illimité ; Qwen3 → injection `/no_think` (sous-classe `OllamaBackend`) |
+| `gemini` | google-genai natif, fallback `/v1beta/openai/` | `GEMINI_MODEL` | Free tier capricieux ; le name `gemini` active le facteur tokens ×1.3 |
 | `groq`   | `api.groq.com/openai/v1` | `GROQ_MODEL` | Free : ~100k TPD sur llama-3.3-70b, latence ultra-basse |
-| `ollama` | `localhost:11434/v1` | `OLLAMA_MODEL` | Local, illimité ; pour Qwen3 on injecte `/no_think` pour éviter le thinking loop |
-| `manual` | `.llm_io/inbox` ↔ `outbox` | — | Pas de LLM. Un opérateur (humain, Claude in chat, autre agent) répond manuellement. **Backend par défaut** |
-| `vllm`   | `$VLLM_BASE_URL` | `VLLM_MODEL` | Réseau Murex (qwen 27B) |
-| `copilot`| GitHub Models | `--model` arg | GH PAT avec scope `models:read` |
+| `anthropic` | SDK anthropic (tool_use natif) | `ANTHROPIC_MODEL` | Clé `ANTHROPIC_API_KEY` |
+| `openrouter` | `openrouter.ai/api/v1` | `OPENROUTER_MODEL` | Loop dev externe (DeepSeek/Qwen/Devstral…) |
+| `vllm`   | `$VLLM_BASE_URL` | `VLLM_MODEL` | Réseau Murex (qwen 27B) ; `enable_thinking:false` via `extra_body` |
+| `openai` / `lmstudio` | openai.com / `localhost:1234/v1` | `OPENAI_MODEL` / `LMSTUDIO_MODEL` | OpenAI-compat purs |
+| `manual` | `.llm_io/inbox` ↔ `outbox` | — | Pas de LLM. Un opérateur (humain, Claude in chat) répond manuellement (mode XML) |
 
-Retry automatique avec backoff exponentiel (5 tentatives) sur 429 / 503 / timeouts.
+Retry automatique avec backoff exponentiel (5 retries) sur 429 / 503 / timeouts (`base.with_retry`).
 
 ---
 
 ## Stack MCP (5 serveurs)
 
-| Serveur | Port | Tools clés exposés à l'agent |
-|---------|------|-------------------------------|
-| **filesystem** (supergateway → `@modelcontextprotocol/server-filesystem`) | 8080 | `read_file`, `write_file`, `edit_file`, `list_directory` — sur `workspaces/`, `knowledge_base/`, `data/train`, `data/test` |
-| **validator** (Python FastMCP, Docker maven container) | 8003 | `compile_project`, `run_test`, `run_test_all`, `extract_method_source`, `score_with_llm` |
-| **mapping** (Python FastMCP) | 8004 | `get_maven_dependencies`, `ask_human` |
-| **triage** (Python FastMCP) | 8002 | `triage_compile_error`, `triage_test_diff` *(legacy graph.py)* |
-| **tavily** *(optionnel)* | `${TAVILY_MCP}` | Recherche internet, skip si var non résolue |
+**Chaque capacité est un serveur MCP Python autonome** sous `mcp_servers/` (même pattern
+FastMCP streamable-http), démarrés par `bash mcp_servers/start_all.sh`. Détail complet,
+tool par tool : [`mcp_servers/README.md`](mcp_servers/README.md).
 
-Le `mkdir_p` n'est pas MCP — c'est un meta-tool implémenté dans `agent/autonomous.py` (le `create_directory` MCP ne crée pas les parents).
+| Serveur | Port | Tools exposés à l'agent |
+|---------|------|--------------------------|
+| **filesystem** (`filesystem_server/`, sandbox Python) | 8080 | `read_file`, `read_multiple_files`, `write_file`, `edit_file`, `mkdir_p`, `list_directory` |
+| **validator** (`validator_server/`, conteneur Docker maven) | 8003 | `compile_project`, `run_test` (+6 tools batch/diag non exposés) |
+| **grep** (`grep_server/`, ripgrep) | 8005 | `grep` — recherche de **contenu** |
+| **cdm_lookup** (`cdm_lookup_server/`, introspection `javap`) | 8006 | `cdm_lookup` — vraies signatures builder / constantes d'enum CDM 6.19 |
+| **internet_search** (`internet_search_server/`, wrapper Tavily REST) | 8007 | `internet_search` — recherche web (clé `TAVILY_KEY` dans `.env`) |
+
+**Un seul** serveur filesystem : `MultiServerMCPClient` aplatit les tools par nom, donc
+un 2e serveur filesystem shadowerait `write_file`/`read_file` et casserait les écritures.
+Le filesystem applique un **sandbox 2-niveaux** : lecture sous `workspaces/`+`knowledge_base/`+
+`data/`, écriture sous `workspaces/` **uniquement**.
+
+`compact_context` et `spawn_subagent` ne sont **pas** des MCP — ce sont des meta-tools
+locaux dans `agent/autonomous.py` : ils manipulent l'état de la boucle (compaction de
+l'historique ; ré-entrée dans `run_loop` en partageant LLM/tools/`project_dir`), ce qu'un
+serveur MCP ne pourrait pas faire. Tout le reste — y compris `mkdir_p` et `cdm_lookup`,
+anciennement locaux — est désormais un vrai MCP.
 
 ---
 
 ## Lancer l'agent (Mac/Linux)
 
 ### Pré-requis
-- Python 3.13, Node.js + npx, Docker Desktop (pour `validator`)
-- `.env` à compléter (au minimum `LLM_BACKEND`, + clé selon backend)
+- **Python 3.13** (tous les serveurs MCP sont en Python — plus de dépendance Node/npx)
+- **Docker Desktop** (pour `validator` : compile/test dans un conteneur maven)
+- **JDK** (`javap`) + `unzip` sur le PATH (pour `cdm_lookup`) ; `rg` (ripgrep) recommandé pour `grep`
+- Backend choisi dans `configs/agent.yaml` (clé `backend:`, défaut `qwopus`). Compléter `.env`
+  avec la clé API du backend retenu (les locaux qwopus/ollama n'en ont pas besoin), et
+  `TAVILY_KEY` si on veut `internet_search`.
 
 ### Setup
 ```bash
@@ -218,10 +244,11 @@ python3 -m venv .venv
 # Démarrer Docker Desktop (le validator a besoin du daemon)
 open -a Docker
 
-# Démarrer les 5 serveurs MCP (foreground, Ctrl+C arrête tout)
-bash scripts/start_servers.sh
+# Démarrer les 5 serveurs MCP locaux (foreground, Ctrl+C arrête tout)
+bash mcp_servers/start_all.sh
 # OU en background :
-bash scripts/start_servers.sh > /tmp/mcp.log 2>&1 &
+bash mcp_servers/start_all.sh > /tmp/mcp.log 2>&1 &
+# (scripts/start_servers.sh existe encore et délègue à ce script)
 ```
 
 ### Lancer une exécution
@@ -230,11 +257,11 @@ bash scripts/start_servers.sh > /tmp/mcp.log 2>&1 &
   --fpml      data/test/rates-5-10/fpml/ird-ex08-fra.xml \
   --expected  data/test/rates-5-10/cdm/ird-ex08-fra.json \
   --out       workspaces/test-fra-autonomous \
-  --max-iter  30
+  --max-iter  60
 ```
 
 ### Répondre aux prompts en mode `manual`
-Avec `LLM_BACKEND=manual`, l'agent attend qu'un opérateur dépose la réponse :
+Avec `backend: manual` dans `configs/agent.yaml`, l'agent attend qu'un opérateur dépose la réponse :
 
 ```bash
 # Voir la requête en cours
@@ -250,7 +277,7 @@ python scripts/emit_write_call.py \
 
 ### Arrêter
 ```bash
-bash scripts/start_servers.sh --stop
+bash mcp_servers/start_all.sh --stop
 ```
 
 ---
@@ -259,33 +286,46 @@ bash scripts/start_servers.sh --stop
 
 ```
 agent/
-  autonomous.py         # ★ Agent autonome — ReAct loop + tool_call XML + sub-agents
-  graph.py              # Legacy LangGraph state machine (non utilisé)
-  react_graph.py        # Autre alternative ReAct (non utilisé)
-  helpers.py            # llm_text_or_raise, _manual_llm_call, unwrap, build_pom…
-  llm_call/             # Factory + 6 backends (gemini, groq, ollama, lmstudio, vllm, copilot)
-mcp_servers/
-  filesystem            # via supergateway → @modelcontextprotocol/server-filesystem
-  validator_server/     # Docker container + mvn compile/package + json_diff (drop globalKey)
-  mapping_server/       # Maven deps (org.finos.cdm:cdm-java:6.19.0) + ask_human
-  triage_server/        # Pattern-matching d'erreurs (utilisé par graph.py legacy)
-knowledge_base/
-  reference/cdm/        # CDM type hierarchy, enum mappings, date handling
-  reference/fpml/       # FpML XPath guides
-  rules/                # irs.md, disambiguation.md
+  autonomous.py         # ★ Agent autonome — ReAct loop + tool_call + sub-agents + timeouts
+  run_logger.py         # Observabilité — run.log (humain) + run_summary.json (par run)
+  protocol.py           # Types neutres (LLMResponse/ToolCall) + conversion wire (messages/tools/extracteurs)
+  context.py            # Estimation tokens + compaction auto/manuelle
+  helpers.py            # MCP server config (get_servers) + unwrap des résultats d'outils
+  llm_call/             # Backends LLM config-driven : base.py (LLMBackend + with_retry),
+                        #   openai_compat/ollama/anthropic/gemini/manual, config.py + __init__ (get_backend, llm_call)
+mcp_servers/            # un serveur MCP Python par capacité — voir mcp_servers/README.md
+  start_all.sh          # ★ Démarre les 5 serveurs locaux (Mac/Linux)
+  README.md             # Doc détaillée, tool par tool
+  filesystem_server/    # read/write/edit/mkdir_p/list — sandbox (read refs, write workspaces)
+  validator_server/     # Docker maven : compile_project / run_test (+harnais batch/diag)
+  grep_server/          # ripgrep — recherche de contenu
+  cdm_lookup_server/    # introspection CDM 6.19 via javap (signatures builder / enums)
+  internet_search_server/  # recherche web (wrapper Tavily REST)
+  dev_server/ exemple_server/ knowledge_server/  # notes de design (pas des serveurs)
+knowledge_base/         # PROSE uniquement (aucun .java pré-écrit ; signatures via cdm_lookup)
+  README.md             # ★ index routeur « pour faire X, lis Y » (lu en premier par l'agent)
+  cdm/                  # modèle cible : object-model, builder-conventions, meta-and-references,
+                        #   dates, enums, pitfalls + structure-skeleton.json (carte JSON null),
+                        #   rosetta/ (DSL vérité-terrain), hierarchy.txt
+  fpml/                 # modèle source : document-structure + 1 fichier par famille produit
+  mapping/              # le pont FpML→CDM : principles + 1 field-map par famille (rates approfondi)
+  build/                # dependencies.md (coordonnées Maven)
+  policies/             # cdm_structure.rego ; notes/ : mémoire de travail de l'agent
 data/
   train/                # 360+ paires FpML/CDM par famille produit
   test/                 # Paires utilisées par le validator (data/test/ monté dans le Docker)
 workspaces/
-  test-fra-autonomous/  # Projet Maven généré par agent/autonomous.py (gitignored)
+  <run>/                # Projet Maven généré + run.log + run_summary.json + trace.jsonl (gitignored)
 scripts/
-  start_servers.sh      # Démarre les 5 MCP servers (Mac/Linux)
-  start_servers.ps1     # Équivalent Windows
-  test_llm.py           # Smoke test du backend LLM configuré
-  emit_write_call.py    # Helper : fichier disque → <tool_call> write_file JSON-échappé
+  start_servers.sh      # Délègue à mcp_servers/start_all.sh (rétro-compat)
+  start_servers.ps1     # Lance les 5 serveurs MCP Python (Windows)
+  test_llm.py           # Smoke test du backend agent.yaml (chemin réel agent.llm_call.llm_call)
+  emit_write_call.py    # Helper : fichier disque → <tool_call> write_file JSON-échappé (mode manual)
+  visualize_data.py     # Viewer côte-à-côte d'une paire FpML/CDM (debug)
+  llm_crash_test.py     # Stress-test d'un endpoint LLM sur du contexte réel (sans timeout)
 configs/
-  agent.yaml            # Config vLLM
-  mcp.yaml              # URLs des MCP servers (skip auto si ${VAR} non résolue)
+  agent.yaml            # ★ Sélection + config des backends LLM (backend:, backends:, defaults:)
+  mcp.yaml              # URLs des 5 MCP (skip auto si ${VAR} non résolue)
 .llm_io/
   inbox/                # Prompts émis par l'agent (mode manual) — JSON
   outbox/               # Réponses de l'opérateur — texte (1 fichier par id)

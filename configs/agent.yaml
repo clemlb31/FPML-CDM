@@ -1,25 +1,99 @@
-vllm:
-  model_ip: "promaxgb10-bcae" # IP ou hostname du serveur vLLM
-  model_name: "/models/qwen3.6-27b-fp8" # chemin du modèle sur le serveur vLLM
+# ── LLM backend configuration ────────────────────────────────────────────────
+# Loaded by agent/llm_call/config.py → resolve_active() → build_backend().
+#
+# `backend:` is the SOLE selector of which model the agent uses (there is no
+# LLM_BACKEND env var any more). Each entry under `backends:` declares:
+#   kind         which backend class drives it (see agent/llm_call/__init__._KINDS)
+#   model        default model id          (override: its `model_env` in .env)
+#   base_url     default endpoint          (override: its `base_url_env` in .env)
+#   api_key      a literal token, OR
+#   api_key_env  the .env var holding the real secret  (secrets NEVER live here)
+#   extra_body   provider-specific knobs passed through verbatim
+# `defaults:` is merged under every backend. max_tokens is set at the call site.
+#
+# Add an OpenAI-compatible model = add an entry with kind: openai_compat (no code).
+# Add a new API shape / code quirk  = add a subclass + register its kind.
 
-agents:
-  - id: calculator
-    name: CalculatorAgent
-    description: "Agent pour générer et tester du code arithmétique"
-    model: "gpt-5-mini"           # ou autre modèle
-    role: "assistant"
-    prompt_path: "prompt1.txt" # take in agent/prompts/ 
-    entrypoint: "run_agent.py"    # script/local entrypoint pour exécution
-    tools:
-      - name: java-runner
-        type: shell
-        command: "scripts/compile_and_run_tests.py"
-        description: "Compile et exécute les tests Maven"
-    memory:
-      enabled: false
-    permissions:
-      filesystem: true
-      network: false
-    constraints:
-      timeout_seconds: 30
-      max_tokens: 4096
+backend: openrouter
+
+defaults:
+  temperature: 0.2
+
+backends:
+
+  # ── Local LAN GPU box (Ollama) — project default ───────────────────────────
+  qwopus:
+    kind: openai_compat
+    base_url_env: QWOPUS_BASE_URL
+    base_url: http://192.168.1.42:11434/v1
+    api_key: ollama                 # Ollama ignores it; the client needs a non-empty string
+    model_env: QWOPUS_MODEL
+    model: hf.co/Jackrong/Qwopus3.5-9B-Coder-GGUF:Q5_K_M
+    # No think:false — it breaks this finetune's chat template. The shared OpenAI
+    # extractor already falls back to the `reasoning` field, so no subclass needed.
+
+  # ── Local Ollama (Qwen3 etc.) ──────────────────────────────────────────────
+  ollama:
+    kind: ollama                    # subclass: appends /no_think for qwen3 models
+    base_url_env: OLLAMA_BASE_URL
+    base_url: http://localhost:11434/v1
+    api_key: ollama
+    model_env: OLLAMA_MODEL
+    model: qwen3.5:4b
+    extra_body: { think: false }
+
+  # ── Murex network vLLM (Qwen 27B) ──────────────────────────────────────────
+  vllm:
+    kind: openai_compat
+    base_url_env: VLLM_BASE_URL
+    base_url: http://10.27.40.184:8000/v1
+    api_key: dummy
+    model_env: VLLM_MODEL
+    model: /models/qwen3.6-27b-fp8
+    extra_body: { chat_template_kwargs: { enable_thinking: false } }
+
+  # ── Hosted OpenAI-compatible endpoints ─────────────────────────────────────
+  groq:
+    kind: openai_compat
+    base_url: https://api.groq.com/openai/v1
+    api_key_env: GROQ_API_KEY
+    model_env: GROQ_MODEL
+    model: llama-3.3-70b-versatile
+
+  openrouter:                       # fast external dev loop on public FINOS data
+    kind: openai_compat
+    base_url: https://openrouter.ai/api/v1
+    api_key_env: OPENROUTER_API_KEY
+    model_env: OPENROUTER_MODEL
+    model: deepseek/deepseek-v4-flash
+
+  lmstudio:
+    kind: openai_compat
+    base_url_env: LMSTUDIO_BASE_URL
+    base_url: http://localhost:1234/v1
+    api_key: lmstudio
+    model_env: LMSTUDIO_MODEL
+    model: local-model
+
+  openai:
+    kind: openai_compat             # no base_url → api.openai.com default
+    api_key_env: OPENAI_API_KEY
+    model_env: OPENAI_MODEL
+    model: gpt-4o-mini
+
+  # ── Native tool_use providers ──────────────────────────────────────────────
+  anthropic:
+    kind: anthropic
+    api_key_env: ANTHROPIC_API_KEY
+    model_env: ANTHROPIC_MODEL
+    model: claude-haiku-4-5-20251001
+
+  gemini:
+    kind: gemini
+    api_key_env: GEMINI_API_KEY
+    model_env: GEMINI_MODEL
+    model: gemini-2.5-flash
+
+  # ── Human / Claude-in-chat operator (no model) ─────────────────────────────
+  manual:
+    kind: manual
