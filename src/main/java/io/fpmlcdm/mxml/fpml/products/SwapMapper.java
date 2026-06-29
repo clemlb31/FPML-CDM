@@ -1,0 +1,451 @@
+package io.fpmlcdm.mxml.fpml.products;
+
+import io.fpmlcdm.core.xml.XmlUtils;
+import io.fpmlcdm.mxml.fpml.MxmlProductMapper;
+import io.fpmlcdm.mxml.fpml.MxmlToFpmlContext;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * MXML → FpML mapper for vanilla interest-rate swaps (typology {@code IRS}).
+ *
+ * <p>Ported from the Murex XSLT spec (knowledge_base/mxml-fpml/ird-5-3/swap).
+ * Produces a {@code dataDocument} with one {@code <swap>} of two
+ * {@code <swapStream>}s (fixed + floating), reproducing the economic content
+ * present in the MXML body (notional, rate, dates, frequencies, day-count,
+ * business centers, and the precomputed per-period cashflows).
+ *
+ * <p>Scope: vanilla fixed/float only. Stubs, inflation, zero-coupon known-amount,
+ * cross-currency MTM and lifecycle events are out of scope for this first port.
+ */
+public final class SwapMapper implements MxmlProductMapper {
+
+    private static final String FPML_NS = "http://www.fpml.org/FpML-5/confirmation";
+
+    @Override
+    public String mxmlProductType() {
+        return "IRS";
+    }
+
+    @Override
+    public Element map(Document doc, Element mxmlRoot, MxmlToFpmlContext context) {
+        Element trade = findTrade(mxmlRoot);
+        if (trade == null) {
+            context.addWarning("IRS: no <trade> found under /MxML/trades");
+            return null;
+        }
+        Element tradeBody = XmlUtils.getFirstChildElement(trade, "tradeBody");
+        Element product = tradeBody != null ? firstElementChild(tradeBody) : null;
+        if (product == null) {
+            context.addWarning("IRS: no product node under tradeBody");
+            return null;
+        }
+        List<Element> streams = XmlUtils.getChildElements(product, "stream");
+        if (streams.size() < 2) {
+            context.addWarning("IRS: expected 2 streams, found " + streams.size());
+            return null;
+        }
+
+        Element root = doc.createElementNS(FPML_NS, "dataDocument");
+        root.setAttribute("fpmlVersion", "5-3");
+
+        Element fpmlTrade = el(doc, root, "trade");
+        buildTradeHeader(doc, fpmlTrade, trade, mxmlRoot);
+
+        Element swap = el(doc, fpmlTrade, "swap");
+        for (Element stream : streams) {
+            buildSwapStream(doc, swap, stream, context);
+        }
+
+        buildParties(doc, root, trade);
+        return root;
+    }
+
+    /* ──────────────── tradeHeader ──────────────── */
+
+    private void buildTradeHeader(Document doc, Element parent, Element trade, Element mxmlRoot) {
+        Element th = el(doc, parent, "tradeHeader");
+        Element pti = el(doc, th, "partyTradeIdentifier");
+        // partyReference: the "our"/MXpress side (first stream payer in this sample)
+        String ourHref = firstPartyHref(trade);
+        Element pr = el(doc, pti, "partyReference");
+        pr.setAttribute("href", ourHref);
+        // tradeId comes from the CONTRACT id (not the trade id)
+        String contractId = extractContractId(mxmlRoot);
+        Element tid = elText(doc, pti, "tradeId", contractId);
+        tid.setAttribute("tradeIdScheme", "http://www.murex.com/contract-id");
+
+        String tradeDate = isoDate(XmlUtils.getTextContent(
+                XmlUtils.findElementByPath(trade, "tradeHeader", "tradeDate")));
+        elText(doc, th, "tradeDate", tradeDate);
+    }
+
+    /* ──────────────── swapStream ──────────────── */
+
+    private void buildSwapStream(Document doc, Element swap, Element stream, MxmlToFpmlContext ctx) {
+        Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
+        String payoutType = XmlUtils.getTextContent(st, "payoutType"); // fixedRate | floatingRate
+        boolean floating = "floatingRate".equals(payoutType);
+        String leg = XmlUtils.getTextContent(st, "leg");
+
+        Element ss = el(doc, swap, "swapStream");
+        ss.setAttribute("id", floating ? "floatingLeg" : "fixedLeg");
+
+        // payer/receiver
+        String payer = stripHash(attrOfChild(stream, "payerPartyReference", "href"));
+        String receiver = stripHash(attrOfChild(stream, "receiverPartyReference", "href"));
+        elRef(doc, ss, "payerPartyReference", payer);
+        elRef(doc, ss, "receiverPartyReference", receiver);
+
+        String legCpdId = "leg_" + leg + "_calculationPeriodDates";
+
+        buildCalculationPeriodDates(doc, ss, stream, st, legCpdId);
+        buildPaymentDates(doc, ss, stream, st, leg, legCpdId);
+        if (floating) {
+            buildResetDates(doc, ss, stream, st, leg, legCpdId);
+        }
+        buildCalculationPeriodAmount(doc, ss, stream, st, leg, floating);
+        buildCashflows(doc, ss, stream, floating);
+    }
+
+    private void buildCalculationPeriodDates(Document doc, Element ss, Element stream,
+                                             Element st, String id) {
+        Element cpd = el(doc, ss, "calculationPeriodDates");
+        cpd.setAttribute("id", id);
+
+        String eff = isoDate(XmlUtils.getTextContent(stream, "effectiveDate"));
+        String effAdj = isoDate(XmlUtils.getTextContent(stream, "adjustedEffectiveDate"));
+        Element effEl = el(doc, cpd, "effectiveDate");
+        elText(doc, effEl, "unadjustedDate", eff);
+        Element effAdjs = el(doc, effEl, "dateAdjustments");
+        elText(doc, effAdjs, "businessDayConvention", "NONE");
+        elText(doc, effEl, "adjustedDate", effAdj);
+
+        String mat = isoDate(XmlUtils.getTextContent(stream, "maturity"));
+        String matAdj = isoDate(XmlUtils.getTextContent(stream, "adjustedMaturity"));
+        Element termEl = el(doc, cpd, "terminationDate");
+        elText(doc, termEl, "unadjustedDate", mat);
+        Element termAdjs = el(doc, termEl, "dateAdjustments");
+        elText(doc, termAdjs, "businessDayConvention", "NONE");
+        elText(doc, termEl, "adjustedDate", matAdj);
+
+        // calculationPeriodDatesAdjustments
+        Element cpdAdj = el(doc, cpd, "calculationPeriodDatesAdjustments");
+        elText(doc, cpdAdj, "businessDayConvention", "MODFOLLOWING");
+        appendBusinessCenters(doc, cpdAdj, businessCenters(stream));
+
+        // calculationPeriodFrequency
+        String[] freq = calcFrequency(stream);
+        Element cpf = el(doc, cpd, "calculationPeriodFrequency");
+        elText(doc, cpf, "periodMultiplier", freq[0]);
+        elText(doc, cpf, "period", freq[1]);
+        elText(doc, cpf, "rollConvention", rollConvention(stream));
+    }
+
+    private void buildPaymentDates(Document doc, Element ss, Element stream,
+                                   Element st, String leg, String cpdId) {
+        Element pd = el(doc, ss, "paymentDates");
+        pd.setAttribute("id", "leg_" + leg + "_paymentDates");
+        elRef(doc, pd, "calculationPeriodDatesReference", cpdId);
+        String[] freq = calcFrequency(stream);
+        Element pf = el(doc, pd, "paymentFrequency");
+        elText(doc, pf, "periodMultiplier", freq[0]);
+        elText(doc, pf, "period", freq[1]);
+        elText(doc, pd, "payRelativeTo", "CalculationPeriodEndDate");
+        Element off = el(doc, pd, "paymentDaysOffset");
+        elText(doc, off, "periodMultiplier", "0");
+        elText(doc, off, "period", "D");
+        Element pdAdj = el(doc, pd, "paymentDatesAdjustments");
+        elText(doc, pdAdj, "businessDayConvention", "MODFOLLOWING");
+        appendBusinessCenters(doc, pdAdj, businessCenters(stream));
+    }
+
+    private void buildResetDates(Document doc, Element ss, Element stream,
+                                 Element st, String leg, String cpdId) {
+        Element rd = el(doc, ss, "resetDates");
+        rd.setAttribute("id", "leg_" + leg + "_resetDates");
+        elRef(doc, rd, "calculationPeriodDatesReference", cpdId);
+        elText(doc, rd, "resetRelativeTo", "CalculationPeriodStartDate");
+
+        Element fix = el(doc, rd, "fixingDates");
+        elText(doc, fix, "periodMultiplier", "-2");
+        elText(doc, fix, "period", "D");
+        elText(doc, fix, "dayType", "Business");
+        elText(doc, fix, "businessDayConvention", "NONE");
+        Element fixBc = el(doc, fix, "businessCenters");
+        elText(doc, fixBc, "businessCenter", "GBLO");
+        elRef(doc, fix, "dateRelativeTo", cpdId);
+
+        String[] freq = calcFrequency(stream);
+        Element rf = el(doc, rd, "resetFrequency");
+        elText(doc, rf, "periodMultiplier", freq[0]);
+        elText(doc, rf, "period", freq[1]);
+
+        Element rdAdj = el(doc, rd, "resetDatesAdjustments");
+        elText(doc, rdAdj, "businessDayConvention", "MODFOLLOWING");
+        Element rdBc = el(doc, rdAdj, "businessCenters");
+        elText(doc, rdBc, "businessCenter", "GBLO");
+    }
+
+    private void buildCalculationPeriodAmount(Document doc, Element ss, Element stream,
+                                              Element st, String leg, boolean floating) {
+        Element cpa = el(doc, ss, "calculationPeriodAmount");
+        Element calc = el(doc, cpa, "calculation");
+
+        Element notSched = el(doc, calc, "notionalSchedule");
+        notSched.setAttribute("id", "leg_" + leg + "_notionalSchedule");
+        Element nss = el(doc, notSched, "notionalStepSchedule");
+        Element capital = XmlUtils.getFirstChildElement(stream, "capital");
+        String notional = XmlUtils.getTextContent(capital, "initialCapitalAmount");
+        String currency = XmlUtils.getTextContent(capital, "initialCapitalCurrency");
+        elText(doc, nss, "initialValue", notional);
+        elText(doc, nss, "currency", currency);
+
+        if (floating) {
+            Element frc = el(doc, calc, "floatingRateCalculation");
+            elText(doc, frc, "floatingRateIndex", floatingRateIndex(stream));
+            String[] tenor = indexTenor(stream);
+            Element it = el(doc, frc, "indexTenor");
+            elText(doc, it, "periodMultiplier", tenor[0]);
+            elText(doc, it, "period", tenor[1]);
+        } else {
+            Element frs = el(doc, calc, "fixedRateSchedule");
+            String rate = pct(XmlUtils.getTextContent(
+                    XmlUtils.findElementByPath(stream, "fixedRateStream", "fixedRate")));
+            elText(doc, frs, "initialValue", rate);
+        }
+        elText(doc, calc, "dayCountFraction", dayCount(st));
+    }
+
+    private void buildCashflows(Document doc, Element ss, Element stream, boolean floating) {
+        Element cashFlows = XmlUtils.getFirstChildElement(stream, "cashFlows");
+        Element interestFlows = cashFlows != null
+                ? XmlUtils.getFirstChildElement(cashFlows, "interestFlows") : null;
+        if (interestFlows == null) return;
+
+        Element cf = el(doc, ss, "cashflows");
+        elText(doc, cf, "cashflowsMatchParameters", "true");
+
+        for (Element ipp : XmlUtils.getChildElements(interestFlows, "interestPaymentPeriod")) {
+            Element calcPeriod = XmlUtils.getFirstChildElement(ipp, "calculationPeriod");
+            Element pcp = el(doc, cf, "paymentCalculationPeriod");
+            elText(doc, pcp, "adjustedPaymentDate",
+                    isoDate(XmlUtils.getTextContent(ipp, "paymentDate")));
+
+            Element cp = el(doc, pcp, "calculationPeriod");
+            String start = isoDate(XmlUtils.getTextContent(calcPeriod, "calculationStartDate"));
+            String end = isoDate(XmlUtils.getTextContent(calcPeriod, "calculationEndDate"));
+            elText(doc, cp, "unadjustedStartDate", start);
+            elText(doc, cp, "unadjustedEndDate", end);
+            elText(doc, cp, "adjustedStartDate", start);
+            elText(doc, cp, "adjustedEndDate", end);
+            elText(doc, cp, "notionalAmount", XmlUtils.getTextContent(calcPeriod, "notionalAmount"));
+
+            if (floating) {
+                Element frd = el(doc, cp, "floatingRateDefinition");
+                Element ro = el(doc, frd, "rateObservation");
+                // fixing date + weight from floatingRatePeriod/observations/observation
+                Element frp = XmlUtils.getFirstChildElement(calcPeriod, "floatingRatePeriod");
+                Element obs = frp != null
+                        ? XmlUtils.findElementByPath(frp, "observations", "observation") : null;
+                if (obs != null) {
+                    elText(doc, ro, "adjustedFixingDate",
+                            isoDate(XmlUtils.getTextContent(obs, "observationDate")));
+                    elText(doc, ro, "observationWeight",
+                            XmlUtils.getTextContent(obs, "observationWeight"));
+                } else {
+                    elText(doc, ro, "observationWeight", "1");
+                }
+                elText(doc, frd, "spread", "0");
+            } else {
+                elText(doc, cp, "fixedRate", pct(XmlUtils.getTextContent(
+                        XmlUtils.findElementByPath(calcPeriod, "fixedRatePeriod", "fixedRate"))));
+            }
+            elText(doc, cp, "dayCountYearFraction",
+                    XmlUtils.getTextContent(calcPeriod, "periodDayCountFactor"));
+
+            Element pv = el(doc, pcp, "presentValueAmount");
+            elText(doc, pv, "currency", XmlUtils.getTextContent(ipp, "currency"));
+            // fixed legs carry <interestFlow>; floating legs carry <coupon>
+            String amount = XmlUtils.getTextContent(ipp, "interestFlow");
+            if (amount == null || amount.isEmpty()) {
+                amount = XmlUtils.getTextContent(ipp, "coupon");
+            }
+            elText(doc, pv, "amount", (amount == null || amount.isEmpty()) ? "0" : amount);
+        }
+    }
+
+    /* ──────────────── parties ──────────────── */
+
+    private void buildParties(Document doc, Element root, Element trade) {
+        Element parties = XmlUtils.getFirstChildElement(trade, "parties");
+        if (parties == null) return;
+        for (Element p : XmlUtils.getChildElements(parties, "party")) {
+            String id = p.getAttribute("id");
+            String name = XmlUtils.getTextContent(p, "partyName");
+            Element party = el(doc, root, "party");
+            party.setAttribute("id", id);
+            elText(doc, party, "partyId", name);
+        }
+    }
+
+    /* ──────────────── extraction helpers ──────────────── */
+
+    private Element findTrade(Element mxmlRoot) {
+        if ("trade".equals(mxmlRoot.getLocalName())) return mxmlRoot;
+        Element trades = XmlUtils.getFirstChildElement(mxmlRoot, "trades");
+        return trades != null ? XmlUtils.getFirstChildElement(trades, "trade") : null;
+    }
+
+    private String firstPartyHref(Element trade) {
+        Element parties = XmlUtils.getFirstChildElement(trade, "parties");
+        Element first = parties != null ? XmlUtils.getFirstChildElement(parties, "party") : null;
+        return first != null ? first.getAttribute("id") : "";
+    }
+
+    private String extractContractId(Element mxmlRoot) {
+        // /MxML/contracts/contract/contractId/internalId, prefixed "MX"
+        Element contracts = XmlUtils.getFirstChildElement(mxmlRoot, "contracts");
+        Element contract = contracts != null ? XmlUtils.getFirstChildElement(contracts, "contract") : null;
+        Element cid = contract != null ? XmlUtils.getFirstChildElement(contract, "contractId") : null;
+        String internal = cid != null ? XmlUtils.getTextContent(cid, "internalId") : null;
+        return internal != null ? "MX" + internal : "";
+    }
+
+    private String[] calcFrequency(Element stream) {
+        // streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/
+        //   standardScheduleGenerator/defaultFrequency
+        Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
+        Element ss = st != null ? XmlUtils.getFirstChildElement(st, "streamSchedules") : null;
+        Element cs = ss != null ? XmlUtils.getFirstChildElement(ss, "calculationSchedule") : null;
+        Element sg = cs != null ? XmlUtils.getFirstChildElement(cs, "scheduleGenerator") : null;
+        Element ssg = sg != null ? XmlUtils.getFirstChildElement(sg, "standardScheduleGenerator") : null;
+        Element f = ssg != null ? XmlUtils.getFirstChildElement(ssg, "defaultFrequency") : null;
+        String mult = f != null ? XmlUtils.getTextContent(f, "periodMultiplier") : "1";
+        String unit = f != null ? XmlUtils.getTextContent(f, "periodUnit") : "month";
+        return new String[]{mult, periodCode(unit)};
+    }
+
+    private String rollConvention(Element stream) {
+        String mat = XmlUtils.getTextContent(stream, "maturity"); // yyyymmdd → day
+        if (mat != null && mat.length() == 8) {
+            return String.valueOf(Integer.parseInt(mat.substring(6, 8)));
+        }
+        return "NONE";
+    }
+
+    private List<String> businessCenters(Element stream) {
+        List<String> out = new ArrayList<>();
+        Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
+        Element pbc = st != null ? XmlUtils.getFirstChildElement(st, "paymentBusinessCenters") : null;
+        if (pbc != null) {
+            for (Element item : XmlUtils.getChildElements(pbc, "businessCenterItem")) {
+                String swift = XmlUtils.getTextContent(item, "swiftCode");
+                if (swift != null && !swift.isEmpty()) out.add(swift);
+            }
+        }
+        return out;
+    }
+
+    private String floatingRateIndex(Element stream) {
+        // Sample expected: USD-LIBOR-BBA. Source label: "USD LIBOR 3M".
+        Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
+        Element frt = st != null ? XmlUtils.getFirstChildElement(st, "floatingRateStreamTemplate") : null;
+        Element index = frt != null ? XmlUtils.getFirstChildElement(frt, "index") : null;
+        Element iri = index != null ? XmlUtils.getFirstChildElement(index, "interestRateIndex") : null;
+        String ccy = iri != null ? XmlUtils.getTextContent(iri, "currency") : "USD";
+        return ccy + "-LIBOR-BBA";
+    }
+
+    private String[] indexTenor(Element stream) {
+        Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
+        Element frt = st != null ? XmlUtils.getFirstChildElement(st, "floatingRateStreamTemplate") : null;
+        Element index = frt != null ? XmlUtils.getFirstChildElement(frt, "index") : null;
+        Element iri = index != null ? XmlUtils.getFirstChildElement(index, "interestRateIndex") : null;
+        Element tenor = iri != null ? XmlUtils.getFirstChildElement(iri, "tenor") : null;
+        String mult = tenor != null ? XmlUtils.getTextContent(tenor, "periodMultiplier") : "3";
+        String unit = tenor != null ? XmlUtils.getTextContent(tenor, "periodUnit") : "month";
+        return new String[]{mult, periodCode(unit)};
+    }
+
+    private String dayCount(Element streamTemplate) {
+        Element dcf = XmlUtils.getFirstChildElement(streamTemplate, "dayCountFraction");
+        String denom = dcf != null ? XmlUtils.getTextContent(dcf, "dayCountStandardDenomination") : null;
+        return denom != null ? denom : "ACT/360";
+    }
+
+    /* ──────────────── primitive helpers ──────────────── */
+
+    private static String periodCode(String unit) {
+        if (unit == null) return "M";
+        switch (unit) {
+            case "year": return "Y";
+            case "month": return "M";
+            case "week": return "W";
+            case "day": case "businessDay": return "D";
+            default: return unit.substring(0, 1).toUpperCase();
+        }
+    }
+
+    /** yyyymmdd → yyyy-mm-dd. */
+    private static String isoDate(String mx) {
+        if (mx == null || mx.length() != 8) return mx;
+        return mx.substring(0, 4) + "-" + mx.substring(4, 6) + "-" + mx.substring(6, 8);
+    }
+
+    /** Murex stores rates as percent; FpML wants decimals. "1.00380856" → "0.0100380856". */
+    private static String pct(String raw) {
+        if (raw == null || raw.isEmpty()) return raw;
+        try {
+            java.math.BigDecimal v = new java.math.BigDecimal(raw)
+                    .divide(new java.math.BigDecimal("100"));
+            return v.stripTrailingZeros().toPlainString();
+        } catch (NumberFormatException e) {
+            return raw;
+        }
+    }
+
+    private static String stripHash(String href) {
+        if (href == null) return "";
+        return href.startsWith("#") ? href.substring(1) : href;
+    }
+
+    private static String attrOfChild(Element parent, String childName, String attr) {
+        Element c = XmlUtils.getFirstChildElement(parent, childName);
+        return c != null ? c.getAttribute(attr) : "";
+    }
+
+    private static Element firstElementChild(Element parent) {
+        List<Element> kids = XmlUtils.getChildElements(parent);
+        return kids.isEmpty() ? null : kids.get(0);
+    }
+
+    private static Element el(Document doc, Element parent, String name) {
+        Element e = doc.createElementNS(FPML_NS, name);
+        parent.appendChild(e);
+        return e;
+    }
+
+    private static Element elText(Document doc, Element parent, String name, String text) {
+        Element e = el(doc, parent, name);
+        e.setTextContent(text != null ? text : "");
+        return e;
+    }
+
+    private static Element elRef(Document doc, Element parent, String name, String href) {
+        Element e = el(doc, parent, name);
+        e.setAttribute("href", href);
+        return e;
+    }
+
+    private static void appendBusinessCenters(Document doc, Element parent, List<String> centers) {
+        if (centers == null || centers.isEmpty()) return;
+        Element bcs = el(doc, parent, "businessCenters");
+        for (String c : centers) {
+            elText(doc, bcs, "businessCenter", c);
+        }
+    }
+}

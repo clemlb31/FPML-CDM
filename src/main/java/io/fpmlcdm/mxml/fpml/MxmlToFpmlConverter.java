@@ -36,7 +36,7 @@ public final class MxmlToFpmlConverter {
      * added here as its XSLT module is ported to {@code products/}.
      */
     private void registerDefaultMappers() {
-        // detector.register(new io.fpmlcdm.mxml.fpml.products.SwapMapper());
+        detector.register(new io.fpmlcdm.mxml.fpml.products.SwapMapper());
         // detector.register(new io.fpmlcdm.mxml.fpml.products.FraMapper());
         // ...
     }

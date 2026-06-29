@@ -1,6 +1,7 @@
 package io.fpmlcdm.mxml.fpml.detect;
 
 import io.fpmlcdm.mxml.fpml.MxmlProductMapper;
+import io.fpmlcdm.core.xml.XmlUtils;
 import org.w3c.dom.Element;
 
 import java.util.HashMap;
@@ -33,14 +34,31 @@ public final class MxmlProductDetector {
     }
 
     /**
-     * Extracts the MXML product discriminator from a trade element.
-     * Placeholder heuristic — to be refined against the real MXML schema
-     * (see knowledge_base/mxml-fpml/).
+     * Extracts the MXML product discriminator from the {@code <MxML>} root by
+     * reading {@code trades/trade/tradeHeader/tradeCategory/typology}
+     * (e.g. {@code IRS}, {@code FRA}, {@code CF}, {@code OSWP}).
+     *
+     * <p>Accepts either the {@code <MxML>} root or a {@code <trade>} element.
      */
-    String detectProductType(Element mxmlTrade) {
-        if (mxmlTrade == null) return null;
-        String tag = mxmlTrade.getAttribute("productType");
-        return (tag != null && !tag.isEmpty()) ? tag : null;
+    String detectProductType(Element node) {
+        if (node == null) return null;
+
+        Element trade;
+        if ("trade".equals(node.getLocalName()) || "trade".equals(node.getNodeName())) {
+            trade = node;
+        } else {
+            Element trades = XmlUtils.getFirstChildElement(node, "trades");
+            trade = trades != null ? XmlUtils.getFirstChildElement(trades, "trade") : null;
+        }
+        if (trade == null) return null;
+
+        Element tradeHeader = XmlUtils.getFirstChildElement(trade, "tradeHeader");
+        Element tradeCategory = tradeHeader != null
+                ? XmlUtils.getFirstChildElement(tradeHeader, "tradeCategory") : null;
+        if (tradeCategory == null) return null;
+
+        String typology = XmlUtils.getTextContent(tradeCategory, "typology");
+        return (typology != null && !typology.isEmpty()) ? typology : null;
     }
 
     public boolean hasMapperFor(String productType) {
