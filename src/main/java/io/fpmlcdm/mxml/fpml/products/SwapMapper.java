@@ -130,7 +130,16 @@ public final class SwapMapper implements MxmlProductMapper {
         Element termEl = el(doc, cpd, "terminationDate");
         elText(doc, termEl, "unadjustedDate", mat);
         Element termAdjs = el(doc, termEl, "dateAdjustments");
-        elText(doc, termAdjs, "businessDayConvention", "NONE");
+        // Per the XSLT (swap/parameters): if the unadjusted maturity equals the
+        // adjusted maturity, no adjustment was applied → NONE (and no centers);
+        // otherwise emit the stream's schedule business-day convention + centers.
+        boolean termShifted = mat != null && !mat.equals(matAdj);
+        if (termShifted) {
+            elText(doc, termAdjs, "businessDayConvention", scheduleBusinessDayConvention(stream));
+            appendBusinessCenters(doc, termAdjs, businessCenters(stream));
+        } else {
+            elText(doc, termAdjs, "businessDayConvention", "NONE");
+        }
         elText(doc, termEl, "adjustedDate", matAdj);
 
         // calculationPeriodDatesAdjustments
@@ -201,6 +210,32 @@ public final class SwapMapper implements MxmlProductMapper {
         Element item = rbc != null ? XmlUtils.getFirstChildElement(rbc, "businessCenterItem") : null;
         String swift = item != null ? XmlUtils.getTextContent(item, "swiftCode") : null;
         return (swift != null && !swift.isEmpty()) ? swift : "GBLO";
+    }
+
+    /**
+     * The stream's schedule business-day convention (FpML form), read from the
+     * calculation schedule generator and mapped from the Murex spelling.
+     */
+    private String scheduleBusinessDayConvention(Element stream) {
+        Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
+        Element ss = st != null ? XmlUtils.getFirstChildElement(st, "streamSchedules") : null;
+        Element cs = ss != null ? XmlUtils.getFirstChildElement(ss, "calculationSchedule") : null;
+        Element sg = cs != null ? XmlUtils.getFirstChildElement(cs, "scheduleGenerator") : null;
+        Element ssg = sg != null ? XmlUtils.getFirstChildElement(sg, "standardScheduleGenerator") : null;
+        String mx = ssg != null ? XmlUtils.getTextContent(ssg, "businessDayConvention") : null;
+        return mapBusinessDayConvention(mx);
+    }
+
+    static String mapBusinessDayConvention(String mx) {
+        if (mx == null) return "MODFOLLOWING";
+        switch (mx) {
+            case "modifiedFollowing": return "MODFOLLOWING";
+            case "following":         return "FOLLOWING";
+            case "preceding":         return "PRECEDING";
+            case "modifiedPreceding": return "MODPRECEDING";
+            case "none":              return "NONE";
+            default:                  return "MODFOLLOWING";
+        }
     }
 
     private void buildCalculationPeriodAmount(Document doc, Element ss, Element stream,
