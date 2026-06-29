@@ -6,6 +6,7 @@ import io.fpmlcdm.mxml.fpml.MxmlToFpmlContext;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -229,19 +230,38 @@ public final class SwapMapper implements MxmlProductMapper {
         Element cf = el(doc, ss, "cashflows");
         elText(doc, cf, "cashflowsMatchParameters", "true");
 
-        for (Element ipp : XmlUtils.getChildElements(interestFlows, "interestPaymentPeriod")) {
+        List<Element> ipps = XmlUtils.getChildElements(interestFlows, "interestPaymentPeriod");
+
+        // Collect adjusted boundaries (as stored in MXML) for each period.
+        List<String> adjStart = new ArrayList<>();
+        List<String> adjEnd = new ArrayList<>();
+        for (Element ipp : ipps) {
+            Element calcPeriod = XmlUtils.getFirstChildElement(ipp, "calculationPeriod");
+            adjStart.add(isoDate(XmlUtils.getTextContent(calcPeriod, "calculationStartDate")));
+            adjEnd.add(isoDate(XmlUtils.getTextContent(calcPeriod, "calculationEndDate")));
+        }
+        // Compute unadjusted boundaries by roll-convention arithmetic (no holiday
+        // calendar needed). Falls back to adjusted dates when not computable.
+        String eff = isoDate(XmlUtils.getTextContent(stream, "effectiveDate"));
+        String mat = isoDate(XmlUtils.getTextContent(stream, "adjustedMaturity"));
+        String matUnadj = isoDate(XmlUtils.getTextContent(stream, "maturity"));
+        String[] freq = calcFrequency(stream);
+        List<String> unStart = new ArrayList<>(adjStart);
+        List<String> unEnd = new ArrayList<>(adjEnd);
+        computeUnadjustedBoundaries(eff, matUnadj, freq, ipps.size(), unStart, unEnd);
+
+        for (int i = 0; i < ipps.size(); i++) {
+            Element ipp = ipps.get(i);
             Element calcPeriod = XmlUtils.getFirstChildElement(ipp, "calculationPeriod");
             Element pcp = el(doc, cf, "paymentCalculationPeriod");
             elText(doc, pcp, "adjustedPaymentDate",
                     isoDate(XmlUtils.getTextContent(ipp, "paymentDate")));
 
             Element cp = el(doc, pcp, "calculationPeriod");
-            String start = isoDate(XmlUtils.getTextContent(calcPeriod, "calculationStartDate"));
-            String end = isoDate(XmlUtils.getTextContent(calcPeriod, "calculationEndDate"));
-            elText(doc, cp, "unadjustedStartDate", start);
-            elText(doc, cp, "unadjustedEndDate", end);
-            elText(doc, cp, "adjustedStartDate", start);
-            elText(doc, cp, "adjustedEndDate", end);
+            elText(doc, cp, "unadjustedStartDate", unStart.get(i));
+            elText(doc, cp, "unadjustedEndDate", unEnd.get(i));
+            elText(doc, cp, "adjustedStartDate", adjStart.get(i));
+            elText(doc, cp, "adjustedEndDate", adjEnd.get(i));
             elText(doc, cp, "notionalAmount", XmlUtils.getTextContent(calcPeriod, "notionalAmount"));
 
             if (floating) {
@@ -292,8 +312,81 @@ public final class SwapMapper implements MxmlProductMapper {
         }
     }
 
-    /* ──────────────── extraction helpers ──────────────── */
+    /* ──────────────── schedule (unadjusted boundaries) ──────────────── */
 
+    /**
+     * Computes the unadjusted period boundaries by roll-convention arithmetic
+     * (effective + k·frequency on the roll day), anchoring period 0 at the
+     * effective date and the last period at the unadjusted maturity.
+     *
+     * <p>No holiday calendar is needed: the unadjusted schedule is purely the
+     * roll schedule. Results overwrite {@code unStart}/{@code unEnd} only when
+     * the generated schedule is regular and strictly increasing; otherwise the
+     * pre-filled adjusted dates are kept (safe fallback for stubs / irregular
+     * schedules, which are out of scope for this vanilla port).
+     */
+    private void computeUnadjustedBoundaries(String effIso, String matIso, String[] freq,
+                                             int count, List<String> unStart, List<String> unEnd) {
+        if (effIso == null || matIso == null || count <= 0) return;
+        int mult;
+        try {
+            mult = Integer.parseInt(freq[0]);
+        } catch (NumberFormatException e) {
+            return;
+        }
+        if (mult <= 0) return;
+        String unit = freq[1];
+
+        LocalDate eff, mat;
+        try {
+            eff = LocalDate.parse(effIso);
+            mat = LocalDate.parse(matIso);
+        } catch (Exception e) {
+            return;
+        }
+        int rollDay = mat.getDayOfMonth();
+
+        List<LocalDate> bounds = new ArrayList<>(count + 1);
+        bounds.add(eff);
+        for (int k = 1; k < count; k++) {
+            LocalDate b = addPeriod(eff, (long) mult * k, unit);
+            if (b == null) return;
+            b = snapToRollDay(b, rollDay, unit);
+            bounds.add(b);
+        }
+        bounds.add(mat);
+
+        // Guard: strictly increasing.
+        for (int i = 1; i < bounds.size(); i++) {
+            if (!bounds.get(i).isAfter(bounds.get(i - 1))) {
+                return; // irregular (stub etc.) → keep adjusted fallback
+            }
+        }
+
+        for (int i = 0; i < count; i++) {
+            unStart.set(i, bounds.get(i).toString());
+            unEnd.set(i, bounds.get(i + 1).toString());
+        }
+    }
+
+    private static LocalDate addPeriod(LocalDate base, long n, String unit) {
+        switch (unit) {
+            case "Y": return base.plusYears(n);
+            case "M": return base.plusMonths(n);
+            case "W": return base.plusWeeks(n);
+            case "D": return base.plusDays(n);
+            default:  return null;
+        }
+    }
+
+    /** For month/year rolls, force the roll day-of-month (clamped to month length). */
+    private static LocalDate snapToRollDay(LocalDate d, int rollDay, String unit) {
+        if (!"M".equals(unit) && !"Y".equals(unit)) return d;
+        int day = Math.min(rollDay, d.lengthOfMonth());
+        return d.withDayOfMonth(day);
+    }
+
+    /* ──────────────── extraction helpers ──────────────── */
     private Element findTrade(Element mxmlRoot) {
         if ("trade".equals(mxmlRoot.getLocalName())) return mxmlRoot;
         Element trades = XmlUtils.getFirstChildElement(mxmlRoot, "trades");
@@ -351,13 +444,54 @@ public final class SwapMapper implements MxmlProductMapper {
     }
 
     private String floatingRateIndex(Element stream) {
-        // Sample expected: USD-LIBOR-BBA. Source label: "USD LIBOR 3M".
         Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
         Element frt = st != null ? XmlUtils.getFirstChildElement(st, "floatingRateStreamTemplate") : null;
         Element index = frt != null ? XmlUtils.getFirstChildElement(frt, "index") : null;
+        String label = index != null ? XmlUtils.getTextContent(index, "indexLabel") : null;
         Element iri = index != null ? XmlUtils.getFirstChildElement(index, "interestRateIndex") : null;
-        String ccy = iri != null ? XmlUtils.getTextContent(iri, "currency") : "USD";
-        return ccy + "-LIBOR-BBA";
+        String ccy = iri != null ? XmlUtils.getTextContent(iri, "currency") : null;
+        return mapFloatingRateIndex(label, ccy);
+    }
+
+    /**
+     * Maps a Murex index label (e.g. {@code "EUR EURIBOR 3M"}) to the FpML
+     * {@code floatingRateIndex} name as Murex emits it.
+     *
+     * <p>NOTE: this reproduces Murex's <b>actual</b> output, which collapses
+     * several non-LIBOR/RFR families onto LIBOR (CDOR/FEDFUND/SARON/SOFR/KLIBOR).
+     * That is faithful to {@code _expected.xml}; it is also the audited
+     * "index distortion" defect — fixing the economics is a separate concern
+     * from reproducing the reference.
+     */
+    static String mapFloatingRateIndex(String label, String currency) {
+        if (label == null || label.isEmpty()) {
+            return (currency != null ? currency : "USD") + "-LIBOR-BBA";
+        }
+        String[] tok = label.trim().split("\\s+");
+        String ccy = tok.length > 0 ? tok[0] : (currency != null ? currency : "USD");
+        String family = tok.length > 1 ? tok[1].toUpperCase() : "LIBOR";
+
+        switch (family) {
+            case "EURIBOR": return "EUR-EURIBOR-Reuters";
+            case "EONIA":   return "EUR-EONIA-OIS-COMPOUND";
+            case "SONIA":   return "GBP-WMBA-SONIA-COMPOUND";
+            case "BBSW":    return "AUD-BBR-BBSW";
+            case "BKBM":    return "NZD-BBR-FRA";
+            case "STIBOR":  return "SEK-STIBOR-SIDE";
+            case "CIBOR":   return "DKK-CIBOR2-DKNA13";
+            // Murex distortions onto LIBOR (faithful to reference):
+            case "CDOR":    return "CAD-LIBOR-BBA";
+            case "FEDFUND": return "USD-LIBOR-BBA";
+            case "SARON":   return "CHF-LIBOR-BBA";
+            case "SOFR":    return "USD-LIBOR-BBA";
+            case "KLIBOR":  return "USD-LIBOR-BBA";
+            case "LIBOR":
+            default:
+                // EUR LIBOR is rendered as EURIBOR-Reuters; JPY/EUR LIBOR → Reuters.
+                if ("EUR".equals(ccy)) return "EUR-EURIBOR-Reuters";
+                if ("JPY".equals(ccy)) return "JPY-LIBOR-Reuters";
+                return ccy + "-LIBOR-BBA";
+        }
     }
 
     private String[] indexTenor(Element stream) {
