@@ -20,9 +20,9 @@ public final class ReportWriter {
         public Row(String path) { this.path = path; }
 
         public String category() {
-            int dataIdx = path.indexOf("/data/train/");
+            int dataIdx = path.indexOf("/data/ground_truth/fpml-cdm/");
             if (dataIdx < 0) return "uncategorised";
-            String rest = path.substring(dataIdx + "/data/train/".length());
+            String rest = path.substring(dataIdx + "/data/ground_truth/fpml-cdm/".length());
             int slash = rest.indexOf('/');
             return slash < 0 ? rest : rest.substring(0, slash);
         }

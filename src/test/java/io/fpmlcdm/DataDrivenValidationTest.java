@@ -6,8 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import io.fpmlcdm.report.SemanticDiff;
-import io.fpmlcdm.validate.CdmValidator;
-import io.fpmlcdm.validate.GlobalKeyReproducer;
+import io.fpmlcdm.fpml.cdm.FpmlToCdmConverter;
+import io.fpmlcdm.fpml.cdm.validate.CdmValidator;
+import io.fpmlcdm.fpml.cdm.validate.GlobalKeyReproducer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -25,7 +26,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Walks {@code data/train/<category>/{fpml,cdm}/*.{xml,json}} and asserts that
+ * Walks {@code data/ground_truth/fpml-cdm/<category>/{fpml,cdm}/*.{xml,json}} and asserts that
  * our converter produces a semantically-equal CDM JSON for each pair.
  *
  * Pairs from {@code *-incomplete} or {@code invalid-products-*} categories are
@@ -35,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class DataDrivenValidationTest {
 
     private static final ObjectMapper JSON = RosettaObjectMapper.getNewRosettaObjectMapper();
-    private static final Path TRAIN = Paths.get("data/train");
+    private static final Path TRAIN = Paths.get("data/ground_truth/fpml-cdm");
 
     /** Shared validator — Guice setup (CdmRuntimeModule) is heavy, do it once. */
     private static CdmValidator validator;
@@ -118,7 +119,7 @@ class DataDrivenValidationTest {
      * data-rule violations beyond what the reference itself has.
      *
      * The FINOS reference dataset is itself only partially CDM-valid (we discovered
-     * during knowledge_base/knowledge/validation_findings.md that it carries quirks
+     * during knowledge_base/fpml-cdm/knowledge/validation_findings.md that it carries quirks
      * like issuer-less UTI tradeIdentifiers that violate IdentifierIssuerChoice).
      * So we can't assert absolute validity — we assert that the set of violations
      * in our output is a subset of (or equal to) the reference's violations. Any
