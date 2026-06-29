@@ -171,13 +171,15 @@ public final class SwapMapper implements MxmlProductMapper {
         elRef(doc, rd, "calculationPeriodDatesReference", cpdId);
         elText(doc, rd, "resetRelativeTo", "CalculationPeriodStartDate");
 
+        String resetBc = resetBusinessCenter(stream);
+
         Element fix = el(doc, rd, "fixingDates");
         elText(doc, fix, "periodMultiplier", "-2");
         elText(doc, fix, "period", "D");
         elText(doc, fix, "dayType", "Business");
         elText(doc, fix, "businessDayConvention", "NONE");
         Element fixBc = el(doc, fix, "businessCenters");
-        elText(doc, fixBc, "businessCenter", "GBLO");
+        elText(doc, fixBc, "businessCenter", resetBc);
         elRef(doc, fix, "dateRelativeTo", cpdId);
 
         String[] freq = calcFrequency(stream);
@@ -188,7 +190,17 @@ public final class SwapMapper implements MxmlProductMapper {
         Element rdAdj = el(doc, rd, "resetDatesAdjustments");
         elText(doc, rdAdj, "businessDayConvention", "MODFOLLOWING");
         Element rdBc = el(doc, rdAdj, "businessCenters");
-        elText(doc, rdBc, "businessCenter", "GBLO");
+        elText(doc, rdBc, "businessCenter", resetBc);
+    }
+
+    /** Reset/fixing business center from the floating template's resetBusinessCenters. */
+    private String resetBusinessCenter(Element stream) {
+        Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
+        Element frt = st != null ? XmlUtils.getFirstChildElement(st, "floatingRateStreamTemplate") : null;
+        Element rbc = frt != null ? XmlUtils.getFirstChildElement(frt, "resetBusinessCenters") : null;
+        Element item = rbc != null ? XmlUtils.getFirstChildElement(rbc, "businessCenterItem") : null;
+        String swift = item != null ? XmlUtils.getTextContent(item, "swiftCode") : null;
+        return (swift != null && !swift.isEmpty()) ? swift : "GBLO";
     }
 
     private void buildCalculationPeriodAmount(Document doc, Element ss, Element stream,
@@ -506,9 +518,47 @@ public final class SwapMapper implements MxmlProductMapper {
     }
 
     private String dayCount(Element streamTemplate) {
+        // Preferred: a rateConvention/dayCountFraction anywhere under the
+        // streamTemplate, skipping the yieldConvention decoy subtree.
+        Element rc = findRateConvention(streamTemplate);
+        if (rc != null) {
+            Element dcf = XmlUtils.getFirstChildElement(rc, "dayCountFraction");
+            String denom = dcf != null
+                    ? XmlUtils.getTextContent(dcf, "dayCountStandardDenomination") : null;
+            if (denom != null && !denom.isEmpty()) return denom;
+        }
+        // Fallback: direct dayCountFraction child of the streamTemplate.
         Element dcf = XmlUtils.getFirstChildElement(streamTemplate, "dayCountFraction");
         String denom = dcf != null ? XmlUtils.getTextContent(dcf, "dayCountStandardDenomination") : null;
-        return denom != null ? denom : "ACT/360";
+        return (denom != null && !denom.isEmpty()) ? denom : "ACT/360";
+    }
+
+    /** First {@code rateConvention} under {@code root}, ignoring yield-convention decoys. */
+    private static Element findRateConvention(Element root) {
+        if (root == null) return null;
+        for (Element c : XmlUtils.getChildElements(root)) {
+            String name = c.getLocalName() != null ? c.getLocalName() : c.getNodeName();
+            if ("yieldConvention".equals(name) || "yieldCalculationConvention".equals(name)) {
+                continue; // skip decoy day-count under yield convention
+            }
+            if ("rateConvention".equals(name)) return c;
+            Element nested = findRateConvention(c);
+            if (nested != null) return nested;
+        }
+        return null;
+    }
+
+    /** Depth-first search for the first descendant (or self) with the given local name. */
+    private static Element findDescendant(Element root, String localName) {
+        if (root == null) return null;
+        for (Element c : XmlUtils.getChildElements(root)) {
+            if (localName.equals(c.getLocalName()) || localName.equals(c.getNodeName())) {
+                return c;
+            }
+            Element nested = findDescendant(c, localName);
+            if (nested != null) return nested;
+        }
+        return null;
     }
 
     /* ──────────────── primitive helpers ──────────────── */
