@@ -472,12 +472,27 @@ public final class SwapMapper implements MxmlProductMapper {
     private void buildParties(Document doc, Element root, Element trade) {
         Element parties = XmlUtils.getFirstChildElement(trade, "parties");
         if (parties == null) return;
+        // Only emit parties actually referenced by an href in the produced document
+        // (FpML lists just the parties that participate; unreferenced internal
+        // parties from the MXML are dropped).
+        java.util.Set<String> referenced = new java.util.HashSet<>();
+        collectHrefs(root, referenced);
         for (Element p : XmlUtils.getChildElements(parties, "party")) {
             String id = p.getAttribute("id");
+            if (!referenced.contains(id)) continue;
             String name = XmlUtils.getTextContent(p, "partyName");
             Element party = el(doc, root, "party");
             party.setAttribute("id", id);
             elText(doc, party, "partyId", name);
+        }
+    }
+
+    /** Collects every {@code href} attribute value in the subtree. */
+    private static void collectHrefs(Element el, java.util.Set<String> out) {
+        String href = el.getAttribute("href");
+        if (href != null && !href.isEmpty()) out.add(href);
+        for (Element c : XmlUtils.getChildElements(el)) {
+            collectHrefs(c, out);
         }
     }
 
