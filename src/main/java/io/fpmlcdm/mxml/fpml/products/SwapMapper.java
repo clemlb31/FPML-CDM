@@ -147,12 +147,131 @@ public final class SwapMapper implements MxmlProductMapper {
         elText(doc, cpdAdj, "businessDayConvention", "MODFOLLOWING");
         appendBusinessCenters(doc, cpdAdj, businessCenters(stream));
 
+        // Stub period elements (between calculationPeriodDatesAdjustments and frequency).
+        emitStubPeriod(doc, cpd, stream);
+
         // calculationPeriodFrequency
         String[] freq = calcFrequency(stream);
         Element cpf = el(doc, cpd, "calculationPeriodFrequency");
         elText(doc, cpf, "periodMultiplier", freq[0]);
         elText(doc, cpf, "period", freq[1]);
         elText(doc, cpf, "rollConvention", rollConvention(stream));
+    }
+
+    /**
+     * Emits {@code firstRegularPeriodStartDate} / {@code lastRegularPeriodEndDate}
+     * and {@code stubPeriodType} when the stream has an initial / final stub.
+     *
+     * <p>Source: MXML {@code stubPeriods/initialStub|finalStub} (presence) and
+     * {@code potentialStubs/{initial,final}StubCharacteristics/couponLength}
+     * (short/long). The regular boundary is the unadjusted start/end of the
+     * adjacent cashflow period, snapped to the roll day.
+     */
+    private void emitStubPeriod(Document doc, Element cpd, Element stream) {
+        Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
+        Element stubPeriods = XmlUtils.getFirstChildElement(stream, "stubPeriods");
+        if (stubPeriods == null) return;
+        boolean hasInitial = XmlUtils.getFirstChildElement(stubPeriods, "initialStub") != null;
+        boolean hasFinal = XmlUtils.getFirstChildElement(stubPeriods, "finalStub") != null;
+        if (!hasInitial && !hasFinal) return;
+
+        // cashflow period boundaries (adjusted, from MXML), used to anchor the regular edge.
+        List<String> startDates = new ArrayList<>();
+        List<String> endDates = new ArrayList<>();
+        Element cashFlows = XmlUtils.getFirstChildElement(stream, "cashFlows");
+        Element interestFlows = cashFlows != null
+                ? XmlUtils.getFirstChildElement(cashFlows, "interestFlows") : null;
+        if (interestFlows != null) {
+            for (Element ipp : XmlUtils.getChildElements(interestFlows, "interestPaymentPeriod")) {
+                Element cpr = XmlUtils.getFirstChildElement(ipp, "calculationPeriod");
+                startDates.add(isoDate(XmlUtils.getTextContent(cpr, "calculationStartDate")));
+                endDates.add(isoDate(XmlUtils.getTextContent(cpr, "calculationEndDate")));
+            }
+        }
+        if (startDates.isEmpty()) return;
+        int rollDay = rollDayInt(stream);
+
+        if (hasInitial) {
+            // first regular period starts at the unadjusted end of the (stub) first period
+            String d = snapIso(endDates.get(0), rollDay);
+            if (d != null) elText(doc, cpd, "firstRegularPeriodStartDate", d);
+        }
+        if (hasFinal) {
+            // last regular period ends at the unadjusted start of the (stub) last period
+            String d = snapIso(startDates.get(startDates.size() - 1), rollDay);
+            if (d != null) elText(doc, cpd, "lastRegularPeriodEndDate", d);
+        }
+
+        String stubType = stubPeriodType(st, hasInitial, hasFinal);
+        if (stubType != null) elText(doc, cpd, "stubPeriodType", stubType);
+    }
+
+    /**
+     * Emits stub payment-date elements: {@code firstPaymentDate} (initial stub)
+     * and {@code lastRegularPaymentDate} (final stub), between paymentFrequency
+     * and payRelativeTo. Values are the adjusted payment dates of the first
+     * (stub) period and the last regular period respectively.
+     */
+    private void emitStubPaymentDates(Document doc, Element pd, Element stream) {
+        Element stubPeriods = XmlUtils.getFirstChildElement(stream, "stubPeriods");
+        if (stubPeriods == null) return;
+        boolean hasInitial = XmlUtils.getFirstChildElement(stubPeriods, "initialStub") != null;
+        boolean hasFinal = XmlUtils.getFirstChildElement(stubPeriods, "finalStub") != null;
+        if (!hasInitial && !hasFinal) return;
+
+        List<String> payDates = new ArrayList<>();
+        Element cashFlows = XmlUtils.getFirstChildElement(stream, "cashFlows");
+        Element interestFlows = cashFlows != null
+                ? XmlUtils.getFirstChildElement(cashFlows, "interestFlows") : null;
+        if (interestFlows != null) {
+            for (Element ipp : XmlUtils.getChildElements(interestFlows, "interestPaymentPeriod")) {
+                payDates.add(isoDate(XmlUtils.getTextContent(ipp, "paymentDate")));
+            }
+        }
+        if (payDates.isEmpty()) return;
+
+        if (hasInitial) {
+            elText(doc, pd, "firstPaymentDate", payDates.get(0));
+        }
+        if (hasFinal) {
+            // last regular payment = payment date of the period before the final stub
+            int idx = payDates.size() >= 2 ? payDates.size() - 2 : payDates.size() - 1;
+            elText(doc, pd, "lastRegularPaymentDate", payDates.get(idx));
+        }
+    }
+
+    /** Maps MXML couponLength + stub side to the FpML stubPeriodType enum. */
+    private String stubPeriodType(Element streamTemplate, boolean initial, boolean finalStub) {
+        Element pot = streamTemplate != null
+                ? XmlUtils.getFirstChildElement(streamTemplate, "potentialStubs") : null;
+        if (pot == null) return null;
+        String side = finalStub ? "Final" : "Initial";
+        String charsName = finalStub ? "finalStubCharacteristics" : "initialStubCharacteristics";
+        Element chars = XmlUtils.getFirstChildElement(pot, charsName);
+        String len = chars != null ? XmlUtils.getTextContent(chars, "couponLength") : null;
+        if ("longCoupon".equals(len)) return "Long" + side;
+        if ("shortCoupon".equals(len)) return "Short" + side;
+        return null;
+    }
+
+    private int rollDayInt(Element stream) {
+        String mat = XmlUtils.getTextContent(stream, "maturity");
+        if (mat != null && mat.length() == 8) {
+            return Integer.parseInt(mat.substring(6, 8));
+        }
+        return 0;
+    }
+
+    /** Snap an ISO date to the given roll day-of-month (clamped); null-safe. */
+    private static String snapIso(String iso, int rollDay) {
+        if (iso == null || rollDay <= 0) return iso;
+        try {
+            LocalDate d = LocalDate.parse(iso);
+            int day = Math.min(rollDay, d.lengthOfMonth());
+            return d.withDayOfMonth(day).toString();
+        } catch (Exception e) {
+            return iso;
+        }
     }
 
     private void buildPaymentDates(Document doc, Element ss, Element stream,
@@ -164,6 +283,9 @@ public final class SwapMapper implements MxmlProductMapper {
         Element pf = el(doc, pd, "paymentFrequency");
         elText(doc, pf, "periodMultiplier", freq[0]);
         elText(doc, pf, "period", freq[1]);
+        // Stub payment dates: firstPaymentDate (initial stub) / lastRegularPaymentDate
+        // (final stub) sit between paymentFrequency and payRelativeTo.
+        emitStubPaymentDates(doc, pd, stream);
         elText(doc, pd, "payRelativeTo", "CalculationPeriodEndDate");
         Element off = el(doc, pd, "paymentDaysOffset");
         elText(doc, off, "periodMultiplier", "0");
