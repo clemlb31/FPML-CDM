@@ -51,11 +51,18 @@ public final class XmlSemanticDiff {
      * <p>{@code partyId} holds the party's display name. The public mxml-fpml
      * dataset scrubs the real Murex names (e.g. {@code MXpress}/{@code MUREX})
      * to anonymized ones ({@code BARCLAYS}/{@code party1}) <em>after</em>
-     * generation — the analog of the CDM {@code globalKey}. The party's
-     * {@code id} attribute (the reference target of every {@code href}) is still
-     * compared, so a counterparty collapse (payer==receiver) is still caught.
+     * generation — the analog of the CDM {@code globalKey}.
+     *
+     * <p>{@code sentBy}/{@code sendTo} (message header, lifecycle envelopes) carry
+     * the <em>same</em> anonymized party display names ({@code BARCLAYS}/
+     * {@code party1}); they are absent from the MXML, so their text is likewise
+     * not reproducible and is present-checked but not compared.
+     *
+     * <p>In all cases the party {@code id} attribute (the reference target of every
+     * {@code href}) is still compared, so a counterparty collapse (payer==receiver)
+     * is still caught.
      */
-    private static final Set<String> ANONYMIZED_LEAVES = Set.of("partyId");
+    private static final Set<String> ANONYMIZED_LEAVES = Set.of("partyId", "sentBy", "sendTo");
 
     /** Attribute local-names dropped everywhere (namespace plumbing, not content). */
     private static final Set<String> IGNORED_ATTRS = Set.of("schemaLocation");
