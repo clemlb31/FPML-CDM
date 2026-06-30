@@ -744,11 +744,18 @@ public final class SwapMapper implements MxmlProductMapper {
         }
     }
 
-    /** Collects every {@code href} attribute value in the subtree. */
+    /**
+     * Collects every {@code href} attribute value in the subtree, EXCEPT those
+     * occurring inside an {@code <additionalPayment>}. FpML lists only parties
+     * referenced outside additionalPayment (verified across the dataset: a party
+     * referenced solely as an additionalPayment payer/receiver is not emitted).
+     */
     private static void collectHrefs(Element el, java.util.Set<String> out) {
         String href = el.getAttribute("href");
         if (href != null && !href.isEmpty()) out.add(href);
         for (Element c : XmlUtils.getChildElements(el)) {
+            String name = c.getLocalName() != null ? c.getLocalName() : c.getNodeName();
+            if ("additionalPayment".equals(name)) continue; // refs here don't emit a party
             collectHrefs(c, out);
         }
     }
