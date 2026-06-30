@@ -50,12 +50,16 @@ public final class SwapMapper implements MxmlProductMapper {
             return null;
         }
 
+        String amendmentEvent = amendmentEventClass(mxmlRoot);
+        if (amendmentEvent != null) {
+            return buildRequestConfirmation(doc, mxmlRoot, trade, product, streams, context);
+        }
+
         Element root = doc.createElementNS(FPML_NS, "dataDocument");
         root.setAttribute("fpmlVersion", "5-3");
 
         Element fpmlTrade = el(doc, root, "trade");
         buildTradeHeader(doc, fpmlTrade, trade, mxmlRoot);
-
         Element swap = el(doc, fpmlTrade, "swap");
         for (Element stream : streams) {
             buildSwapStream(doc, swap, stream, context);
@@ -64,6 +68,108 @@ public final class SwapMapper implements MxmlProductMapper {
 
         buildParties(doc, root, trade);
         return root;
+    }
+
+    /* ──────────────── lifecycle: amendment envelope ──────────────── */
+
+    /**
+     * @return the amendment-class contractEvent mefClass token (CANCEL_REISSUE /
+     *         RESTRUCTURE) if present, else null. Other event classes (UNWIND,
+     *         ASSIGNMENT, …) are NOT amendments and fall through to dataDocument.
+     */
+    private String amendmentEventClass(Element mxmlRoot) {
+        Element ces = XmlUtils.getFirstChildElement(mxmlRoot, "contractEvents");
+        Element ce = ces != null ? XmlUtils.getFirstChildElement(ces, "contractEvent") : null;
+        if (ce == null) return null;
+        String mef = ce.getAttribute("mefClass");
+        if (mef == null) return null;
+        if (mef.contains("CANCEL_REISSUE")) return "CANCEL_REISSUE";
+        if (mef.contains("RESTRUCTURE")) return "RESTRUCTURE";
+        return null;
+    }
+
+    /**
+     * Builds a {@code requestConfirmation} envelope wrapping the (unchanged) trade
+     * body in an {@code <amendment>}. Header sentBy/sendTo/creationTimestamp are
+     * comparator-ignored; messageId/eventId/dates/hrefs are derived from MXML;
+     * isCorrection/correlationId/sequenceNumber are constants.
+     */
+    private Element buildRequestConfirmation(Document doc, Element mxmlRoot, Element trade,
+                                             Element product, List<Element> streams,
+                                             MxmlToFpmlContext context) {
+        Element root = doc.createElementNS(FPML_NS, "requestConfirmation");
+        root.setAttribute("fpmlVersion", "5-3");
+
+        String contractId = extractContractId(mxmlRoot); // "MX"+id
+        String reportingHref = firstPartyHref(trade);
+
+        Element header = el(doc, root, "header");
+        Element mid = elText(doc, header, "messageId", contractId);
+        mid.setAttribute("messageIdScheme", "http://www.murex.com/message-id");
+        elText(doc, header, "sentBy", "");          // comparator-ignored (anonymized)
+        elText(doc, header, "sendTo", "");          // comparator-ignored (anonymized)
+        elText(doc, header, "creationTimestamp", ""); // comparator-ignored (volatile)
+
+        elText(doc, root, "isCorrection", "false");
+        Element corr = elText(doc, root, "correlationId", "1234");
+        corr.setAttribute("correlationIdScheme", "http://www.murex.com/correlation-id");
+        elText(doc, root, "sequenceNumber", "1");
+
+        Element obo = el(doc, root, "onBehalfOf");
+        elRef(doc, obo, "partyReference", reportingHref);
+
+        Element amendment = el(doc, root, "amendment");
+        Element eventId = el(doc, amendment, "eventIdentifier");
+        elRef(doc, eventId, "partyReference", reportingHref);
+        elText(doc, eventId, "eventId", extractEventId(mxmlRoot));
+
+        Element fpmlTrade = el(doc, amendment, "trade");
+        buildTradeHeader(doc, fpmlTrade, trade, mxmlRoot);
+        Element swap = el(doc, fpmlTrade, "swap");
+        for (Element stream : streams) {
+            buildSwapStream(doc, swap, stream, context);
+        }
+        buildAdditionalPayments(doc, swap, product, streams);
+
+        elText(doc, amendment, "agreementDate", tradeDateIso(trade));
+        elText(doc, amendment, "executionDateTime", executionDateTime(trade, mxmlRoot));
+        elText(doc, amendment, "effectiveDate",
+                isoDate(XmlUtils.getTextContent(streams.get(0), "effectiveDate")));
+
+        buildParties(doc, root, trade);
+        return root;
+    }
+
+    private String extractEventId(Element mxmlRoot) {
+        Element ces = XmlUtils.getFirstChildElement(mxmlRoot, "contractEvents");
+        Element ce = ces != null ? XmlUtils.getFirstChildElement(ces, "contractEvent") : null;
+        if (ce == null) return "";
+        Element hdr = XmlUtils.getFirstChildElement(ce, "contractEventHeader");
+        Element cid = hdr != null ? XmlUtils.getFirstChildElement(hdr, "contractEventId") : null;
+        String id = cid != null ? XmlUtils.getTextContent(cid, "internalId") : null;
+        return id != null ? id : "";
+    }
+
+    private String tradeDateIso(Element trade) {
+        return isoDate(XmlUtils.getTextContent(
+                XmlUtils.findElementByPath(trade, "tradeHeader", "tradeDate")));
+    }
+
+    /** executionDateTime = tradeDate + 'T' + inputConditions timestamp time + 'Z'. */
+    private String executionDateTime(Element trade, Element mxmlRoot) {
+        String date = tradeDateIso(trade);
+        String time = "00:00:00";
+        // /MxML/contracts/contract/inputConditions/timestamp = "yyyymmdd HH:MM:SS"
+        Element contracts = XmlUtils.getFirstChildElement(mxmlRoot, "contracts");
+        Element contract = contracts != null ? XmlUtils.getFirstChildElement(contracts, "contract") : null;
+        Element ic = contract != null ? XmlUtils.getFirstChildElement(contract, "inputConditions") : null;
+        String ts = ic != null ? XmlUtils.getTextContent(ic, "timestamp") : null;
+        if (ts != null) {
+            java.util.regex.Matcher m = java.util.regex.Pattern
+                    .compile("(\\d{2}:\\d{2}:\\d{2})").matcher(ts);
+            if (m.find()) time = m.group(1);
+        }
+        return date + "T" + time + "Z";
     }
 
     /**
@@ -709,12 +815,18 @@ public final class SwapMapper implements MxmlProductMapper {
     }
 
     private String extractContractId(Element mxmlRoot) {
-        // /MxML/contracts/contract/contractId/internalId, prefixed "MX"
+        // /MxML/contracts/contract/contractId/rootContract, prefixed "MX".
+        // The confirmation references the ROOT contract (for an amendment the
+        // reissued contract appears first with a different internalId, but the
+        // rootContract is stable; for vanilla trades root == internal).
         Element contracts = XmlUtils.getFirstChildElement(mxmlRoot, "contracts");
         Element contract = contracts != null ? XmlUtils.getFirstChildElement(contracts, "contract") : null;
         Element cid = contract != null ? XmlUtils.getFirstChildElement(contract, "contractId") : null;
-        String internal = cid != null ? XmlUtils.getTextContent(cid, "internalId") : null;
-        return internal != null ? "MX" + internal : "";
+        String root = cid != null ? XmlUtils.getTextContent(cid, "rootContract") : null;
+        if (root == null || root.isEmpty()) {
+            root = cid != null ? XmlUtils.getTextContent(cid, "internalId") : null;
+        }
+        return root != null ? "MX" + root : "";
     }
 
     private String[] calcFrequency(Element stream) {
