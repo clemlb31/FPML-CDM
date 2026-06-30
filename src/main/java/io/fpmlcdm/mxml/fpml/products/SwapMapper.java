@@ -188,6 +188,11 @@ public final class SwapMapper implements MxmlProductMapper {
             if (flow == null) continue;
             String payer = stripHash(attrOfChild(flow, "payerPartyReference", "href"));
             String receiver = stripHash(attrOfChild(flow, "receiverPartyReference", "href"));
+            // MXML often leaves the additionalFlow payer empty; derive it as the
+            // swap counterparty (the stream party href that is not the receiver).
+            if (payer.isEmpty()) {
+                payer = otherStreamPartyHref(streams, receiver);
+            }
             String date = isoDate(XmlUtils.getTextContent(flow, "date"));
             String ccy = XmlUtils.getTextContent(flow, "currency");
             String amount = XmlUtils.getTextContent(flow, "amount");
@@ -208,6 +213,21 @@ public final class SwapMapper implements MxmlProductMapper {
     }
 
     /* ──────────────── tradeHeader ──────────────── */
+
+    /** The swap counterparty href: a stream payer/receiver href that is not {@code exclude}. */
+    private String otherStreamPartyHref(List<Element> streams, String exclude) {
+        java.util.LinkedHashSet<String> hrefs = new java.util.LinkedHashSet<>();
+        for (Element stream : streams) {
+            String p = stripHash(attrOfChild(stream, "payerPartyReference", "href"));
+            String r = stripHash(attrOfChild(stream, "receiverPartyReference", "href"));
+            if (!p.isEmpty()) hrefs.add(p);
+            if (!r.isEmpty()) hrefs.add(r);
+        }
+        for (String h : hrefs) {
+            if (!h.equals(exclude)) return h;
+        }
+        return exclude;
+    }
 
     private void buildTradeHeader(Document doc, Element parent, Element trade, Element mxmlRoot) {
         Element th = el(doc, parent, "tradeHeader");
@@ -674,6 +694,12 @@ public final class SwapMapper implements MxmlProductMapper {
                 if (obs != null) {
                     elText(doc, ro, "adjustedFixingDate",
                             isoDate(XmlUtils.getTextContent(obs, "observationDate")));
+                    // observedRate is present only on already-fixed periods
+                    // (typically the first); emit it (as a decimal) before the weight.
+                    String observed = XmlUtils.getTextContent(obs, "observedRate");
+                    if (observed != null && !observed.isEmpty()) {
+                        elText(doc, ro, "observedRate", pct(observed));
+                    }
                     elText(doc, ro, "observationWeight",
                             XmlUtils.getTextContent(obs, "observationWeight"));
                 } else {
