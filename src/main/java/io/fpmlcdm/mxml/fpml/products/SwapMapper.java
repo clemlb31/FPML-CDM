@@ -22,9 +22,9 @@ import java.util.List;
  * <p>Scope: vanilla fixed/float only. Stubs, inflation, zero-coupon known-amount,
  * cross-currency MTM and lifecycle events are out of scope for this first port.
  */
-public final class SwapMapper implements MxmlProductMapper {
+public class SwapMapper implements MxmlProductMapper {
 
-    private static final String FPML_NS = "http://www.fpml.org/FpML-5/confirmation";
+    protected static final String FPML_NS = "http://www.fpml.org/FpML-5/confirmation";
 
     @Override
     public String mxmlProductType() {
@@ -77,7 +77,7 @@ public final class SwapMapper implements MxmlProductMapper {
      *         RESTRUCTURE) if present, else null. Other event classes (UNWIND,
      *         ASSIGNMENT, …) are NOT amendments and fall through to dataDocument.
      */
-    private String amendmentEventClass(Element mxmlRoot) {
+    protected String amendmentEventClass(Element mxmlRoot) {
         Element ces = XmlUtils.getFirstChildElement(mxmlRoot, "contractEvents");
         Element ce = ces != null ? XmlUtils.getFirstChildElement(ces, "contractEvent") : null;
         if (ce == null) return null;
@@ -94,7 +94,7 @@ public final class SwapMapper implements MxmlProductMapper {
      * comparator-ignored; messageId/eventId/dates/hrefs are derived from MXML;
      * isCorrection/correlationId/sequenceNumber are constants.
      */
-    private Element buildRequestConfirmation(Document doc, Element mxmlRoot, Element trade,
+    protected Element buildRequestConfirmation(Document doc, Element mxmlRoot, Element trade,
                                              Element product, List<Element> streams,
                                              MxmlToFpmlContext context) {
         Element root = doc.createElementNS(FPML_NS, "requestConfirmation");
@@ -140,7 +140,7 @@ public final class SwapMapper implements MxmlProductMapper {
         return root;
     }
 
-    private String extractEventId(Element mxmlRoot) {
+    protected String extractEventId(Element mxmlRoot) {
         Element ces = XmlUtils.getFirstChildElement(mxmlRoot, "contractEvents");
         Element ce = ces != null ? XmlUtils.getFirstChildElement(ces, "contractEvent") : null;
         if (ce == null) return "";
@@ -150,13 +150,13 @@ public final class SwapMapper implements MxmlProductMapper {
         return id != null ? id : "";
     }
 
-    private String tradeDateIso(Element trade) {
+    protected String tradeDateIso(Element trade) {
         return isoDate(XmlUtils.getTextContent(
                 XmlUtils.findElementByPath(trade, "tradeHeader", "tradeDate")));
     }
 
     /** executionDateTime = tradeDate + 'T' + inputConditions timestamp time + 'Z'. */
-    private String executionDateTime(Element trade, Element mxmlRoot) {
+    protected String executionDateTime(Element trade, Element mxmlRoot) {
         String date = tradeDateIso(trade);
         String time = "00:00:00";
         // /MxML/contracts/contract/inputConditions/timestamp = "yyyymmdd HH:MM:SS"
@@ -178,7 +178,7 @@ public final class SwapMapper implements MxmlProductMapper {
      * currency/amount; payment-date adjustments reuse the first stream's payment
      * business centers (MODFOLLOWING). Amount is copied verbatim (no %/100).
      */
-    private void buildAdditionalPayments(Document doc, Element swap, Element product,
+    protected void buildAdditionalPayments(Document doc, Element swap, Element product,
                                          List<Element> streams) {
         Element addFlows = XmlUtils.getFirstChildElement(product, "additionalFlows");
         if (addFlows == null) return;
@@ -215,7 +215,7 @@ public final class SwapMapper implements MxmlProductMapper {
     /* ──────────────── tradeHeader ──────────────── */
 
     /** The swap counterparty href: a stream payer/receiver href that is not {@code exclude}. */
-    private String otherStreamPartyHref(List<Element> streams, String exclude) {
+    protected String otherStreamPartyHref(List<Element> streams, String exclude) {
         java.util.LinkedHashSet<String> hrefs = new java.util.LinkedHashSet<>();
         for (Element stream : streams) {
             String p = stripHash(attrOfChild(stream, "payerPartyReference", "href"));
@@ -229,7 +229,7 @@ public final class SwapMapper implements MxmlProductMapper {
         return exclude;
     }
 
-    private void buildTradeHeader(Document doc, Element parent, Element trade, Element mxmlRoot) {
+    protected void buildTradeHeader(Document doc, Element parent, Element trade, Element mxmlRoot) {
         Element th = el(doc, parent, "tradeHeader");
         Element pti = el(doc, th, "partyTradeIdentifier");
         // partyReference: the "our"/MXpress side (first stream payer in this sample)
@@ -248,7 +248,7 @@ public final class SwapMapper implements MxmlProductMapper {
 
     /* ──────────────── swapStream ──────────────── */
 
-    private void buildSwapStream(Document doc, Element swap, Element stream, MxmlToFpmlContext ctx) {
+    protected void buildSwapStream(Document doc, Element swap, Element stream, MxmlToFpmlContext ctx) {
         Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
         String payoutType = XmlUtils.getTextContent(st, "payoutType"); // fixedRate | floatingRate
         boolean floating = "floatingRate".equals(payoutType);
@@ -274,7 +274,7 @@ public final class SwapMapper implements MxmlProductMapper {
         buildCashflows(doc, ss, stream, floating);
     }
 
-    private void buildCalculationPeriodDates(Document doc, Element ss, Element stream,
+    protected void buildCalculationPeriodDates(Document doc, Element ss, Element stream,
                                              Element st, String id) {
         Element cpd = el(doc, ss, "calculationPeriodDates");
         cpd.setAttribute("id", id);
@@ -329,7 +329,7 @@ public final class SwapMapper implements MxmlProductMapper {
      * (short/long). The regular boundary is the unadjusted start/end of the
      * adjacent cashflow period, snapped to the roll day.
      */
-    private void emitStubPeriod(Document doc, Element cpd, Element stream) {
+    protected void emitStubPeriod(Document doc, Element cpd, Element stream) {
         Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
         Element stubPeriods = XmlUtils.getFirstChildElement(stream, "stubPeriods");
         if (stubPeriods == null) return;
@@ -374,7 +374,7 @@ public final class SwapMapper implements MxmlProductMapper {
      * and payRelativeTo. Values are the adjusted payment dates of the first
      * (stub) period and the last regular period respectively.
      */
-    private void emitStubPaymentDates(Document doc, Element pd, Element stream) {
+    protected void emitStubPaymentDates(Document doc, Element pd, Element stream) {
         Element stubPeriods = XmlUtils.getFirstChildElement(stream, "stubPeriods");
         if (stubPeriods == null) return;
         boolean hasInitial = XmlUtils.getFirstChildElement(stubPeriods, "initialStub") != null;
@@ -403,7 +403,7 @@ public final class SwapMapper implements MxmlProductMapper {
     }
 
     /** Maps MXML couponLength + stub side to the FpML stubPeriodType enum. */
-    private String stubPeriodType(Element streamTemplate, boolean initial, boolean finalStub) {
+    protected String stubPeriodType(Element streamTemplate, boolean initial, boolean finalStub) {
         Element pot = streamTemplate != null
                 ? XmlUtils.getFirstChildElement(streamTemplate, "potentialStubs") : null;
         if (pot == null) return null;
@@ -416,7 +416,7 @@ public final class SwapMapper implements MxmlProductMapper {
         return null;
     }
 
-    private int rollDayInt(Element stream) {
+    protected int rollDayInt(Element stream) {
         String mat = XmlUtils.getTextContent(stream, "maturity");
         if (mat != null && mat.length() == 8) {
             return Integer.parseInt(mat.substring(6, 8));
@@ -425,7 +425,7 @@ public final class SwapMapper implements MxmlProductMapper {
     }
 
     /** Snap an ISO date to the given roll day-of-month (clamped); null-safe. */
-    private static String snapIso(String iso, int rollDay) {
+    protected static String snapIso(String iso, int rollDay) {
         if (iso == null || rollDay <= 0) return iso;
         try {
             LocalDate d = LocalDate.parse(iso);
@@ -436,7 +436,7 @@ public final class SwapMapper implements MxmlProductMapper {
         }
     }
 
-    private void buildPaymentDates(Document doc, Element ss, Element stream,
+    protected void buildPaymentDates(Document doc, Element ss, Element stream,
                                    Element st, String leg, String cpdId) {
         Element pd = el(doc, ss, "paymentDates");
         pd.setAttribute("id", "leg_" + leg + "_paymentDates");
@@ -464,7 +464,7 @@ public final class SwapMapper implements MxmlProductMapper {
         appendBusinessCenters(doc, pdAdj, businessCenters(stream));
     }
 
-    private void buildResetDates(Document doc, Element ss, Element stream,
+    protected void buildResetDates(Document doc, Element ss, Element stream,
                                  Element st, String leg, String cpdId) {
         Element rd = el(doc, ss, "resetDates");
         rd.setAttribute("id", "leg_" + leg + "_resetDates");
@@ -494,7 +494,7 @@ public final class SwapMapper implements MxmlProductMapper {
     }
 
     /** Reset/fixing business center from the floating template's resetBusinessCenters. */
-    private String resetBusinessCenter(Element stream) {
+    protected String resetBusinessCenter(Element stream) {
         Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
         Element frt = st != null ? XmlUtils.getFirstChildElement(st, "floatingRateStreamTemplate") : null;
         Element rbc = frt != null ? XmlUtils.getFirstChildElement(frt, "resetBusinessCenters") : null;
@@ -504,7 +504,7 @@ public final class SwapMapper implements MxmlProductMapper {
     }
 
     /** The leg's paymentSchedule shifter/shift element, or null if no shifter. */
-    private Element paymentScheduleShift(Element stream) {
+    protected Element paymentScheduleShift(Element stream) {
         Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
         Element ss = st != null ? XmlUtils.getFirstChildElement(st, "streamSchedules") : null;
         Element ps = ss != null ? XmlUtils.getFirstChildElement(ss, "paymentSchedule") : null;
@@ -516,7 +516,7 @@ public final class SwapMapper implements MxmlProductMapper {
      * The stream's schedule business-day convention (FpML form), read from the
      * calculation schedule generator and mapped from the Murex spelling.
      */
-    private String scheduleBusinessDayConvention(Element stream) {
+    protected String scheduleBusinessDayConvention(Element stream) {
         Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
         Element ss = st != null ? XmlUtils.getFirstChildElement(st, "streamSchedules") : null;
         Element cs = ss != null ? XmlUtils.getFirstChildElement(ss, "calculationSchedule") : null;
@@ -538,7 +538,7 @@ public final class SwapMapper implements MxmlProductMapper {
         }
     }
 
-    private void buildCalculationPeriodAmount(Document doc, Element ss, Element stream,
+    protected void buildCalculationPeriodAmount(Document doc, Element ss, Element stream,
                                               Element st, String leg, boolean floating) {
         Element cpa = el(doc, ss, "calculationPeriodAmount");
         Element calc = el(doc, cpa, "calculation");
@@ -578,7 +578,7 @@ public final class SwapMapper implements MxmlProductMapper {
      * (verbatim, no %/100). Source: stream/cashFlows/interestFlows/
      * interestPaymentPeriod/calculationPeriod/notionalAmount.
      */
-    private void emitNotionalSteps(Document doc, Element nss, Element stream, String initialValue) {
+    protected void emitNotionalSteps(Document doc, Element nss, Element stream, String initialValue) {
         Element cashFlows = XmlUtils.getFirstChildElement(stream, "cashFlows");
         Element interestFlows = cashFlows != null
                 ? XmlUtils.getFirstChildElement(cashFlows, "interestFlows") : null;
@@ -599,7 +599,7 @@ public final class SwapMapper implements MxmlProductMapper {
     }
 
     /** Numeric equality for notionals (tolerant of trailing-zero formatting). */
-    private static boolean notionalEquals(String a, String b) {
+    protected static boolean notionalEquals(String a, String b) {
         if (a == null || b == null) return java.util.Objects.equals(a, b);
         try {
             return new java.math.BigDecimal(a).compareTo(new java.math.BigDecimal(b)) == 0;
@@ -615,7 +615,7 @@ public final class SwapMapper implements MxmlProductMapper {
      * set). Defaults to true (the vast majority); kept narrow so non-customized
      * legs never regress.
      */
-    private boolean cashflowsMatchParameters(Element stream) {
+    protected boolean cashflowsMatchParameters(Element stream) {
         Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
         String leg = st != null ? XmlUtils.getTextContent(st, "leg") : null;
         if (leg == null) return true;
@@ -634,13 +634,13 @@ public final class SwapMapper implements MxmlProductMapper {
         return true;
     }
 
-    private static boolean isCashflowsImpacting(String customizedObject) {
+    protected static boolean isCashflowsImpacting(String customizedObject) {
         // Confirmed impacting object; kept narrow (other values may also impact,
         // but only capitalPaymentFlow is verified against the reference data).
         return "capitalPaymentFlow".equals(customizedObject);
     }
 
-    private void buildCashflows(Document doc, Element ss, Element stream, boolean floating) {
+    protected void buildCashflows(Document doc, Element ss, Element stream, boolean floating) {
         Element cashFlows = XmlUtils.getFirstChildElement(stream, "cashFlows");
         Element interestFlows = cashFlows != null
                 ? XmlUtils.getFirstChildElement(cashFlows, "interestFlows") : null;
@@ -726,7 +726,7 @@ public final class SwapMapper implements MxmlProductMapper {
 
     /* ──────────────── parties ──────────────── */
 
-    private void buildParties(Document doc, Element root, Element trade) {
+    protected void buildParties(Document doc, Element root, Element trade) {
         Element parties = XmlUtils.getFirstChildElement(trade, "parties");
         if (parties == null) return;
         // Only emit parties actually referenced by an href in the produced document
@@ -750,7 +750,7 @@ public final class SwapMapper implements MxmlProductMapper {
      * referenced outside additionalPayment (verified across the dataset: a party
      * referenced solely as an additionalPayment payer/receiver is not emitted).
      */
-    private static void collectHrefs(Element el, java.util.Set<String> out) {
+    protected static void collectHrefs(Element el, java.util.Set<String> out) {
         String href = el.getAttribute("href");
         if (href != null && !href.isEmpty()) out.add(href);
         for (Element c : XmlUtils.getChildElements(el)) {
@@ -773,7 +773,7 @@ public final class SwapMapper implements MxmlProductMapper {
      * pre-filled adjusted dates are kept (safe fallback for stubs / irregular
      * schedules, which are out of scope for this vanilla port).
      */
-    private void computeUnadjustedBoundaries(String effIso, String matIso, String[] freq,
+    protected void computeUnadjustedBoundaries(String effIso, String matIso, String[] freq,
                                              int count, List<String> unStart, List<String> unEnd) {
         if (effIso == null || matIso == null || count <= 0) return;
         int mult;
@@ -817,7 +817,7 @@ public final class SwapMapper implements MxmlProductMapper {
         }
     }
 
-    private static LocalDate addPeriod(LocalDate base, long n, String unit) {
+    protected static LocalDate addPeriod(LocalDate base, long n, String unit) {
         switch (unit) {
             case "Y": return base.plusYears(n);
             case "M": return base.plusMonths(n);
@@ -828,26 +828,26 @@ public final class SwapMapper implements MxmlProductMapper {
     }
 
     /** For month/year rolls, force the roll day-of-month (clamped to month length). */
-    private static LocalDate snapToRollDay(LocalDate d, int rollDay, String unit) {
+    protected static LocalDate snapToRollDay(LocalDate d, int rollDay, String unit) {
         if (!"M".equals(unit) && !"Y".equals(unit)) return d;
         int day = Math.min(rollDay, d.lengthOfMonth());
         return d.withDayOfMonth(day);
     }
 
     /* ──────────────── extraction helpers ──────────────── */
-    private Element findTrade(Element mxmlRoot) {
+    protected Element findTrade(Element mxmlRoot) {
         if ("trade".equals(mxmlRoot.getLocalName())) return mxmlRoot;
         Element trades = XmlUtils.getFirstChildElement(mxmlRoot, "trades");
         return trades != null ? XmlUtils.getFirstChildElement(trades, "trade") : null;
     }
 
-    private String firstPartyHref(Element trade) {
+    protected String firstPartyHref(Element trade) {
         Element parties = XmlUtils.getFirstChildElement(trade, "parties");
         Element first = parties != null ? XmlUtils.getFirstChildElement(parties, "party") : null;
         return first != null ? first.getAttribute("id") : "";
     }
 
-    private String extractContractId(Element mxmlRoot) {
+    protected String extractContractId(Element mxmlRoot) {
         // /MxML/contracts/contract/contractId/rootContract, prefixed "MX".
         // The confirmation references the ROOT contract (for an amendment the
         // reissued contract appears first with a different internalId, but the
@@ -862,7 +862,7 @@ public final class SwapMapper implements MxmlProductMapper {
         return root != null ? "MX" + root : "";
     }
 
-    private String[] calcFrequency(Element stream) {
+    protected String[] calcFrequency(Element stream) {
         // streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/
         //   standardScheduleGenerator/defaultFrequency
         Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
@@ -876,7 +876,7 @@ public final class SwapMapper implements MxmlProductMapper {
         return new String[]{mult, periodCode(unit)};
     }
 
-    private String rollConvention(Element stream) {
+    protected String rollConvention(Element stream) {
         String mat = XmlUtils.getTextContent(stream, "maturity"); // yyyymmdd → day
         if (mat != null && mat.length() == 8) {
             return String.valueOf(Integer.parseInt(mat.substring(6, 8)));
@@ -884,7 +884,7 @@ public final class SwapMapper implements MxmlProductMapper {
         return "NONE";
     }
 
-    private List<String> businessCenters(Element stream) {
+    protected List<String> businessCenters(Element stream) {
         List<String> out = new ArrayList<>();
         Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
         Element pbc = st != null ? XmlUtils.getFirstChildElement(st, "paymentBusinessCenters") : null;
@@ -897,7 +897,7 @@ public final class SwapMapper implements MxmlProductMapper {
         return out;
     }
 
-    private String floatingRateIndex(Element stream) {
+    protected String floatingRateIndex(Element stream) {
         Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
         Element frt = st != null ? XmlUtils.getFirstChildElement(st, "floatingRateStreamTemplate") : null;
         Element index = frt != null ? XmlUtils.getFirstChildElement(frt, "index") : null;
@@ -948,7 +948,7 @@ public final class SwapMapper implements MxmlProductMapper {
         }
     }
 
-    private String[] indexTenor(Element stream) {
+    protected String[] indexTenor(Element stream) {
         Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
         Element frt = st != null ? XmlUtils.getFirstChildElement(st, "floatingRateStreamTemplate") : null;
         Element index = frt != null ? XmlUtils.getFirstChildElement(frt, "index") : null;
@@ -959,7 +959,7 @@ public final class SwapMapper implements MxmlProductMapper {
         return new String[]{mult, periodCode(unit)};
     }
 
-    private String dayCount(Element streamTemplate) {
+    protected String dayCount(Element streamTemplate) {
         // Authoritative source: the first dayCountFraction carrying a non-empty
         // dayCountFractionLabel (the leg's calculation convention), skipping the
         // yieldConvention decoy. The index's rateConvention (e.g. "LIN ACT/360")
@@ -978,7 +978,7 @@ public final class SwapMapper implements MxmlProductMapper {
     }
 
     /** Murex dayCountFractionLabel -> FpML dayCountFraction (the dayCountBasis table). */
-    private static String mapDayCount(String label) {
+    protected static String mapDayCount(String label) {
         if (label == null || label.isEmpty()) return null;
         switch (label.trim()) {
             case "ACT/360":      return "ACT/360";
@@ -997,7 +997,7 @@ public final class SwapMapper implements MxmlProductMapper {
      * First {@code dayCountFraction} with a non-empty {@code dayCountFractionLabel}
      * under the streamTemplate, skipping any {@code yieldConvention} subtree.
      */
-    private static Element findLabeledDayCountFraction(Element root) {
+    protected static Element findLabeledDayCountFraction(Element root) {
         if (root == null) return null;
         for (Element c : XmlUtils.getChildElements(root)) {
             String name = c.getLocalName() != null ? c.getLocalName() : c.getNodeName();
@@ -1015,7 +1015,7 @@ public final class SwapMapper implements MxmlProductMapper {
     }
 
     /** First {@code rateConvention} under {@code root}, ignoring yield-convention decoys. */
-    private static Element findRateConvention(Element root) {
+    protected static Element findRateConvention(Element root) {
         if (root == null) return null;
         for (Element c : XmlUtils.getChildElements(root)) {
             String name = c.getLocalName() != null ? c.getLocalName() : c.getNodeName();
@@ -1030,7 +1030,7 @@ public final class SwapMapper implements MxmlProductMapper {
     }
 
     /** Depth-first search for the first descendant (or self) with the given local name. */
-    private static Element findDescendant(Element root, String localName) {
+    protected static Element findDescendant(Element root, String localName) {
         if (root == null) return null;
         for (Element c : XmlUtils.getChildElements(root)) {
             if (localName.equals(c.getLocalName()) || localName.equals(c.getNodeName())) {
@@ -1044,7 +1044,7 @@ public final class SwapMapper implements MxmlProductMapper {
 
     /* ──────────────── primitive helpers ──────────────── */
 
-    private static String periodCode(String unit) {
+    protected static String periodCode(String unit) {
         if (unit == null) return "M";
         switch (unit) {
             case "year": return "Y";
@@ -1056,13 +1056,13 @@ public final class SwapMapper implements MxmlProductMapper {
     }
 
     /** yyyymmdd → yyyy-mm-dd. */
-    private static String isoDate(String mx) {
+    protected static String isoDate(String mx) {
         if (mx == null || mx.length() != 8) return mx;
         return mx.substring(0, 4) + "-" + mx.substring(4, 6) + "-" + mx.substring(6, 8);
     }
 
     /** Murex stores rates as percent; FpML wants decimals. "1.00380856" → "0.0100380856". */
-    private static String pct(String raw) {
+    protected static String pct(String raw) {
         if (raw == null || raw.isEmpty()) return raw;
         try {
             java.math.BigDecimal v = new java.math.BigDecimal(raw)
@@ -1073,40 +1073,40 @@ public final class SwapMapper implements MxmlProductMapper {
         }
     }
 
-    private static String stripHash(String href) {
+    protected static String stripHash(String href) {
         if (href == null) return "";
         return href.startsWith("#") ? href.substring(1) : href;
     }
 
-    private static String attrOfChild(Element parent, String childName, String attr) {
+    protected static String attrOfChild(Element parent, String childName, String attr) {
         Element c = XmlUtils.getFirstChildElement(parent, childName);
         return c != null ? c.getAttribute(attr) : "";
     }
 
-    private static Element firstElementChild(Element parent) {
+    protected static Element firstElementChild(Element parent) {
         List<Element> kids = XmlUtils.getChildElements(parent);
         return kids.isEmpty() ? null : kids.get(0);
     }
 
-    private static Element el(Document doc, Element parent, String name) {
+    protected static Element el(Document doc, Element parent, String name) {
         Element e = doc.createElementNS(FPML_NS, name);
         parent.appendChild(e);
         return e;
     }
 
-    private static Element elText(Document doc, Element parent, String name, String text) {
+    protected static Element elText(Document doc, Element parent, String name, String text) {
         Element e = el(doc, parent, name);
         e.setTextContent(text != null ? text : "");
         return e;
     }
 
-    private static Element elRef(Document doc, Element parent, String name, String href) {
+    protected static Element elRef(Document doc, Element parent, String name, String href) {
         Element e = el(doc, parent, name);
         e.setAttribute("href", href);
         return e;
     }
 
-    private static void appendBusinessCenters(Document doc, Element parent, List<String> centers) {
+    protected static void appendBusinessCenters(Document doc, Element parent, List<String> centers) {
         if (centers == null || centers.isEmpty()) return;
         Element bcs = el(doc, parent, "businessCenters");
         for (String c : centers) {
