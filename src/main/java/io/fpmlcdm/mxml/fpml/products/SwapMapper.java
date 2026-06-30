@@ -424,6 +424,9 @@ public final class SwapMapper implements MxmlProductMapper {
         String notional = XmlUtils.getTextContent(capital, "initialCapitalAmount");
         String currency = XmlUtils.getTextContent(capital, "initialCapitalCurrency");
         elText(doc, nss, "initialValue", notional);
+        // Amortizing steps: a <step> wherever a period's notional differs from the
+        // previous period's (order: initialValue -> step* -> currency).
+        emitNotionalSteps(doc, nss, stream, notional);
         elText(doc, nss, "currency", currency);
 
         if (floating) {
@@ -442,6 +445,75 @@ public final class SwapMapper implements MxmlProductMapper {
         elText(doc, calc, "dayCountFraction", dayCount(st));
     }
 
+    /**
+     * Emits a {@code <step>} (stepDate, stepValue) wherever a calculation
+     * period's notional differs from the previous period's. stepDate = the
+     * period's calculationStartDate (yyyymmdd→ISO); stepValue = the new notional
+     * (verbatim, no %/100). Source: stream/cashFlows/interestFlows/
+     * interestPaymentPeriod/calculationPeriod/notionalAmount.
+     */
+    private void emitNotionalSteps(Document doc, Element nss, Element stream, String initialValue) {
+        Element cashFlows = XmlUtils.getFirstChildElement(stream, "cashFlows");
+        Element interestFlows = cashFlows != null
+                ? XmlUtils.getFirstChildElement(cashFlows, "interestFlows") : null;
+        if (interestFlows == null) return;
+        String prev = initialValue;
+        for (Element ipp : XmlUtils.getChildElements(interestFlows, "interestPaymentPeriod")) {
+            Element cp = XmlUtils.getFirstChildElement(ipp, "calculationPeriod");
+            if (cp == null) continue;
+            String notional = XmlUtils.getTextContent(cp, "notionalAmount");
+            if (notional == null || notional.isEmpty()) continue;
+            if (!notionalEquals(notional, prev)) {
+                Element step = el(doc, nss, "step");
+                elText(doc, step, "stepDate", isoDate(XmlUtils.getTextContent(cp, "calculationStartDate")));
+                elText(doc, step, "stepValue", notional);
+                prev = notional;
+            }
+        }
+    }
+
+    /** Numeric equality for notionals (tolerant of trailing-zero formatting). */
+    private static boolean notionalEquals(String a, String b) {
+        if (a == null || b == null) return java.util.Objects.equals(a, b);
+        try {
+            return new java.math.BigDecimal(a).compareTo(new java.math.BigDecimal(b)) == 0;
+        } catch (NumberFormatException e) {
+            return a.equals(b);
+        }
+    }
+
+    /**
+     * cashflowsMatchParameters is false only when this leg carries a
+     * cashflows-impacting customization (MXML product/customized=true +
+     * customizations/customization[leg=this]/customizedObject in the impacting
+     * set). Defaults to true (the vast majority); kept narrow so non-customized
+     * legs never regress.
+     */
+    private boolean cashflowsMatchParameters(Element stream) {
+        Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
+        String leg = st != null ? XmlUtils.getTextContent(st, "leg") : null;
+        if (leg == null) return true;
+        org.w3c.dom.Node parent = stream.getParentNode();
+        if (!(parent instanceof Element)) return true;
+        Element product = (Element) parent;
+        if (!"true".equals(XmlUtils.getTextContent(product, "customized"))) return true;
+        Element customizations = XmlUtils.getFirstChildElement(product, "customizations");
+        if (customizations == null) return true;
+        for (Element c : XmlUtils.getChildElements(customizations, "customization")) {
+            if (leg.equals(XmlUtils.getTextContent(c, "leg"))
+                    && isCashflowsImpacting(XmlUtils.getTextContent(c, "customizedObject"))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isCashflowsImpacting(String customizedObject) {
+        // Confirmed impacting object; kept narrow (other values may also impact,
+        // but only capitalPaymentFlow is verified against the reference data).
+        return "capitalPaymentFlow".equals(customizedObject);
+    }
+
     private void buildCashflows(Document doc, Element ss, Element stream, boolean floating) {
         Element cashFlows = XmlUtils.getFirstChildElement(stream, "cashFlows");
         Element interestFlows = cashFlows != null
@@ -449,7 +521,8 @@ public final class SwapMapper implements MxmlProductMapper {
         if (interestFlows == null) return;
 
         Element cf = el(doc, ss, "cashflows");
-        elText(doc, cf, "cashflowsMatchParameters", "true");
+        elText(doc, cf, "cashflowsMatchParameters",
+                cashflowsMatchParameters(stream) ? "true" : "false");
 
         List<Element> ipps = XmlUtils.getChildElements(interestFlows, "interestPaymentPeriod");
 
