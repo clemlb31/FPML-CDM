@@ -60,9 +60,45 @@ public final class SwapMapper implements MxmlProductMapper {
         for (Element stream : streams) {
             buildSwapStream(doc, swap, stream, context);
         }
+        buildAdditionalPayments(doc, swap, product, streams);
 
         buildParties(doc, root, trade);
         return root;
+    }
+
+    /**
+     * Emits {@code <additionalPayment>} (after the swapStreams) for each MXML
+     * {@code additionalFlows/additionalFlow}. Source: flow payer/receiver/date/
+     * currency/amount; payment-date adjustments reuse the first stream's payment
+     * business centers (MODFOLLOWING). Amount is copied verbatim (no %/100).
+     */
+    private void buildAdditionalPayments(Document doc, Element swap, Element product,
+                                         List<Element> streams) {
+        Element addFlows = XmlUtils.getFirstChildElement(product, "additionalFlows");
+        if (addFlows == null) return;
+        List<String> centers = streams.isEmpty() ? java.util.List.of() : businessCenters(streams.get(0));
+        for (Element af : XmlUtils.getChildElements(addFlows, "additionalFlow")) {
+            Element flow = XmlUtils.getFirstChildElement(af, "flow");
+            if (flow == null) continue;
+            String payer = stripHash(attrOfChild(flow, "payerPartyReference", "href"));
+            String receiver = stripHash(attrOfChild(flow, "receiverPartyReference", "href"));
+            String date = isoDate(XmlUtils.getTextContent(flow, "date"));
+            String ccy = XmlUtils.getTextContent(flow, "currency");
+            String amount = XmlUtils.getTextContent(flow, "amount");
+
+            Element ap = el(doc, swap, "additionalPayment");
+            elRef(doc, ap, "payerPartyReference", payer);
+            elRef(doc, ap, "receiverPartyReference", receiver);
+            Element pa = el(doc, ap, "paymentAmount");
+            elText(doc, pa, "currency", ccy);
+            elText(doc, pa, "amount", amount);
+            Element pdte = el(doc, ap, "paymentDate");
+            elText(doc, pdte, "unadjustedDate", date);
+            Element adjs = el(doc, pdte, "dateAdjustments");
+            elText(doc, adjs, "businessDayConvention", "MODFOLLOWING");
+            appendBusinessCenters(doc, adjs, centers);
+            elText(doc, pdte, "adjustedDate", date);
+        }
     }
 
     /* ──────────────── tradeHeader ──────────────── */
@@ -287,9 +323,16 @@ public final class SwapMapper implements MxmlProductMapper {
         // (final stub) sit between paymentFrequency and payRelativeTo.
         emitStubPaymentDates(doc, pd, stream);
         elText(doc, pd, "payRelativeTo", "CalculationPeriodEndDate");
-        Element off = el(doc, pd, "paymentDaysOffset");
-        elText(doc, off, "periodMultiplier", "0");
-        elText(doc, off, "period", "D");
+        // paymentDaysOffset is emitted only when the leg's paymentSchedule carries
+        // a shifter (presence-based, not value-based: a 0-day shifter still emits).
+        Element shift = paymentScheduleShift(stream);
+        if (shift != null) {
+            Element off = el(doc, pd, "paymentDaysOffset");
+            String pm = XmlUtils.getTextContent(shift, "periodMultiplier");
+            String pu = XmlUtils.getTextContent(shift, "periodUnit");
+            elText(doc, off, "periodMultiplier", pm != null ? pm : "0");
+            elText(doc, off, "period", periodCode(pu));
+        }
         Element pdAdj = el(doc, pd, "paymentDatesAdjustments");
         elText(doc, pdAdj, "businessDayConvention", "MODFOLLOWING");
         appendBusinessCenters(doc, pdAdj, businessCenters(stream));
@@ -332,6 +375,15 @@ public final class SwapMapper implements MxmlProductMapper {
         Element item = rbc != null ? XmlUtils.getFirstChildElement(rbc, "businessCenterItem") : null;
         String swift = item != null ? XmlUtils.getTextContent(item, "swiftCode") : null;
         return (swift != null && !swift.isEmpty()) ? swift : "GBLO";
+    }
+
+    /** The leg's paymentSchedule shifter/shift element, or null if no shifter. */
+    private Element paymentScheduleShift(Element stream) {
+        Element st = XmlUtils.getFirstChildElement(stream, "streamTemplate");
+        Element ss = st != null ? XmlUtils.getFirstChildElement(st, "streamSchedules") : null;
+        Element ps = ss != null ? XmlUtils.getFirstChildElement(ss, "paymentSchedule") : null;
+        Element shifter = ps != null ? XmlUtils.getFirstChildElement(ps, "shifter") : null;
+        return shifter != null ? XmlUtils.getFirstChildElement(shifter, "shift") : null;
     }
 
     /**
