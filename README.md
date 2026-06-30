@@ -7,9 +7,9 @@ The project is organized into **3 bidirectional compartments**:
 
 | Compartment | Directions | Status | Doc |
 |---|---|---|---|
-| **FpML ↔ CDM** | FpML→CDM ✅ · CDM→FpML 🧪 | FpML→CDM **530/530** · CDM→FpML prototype | [docs/fpml-cdm.md](docs/fpml-cdm.md) · [docs/cdm-to-fpml.md](docs/cdm-to-fpml.md) |
-| **MXML ↔ FpML** | MXML→FpML 🔨 · FpML→MXML ⏳ | Java port from the Murex XSLT spec | [docs/mxml-fpml.md](docs/mxml-fpml.md) |
-| **MXML ↔ CDM** | MXML→CDM 🔗 · CDM→MXML ⏳ | By chaining MXML→FpML→CDM | [docs/mxml-cdm.md](docs/mxml-cdm.md) |
+| **FpML ↔ CDM** | FpML→CDM ✅ · CDM→FpML 🧪 | FpML→CDM **530/530** (563/563 byte-identical) · CDM→FpML prototype (compiles) | [docs/fpml-cdm.md](docs/fpml-cdm.md) · [docs/cdm-to-fpml.md](docs/cdm-to-fpml.md) |
+| **MXML ↔ FpML** | MXML→FpML 🔨 · FpML→MXML ⏳ | Java port from XSLT — **5/291 EQUAL** (vanilla IRS + amendment envelope) | [docs/mxml-fpml.md](docs/mxml-fpml.md) |
+| **MXML ↔ CDM** | MXML→CDM 🔗 · CDM→MXML ⏳ | By chaining MXML→FpML→CDM — **5/196 verified EQUAL** | [docs/mxml-cdm.md](docs/mxml-cdm.md) |
 
 Cross-cutting: [schemas & structural validity](docs/schemas-and-validation.md) · [OpenCode tooling](docs/opencode-setup.md) · roadmap [TODO.md](TODO.md).
 

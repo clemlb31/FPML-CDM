@@ -4,7 +4,7 @@ Bidirectional conversion between **MXML** (Murex XML) and **FpML 5.x**.
 
 | Direction | Status | Approach |
 |---|---|---|
-| **MXML → FpML** | 🔨 To build | Java port from the XSLT spec (see below) → `io.fpmlcdm.mxml.fpml` |
+| **MXML → FpML** | 🔨 In progress | Java port from the XSLT spec (see below) → `io.fpmlcdm.mxml.fpml` |
 | **FpML → MXML** | ⏳ Future | Symmetric, after MXML→FpML |
 
 Test data: [data/ground_truth/mxml-fpml/](../data/ground_truth/mxml-fpml/) — each `OUT_IRD_*` / `OUT_CRD_*` folder contains
@@ -31,22 +31,20 @@ proprietary dependency). Rejected alternative: export the ~60 missing modules fr
 ## Port plan — MXML → FpML (Java)
 
 Target package: **`io.fpmlcdm.mxml.fpml`** (mirrors the existing structure, **with no CDM dependency**:
-it's pure XML→XML, so it compiles/runs even when the CDM build is blocked). The converter skeleton
-(`MxmlToFpmlConverter`, `MxmlToFpmlContext`, `MxmlProductMapper`, `detect/MxmlProductDetector`) now
-**exists as compiling skeletons**; the product-mapping logic remains to be ported.
+it's pure XML→XML, so it compiles/runs even when the CDM build is blocked).
 
 ```
 io/fpmlcdm/mxml/fpml/
 ├── MxmlToFpmlConverter.java     # orchestration (MXML DOM → FpML DOM/string)
 ├── MxmlToFpmlContext.java       # conversion context (ID registry, error/warning collection)
 ├── MxmlProductMapper.java       # product-mapping entry point
-├── detect/MxmlProductDetector   # dispatch by MXML product type
-└── products/SwapMapper, FraMapper, CapFloorMapper, SwaptionMapper, …  (reuses io.fpmlcdm.core xml utils for the DOM)
+├── detect/MxmlProductDetector   # dispatch by MXML product type (tradeCategory/typology)
+└── products/SwapMapper, …       # IRS ported; CapFloor/Cs/Fra next (reuses io.fpmlcdm.core xml utils)
 ```
 
-Build order (from most to least covered by the spec):
-1. **IRD vanilla swap** (`data/ground_truth/mxml-fpml/OUT_IRD_SWAP_*` / `OUT_IRD_ASWP_*`) — canonical case.
-2. FRA, Cap/Floor, Swaption (oswp), Asset swap (aswp), Cross-currency (cs).
+Build order (most to least covered by the spec, by NOMAP leverage):
+1. **IRD vanilla swap** (IRS) — done.
+2. Cap/Floor (cf), Cross-currency (cs), FRA, then Swaption (oswp), Asset swap (aswp).
 
 Validation: compare the produced FpML against the `*_expected.xml` (semantic XML diff via
 [`XmlSemanticDiff`](../src/main/java/io/fpmlcdm/report/XmlSemanticDiff.java)).
@@ -61,7 +59,7 @@ The produced FpML can then feed the existing **FpML→CDM** pipeline ⇒ see [mx
   namespace-aware FpML comparison. **Compares against `*_expected.xml` only** (not the
   `*_ignored` masks — those only ever ignore non-deterministic timestamps, which the
   comparator handles generically). Tolerant of: volatile timestamps; anonymized party
-  display names (`partyId` text — the mxml-fpml dataset scrubs `MXpress`/`MUREX` →
+  display names (`partyId`/`sentBy`/`sendTo` text — the dataset scrubs `MXpress`/`MUREX` →
   `BARCLAYS`/`party1` after generation); numeric formatting (`0.025 == 0.0250`). Parties
   matched by `@id` (order-independent) while all `href`s are compared, so a counterparty
   collapse (payer==receiver) is still caught.
@@ -69,35 +67,49 @@ The produced FpML can then feed the existing **FpML→CDM** pipeline ⇒ see [mx
   (offline) + JUnit [`MxmlToFpmlTest`](../src/test/java/io/fpmlcdm/mxml/fpml/MxmlToFpmlTest.java)
   (NOMAP = skipped, so it auto-activates per mapper as they land).
 
-## Status (2026-06-29) — vanilla IRS ported
+## Status (2026-06-30) - vanilla IRS + amendment envelope
 
-`SwapMapper` covers the vanilla fixed/float IRS. On the 291-pair dataset: **1 EQUAL,
-~78 produced-with-diffs, ~212 NOMAP** (no mapper yet for the other products). The first
-EQUAL (`OUT_IRD_IRS_5-3_INS_01`) reproduces notional, rate (%/100), frequencies, day-count,
-business centers, fixing dates and the precomputed per-period cashflows exactly.
+`SwapMapper` covers the vanilla fixed/float IRS plus the amendment lifecycle envelope.
+On the 291-pair MXML->FpML dataset: **5 EQUAL, ~74 produced-with-diffs, ~212 NOMAP**
+(no mapper yet for non-IRS products). Chained end-to-end, this yields **5/196 verified
+MXML->CDM EQUAL** (see [mxml-cdm.md](mxml-cdm.md)).
 
-Implemented & verified:
-- **Floating-rate index mapping** (EURIBOR/LIBOR/EONIA/SONIA/BBSW/CIBOR/STIBOR/BKBM families).
-  Faithfully reproduces Murex's actual output, **including its distortions onto LIBOR**
+The 5 EQUAL: INS_01, INS_17 (additionalPayment), INS_09 (amortizing notional +
+cashflowsMatchParameters), INS_FinalShortCurrent (conditional paymentDaysOffset),
+CancelAndReissue_01 (requestConfirmation/amendment envelope).
+
+Implemented & verified (all XSLT/data-grounded; FpML->CDM held 563/563 throughout):
+- **Floating-rate index mapping** (EURIBOR/LIBOR/EONIA/SONIA/BBSW/CIBOR/STIBOR/BKBM).
+  Reproduces Murex's actual output, including its distortions onto LIBOR
   (CDOR/FEDFUND/SARON/SOFR/KLIBOR) so output matches `_expected.xml`.
-- **Unadjusted schedule regeneration** by roll-convention arithmetic (no holiday calendar
-  needed); reduced the unadjusted-date diffs ~82%.
-- **Day-count** from `rateConvention/dayCountFraction` (skips the `yieldConvention` decoy).
-- **Reset/fixing business center** from `resetBusinessCenters` (not hardcoded).
+- **Unadjusted schedule regeneration** by roll-convention arithmetic (~82% diff reduction).
+- **Day-count** from the labeled `dayCountFraction` via the dayCountBasis table
+  (ACT/365->ACT/365L etc.), skipping the index's unlabeled convention decoy.
+- **Reset/fixing business center** + conditional `fixingDates` from `resetBusinessCenters`.
+- **Stubs** (firstRegular/lastRegular period dates + stubPeriodType), **amortizing notional
+  steps**, **conditional paymentDaysOffset** (emit iff the leg has a paymentSchedule shifter),
+  **additionalPayment** (with derived payer), **first-fixing observedRate**.
+- **Termination-date BDC** per the XSLT rule (per-stream maturity vs adjustedMaturity).
+- **Party emission** excludes additionalPayment-only hrefs (still catches counterparty collapse).
+- **Amendment envelope** (`requestConfirmation`/`amendment`) for CANCEL_REISSUE/RESTRUCTURE,
+  gated strictly on `contractEvents` so vanilla `dataDocument` trades are untouched.
 
-Known blockers for further EQUALs (each its own scoped effort, not a quick win):
-- **Lifecycle envelopes** — ~18 pairs expect a `requestConfirmation`/`FpML` root wrapping the
-  trade in `<amendment>`/`<termination>`/`<novation>` + a message `header`. Touches trade
-  direction & event semantics. Out of scope for the vanilla port.
-- **Stubs** — `firstRegularPeriodStartDate`, `stubPeriodType` (irregular schedules).
-- **Break clauses** — `earlyTerminationProvision` (mandatory ET + cash settlement). ⚠️ Note:
-  the reference `_expected.xml` for these carries **unsubstituted XSLT placeholders**
-  (literal `<businessCenter>businessCenter</businessCenter>`, `id="mandatoryEarlyTerminationDate"`)
-  that are not derivable from the MXML — so these pairs cannot reach EQUAL even with a correct
-  mapper. The termination-date `businessDayConvention` is also **not** a simple copy of the
-  schedule generator's convention (a date-shift heuristic correlates ~150/166 but is wrong on
-  16, incl. `PRECEDING`/`FOLLOWING` cases) — its true MXML source is still unidentified.
-
+Known blockers for further EQUALs (each its own scoped effort):
+- **Other product families = NOMAP** (the bulk): cross-currency swap (34 cdm pairs),
+  cap/floor (15), CDS (17), FX (12), FRA (5)... only IRS is ported. Highest-leverage next
+  work: CapFloorMapper (cf/ XSLT present, reuses swap stream logic -> ~4-6 EQUAL),
+  then CsMapper (reuses swap tradeNode + principalExchange -> ~6 EQUAL), FraMapper (~3).
+- **Lifecycle termination/novation** - `originalTrade`/`newTrade` body + notional-impact math;
+  the `tradeNotionalChange`/`tradeNovationContent` XSLT modules are absent. Some pairs are also
+  blocked by payment-precision (5e-10) and unidentified executionDateTime sources.
+- **Break clauses** - `earlyTerminationProvision`. The reference `_expected.xml` carries
+  unsubstituted XSLT placeholders (literal `<businessCenter>businessCenter</businessCenter>`),
+  not derivable from MXML -> these pairs cannot reach EQUAL even with a correct mapper.
+- **Inflation / FX-linked (MTM) / exotic** - different element trees, separate mappers.
+- **Root choice (dataDocument vs requestConfirmation)** is NOT MXML-derivable in general:
+  the XSLT takes `fpmlType` as an external parameter (e.g. Restructure_02 has no
+  `contractEvents` yet expects `requestConfirmation`). The `contractEvents`-presence gate is
+  the safe proxy (0 false positives, misses ~5).
 
 ## FpML → MXML (future)
 Symmetric direction: to be specified once MXML→FpML is stabilized (will reuse the `mapping/` tables in reverse).
