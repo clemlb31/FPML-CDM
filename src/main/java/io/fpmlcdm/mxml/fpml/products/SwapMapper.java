@@ -960,19 +960,58 @@ public final class SwapMapper implements MxmlProductMapper {
     }
 
     private String dayCount(Element streamTemplate) {
-        // Preferred: a rateConvention/dayCountFraction anywhere under the
-        // streamTemplate, skipping the yieldConvention decoy subtree.
-        Element rc = findRateConvention(streamTemplate);
-        if (rc != null) {
-            Element dcf = XmlUtils.getFirstChildElement(rc, "dayCountFraction");
-            String denom = dcf != null
-                    ? XmlUtils.getTextContent(dcf, "dayCountStandardDenomination") : null;
+        // Authoritative source: the first dayCountFraction carrying a non-empty
+        // dayCountFractionLabel (the leg's calculation convention), skipping the
+        // yieldConvention decoy. The index's rateConvention (e.g. "LIN ACT/360")
+        // has no label, so it is naturally bypassed. The label is mapped through
+        // the Murex->FpML dayCountBasis table (dayCountStandardDenomination is a
+        // decoy: it renders ACT/365 as ACT/365.FIXED instead of ACT/365L).
+        Element dcf = findLabeledDayCountFraction(streamTemplate);
+        if (dcf != null) {
+            String label = XmlUtils.getTextContent(dcf, "dayCountFractionLabel");
+            String mapped = mapDayCount(label);
+            if (mapped != null) return mapped;
+            String denom = XmlUtils.getTextContent(dcf, "dayCountStandardDenomination");
             if (denom != null && !denom.isEmpty()) return denom;
         }
-        // Fallback: direct dayCountFraction child of the streamTemplate.
-        Element dcf = XmlUtils.getFirstChildElement(streamTemplate, "dayCountFraction");
-        String denom = dcf != null ? XmlUtils.getTextContent(dcf, "dayCountStandardDenomination") : null;
-        return (denom != null && !denom.isEmpty()) ? denom : "ACT/360";
+        return "ACT/360";
+    }
+
+    /** Murex dayCountFractionLabel -> FpML dayCountFraction (the dayCountBasis table). */
+    private static String mapDayCount(String label) {
+        if (label == null || label.isEmpty()) return null;
+        switch (label.trim()) {
+            case "ACT/360":      return "ACT/360";
+            case "LIN ACT/360":  return "ACT/360";
+            case "30/360":       return "30/360";
+            case "LIN 30/360":   return "30/360";
+            case "ACT/365":      return "ACT/365L";
+            case "ACT/365 CP":   return "ACT/365L";
+            case "ACT/ACT XTR":  return "1/1";
+            case "ACT/ACT CP":   return "1/1";
+            default:             return null; // unmapped -> caller falls back
+        }
+    }
+
+    /**
+     * First {@code dayCountFraction} with a non-empty {@code dayCountFractionLabel}
+     * under the streamTemplate, skipping any {@code yieldConvention} subtree.
+     */
+    private static Element findLabeledDayCountFraction(Element root) {
+        if (root == null) return null;
+        for (Element c : XmlUtils.getChildElements(root)) {
+            String name = c.getLocalName() != null ? c.getLocalName() : c.getNodeName();
+            if ("yieldConvention".equals(name) || "yieldCalculationConvention".equals(name)) {
+                continue; // decoy day-count under yield convention
+            }
+            if ("dayCountFraction".equals(name)) {
+                String label = XmlUtils.getTextContent(c, "dayCountFractionLabel");
+                if (label != null && !label.isEmpty()) return c;
+            }
+            Element nested = findLabeledDayCountFraction(c);
+            if (nested != null) return nested;
+        }
+        return null;
     }
 
     /** First {@code rateConvention} under {@code root}, ignoring yield-convention decoys. */
