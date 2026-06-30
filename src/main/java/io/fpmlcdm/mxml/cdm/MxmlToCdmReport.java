@@ -1,7 +1,10 @@
 package io.fpmlcdm.mxml.cdm;
 
 import cdm.event.common.TradeState;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import io.fpmlcdm.core.conversion.ConversionResult;
 import io.fpmlcdm.core.dataset.PairLoader;
@@ -98,11 +101,62 @@ public final class MxmlToCdmReport {
             }
             String actual = JSON.writerWithDefaultPrettyPrinter().writeValueAsString(tradeStates.get(0));
             String expected = Files.readString(pair.expected());
-            SemanticDiff.Result d = SemanticDiff.compare(expected, actual);
+            // Normalize party anonymization before comparison (harness-local only;
+            // the shared SemanticDiff / FpML->CDM 530/530 guard is untouched).
+            JsonNode exp = normalizeParties(JSON.readTree(expected));
+            JsonNode act = normalizeParties(JSON.readTree(actual));
+            SemanticDiff.Result d = SemanticDiff.compare(exp, act);
             return d.isEqual() ? Status.EQUAL : Status.DIFF;
         } catch (Exception e) {
             return Status.ERROR;
         }
+    }
+
+    /**
+     * Neutralizes party-anonymization noise that is not economically meaningful:
+     * the reference CDM was generated from the anonymized {@code _expected.xml}
+     * (partyId BARCLAYS/party1), while the chain converts the raw MXML
+     * (MXpress/MUREX). Mirrors {@code XmlSemanticDiff}'s party handling:
+     * <ul>
+     *   <li>sort {@code trade.party[]} by {@code meta.externalKey} (order-independent);</li>
+     *   <li>blank {@code partyId[].identifier.value} (the anonymized display name).</li>
+     * </ul>
+     * The {@code externalKey} and all {@code href}/reference values are left intact,
+     * so a counterparty collapse (payer==receiver) is still caught. Applied to both
+     * sides; no change to the shared comparator.
+     */
+    private static JsonNode normalizeParties(JsonNode root) {
+        JsonNode trade = root.get("trade");
+        if (trade == null || !trade.has("party")) return root;
+        JsonNode partyNode = trade.get("party");
+        if (!(partyNode instanceof ArrayNode)) return root;
+        ArrayNode parties = (ArrayNode) partyNode;
+
+        for (JsonNode p : parties) {
+            JsonNode ids = p.get("partyId");
+            if (ids instanceof ArrayNode) {
+                for (JsonNode id : ids) {
+                    JsonNode ident = id.get("identifier");
+                    if (ident instanceof ObjectNode && ident.has("value")) {
+                        ((ObjectNode) ident).put("value", "");
+                    }
+                }
+            }
+        }
+
+        // sort by externalKey so party ordering is irrelevant
+        List<JsonNode> sorted = new java.util.ArrayList<>();
+        parties.forEach(sorted::add);
+        sorted.sort(java.util.Comparator.comparing(MxmlToCdmReport::externalKeyOf));
+        ArrayNode rebuilt = parties.removeAll();
+        sorted.forEach(rebuilt::add);
+        return root;
+    }
+
+    private static String externalKeyOf(JsonNode party) {
+        JsonNode meta = party.get("meta");
+        JsonNode k = meta != null ? meta.get("externalKey") : null;
+        return k != null ? k.asText() : "";
     }
 
     private void printReport(Map<String, int[]> byCat, int total,
