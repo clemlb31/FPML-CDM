@@ -50,9 +50,18 @@ public final class MxmlToCdmConverter {
             return ConversionResult.failure(fpmlResult.getErrors(), fpmlResult.getWarnings());
         }
 
+        // NOMAP: the MXML→FpML leg produced no document (no product mapper yet).
+        // Surface this as success-with-empty-list rather than feeding an empty
+        // document into FpML→CDM (which would throw "Premature end of file").
+        Document fpmlDoc = fpmlResult.getResult();
+        if (fpmlDoc == null || fpmlDoc.getDocumentElement() == null) {
+            return ConversionResult.success(java.util.Collections.emptyList(),
+                                            fpmlResult.getWarnings());
+        }
+
         // Leg 2: FpML → CDM (reuse the mature pipeline)
         try {
-            String fpmlXml = XmlUtils.serialize(fpmlResult.getResult());
+            String fpmlXml = XmlUtils.serialize(fpmlDoc);
             try (InputStream fpmlStream =
                      new ByteArrayInputStream(fpmlXml.getBytes(StandardCharsets.UTF_8))) {
                 List<TradeState> tradeStates = fpmlToCdm.convert(fpmlStream);
