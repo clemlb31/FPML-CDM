@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FpML xmlns="http://www.fpml.org/2007/FpML-4-3" xmlns:fpml="http://www.fpml.org/2007/FpML-4-3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="4-3" xsi:type="RequestTradeConfirmation" xsi:schemaLocation="http://www.fpml.org/2007/FpML-4-3                                           /xmls/OTC/fpml-main-4-3.xsd                                                               http://www.w3.org/2000/09/xmldsig#                                                               /xmls/OTC/xmldsig-core-schema.xsd">
+	<header>
+		<messageId messageIdScheme="http://www.murex.com/message-id">MX722</messageId>
+		<sentBy partyIdScheme="http://www.fpml.org/coding-scheme/external/iso9362">party1</sentBy>
+		<sendTo partyIdScheme="http://www.fpml.org/coding-scheme/external/iso9362">party2</sendTo>
+		<creationTimestamp>2012-11-27T13:54:11.000+01:00</creationTimestamp>
+	</header>
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="party1"/>
+				<tradeId tradeIdScheme="http://www.murex.com/contract-id">MX722</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2008-12-15</tradeDate>
+		</tradeHeader>
+		<swap>
+			<swapStream>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="party2"/>
+				<calculationPeriodDates id="fixedRateCalculationPeriodDates1">
+					<effectiveDate>
+						<unadjustedDate>2008-12-17</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>NONE</businessDayConvention>
+						</dateAdjustments>
+					</effectiveDate>
+					<terminationDate>
+						<unadjustedDate>2009-12-17</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">THBA</businessCenter>
+								<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">USNY</businessCenter>
+							</businessCenters>
+						</dateAdjustments>
+					</terminationDate>
+					<calculationPeriodDatesAdjustments>
+						<businessDayConvention>MODFOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">THBA</businessCenter>
+							<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">USNY</businessCenter>
+						</businessCenters>
+					</calculationPeriodDatesAdjustments>
+					<calculationPeriodFrequency>
+						<periodMultiplier>6</periodMultiplier>
+						<period>M</period>
+						<rollConvention>17</rollConvention>
+					</calculationPeriodFrequency>
+				</calculationPeriodDates>
+				<paymentDates id="fixedLegPaymentDates">
+					<calculationPeriodDatesReference href="fixedRateCalculationPeriodDates1"/>
+					<paymentFrequency>
+						<periodMultiplier>6</periodMultiplier>
+						<period>M</period>
+					</paymentFrequency>
+					<payRelativeTo>CalculationPeriodEndDate</payRelativeTo>
+					<paymentDatesAdjustments>
+						<businessDayConvention>MODFOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">THBA</businessCenter>
+							<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">USNY</businessCenter>
+						</businessCenters>
+					</paymentDatesAdjustments>
+				</paymentDates>
+				<calculationPeriodAmount>
+					<calculation>
+						<notionalSchedule>
+							<notionalStepSchedule>
+								<initialValue>225000000</initialValue>
+								<currency currencyScheme="http://www.fpml.org/ext/iso4217">THB</currency>
+							</notionalStepSchedule>
+						</notionalSchedule>
+						<fixedRateSchedule>
+							<initialValue>0.0095</initialValue>
+						</fixedRateSchedule>
+						<dayCountFraction dayCountFractionScheme="http://www.fpml.org/coding-scheme/day-count-fraction-2-1">ACT/365.FIXED</dayCountFraction>
+					</calculation>
+				</calculationPeriodAmount>
+				<principalExchanges>
+					<initialExchange>true</initialExchange>
+					<finalExchange>true</finalExchange>
+					<intermediateExchange>false</intermediateExchange>
+				</principalExchanges>
+			</swapStream>
+			<swapStream>
+				<payerPartyReference href="party2"/>
+				<receiverPartyReference href="party1"/>
+				<calculationPeriodDates id="floatingRateCalculationPeriodDates1">
+					<effectiveDate>
+						<unadjustedDate>2008-12-17</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>NONE</businessDayConvention>
+						</dateAdjustments>
+					</effectiveDate>
+					<terminationDate>
+						<unadjustedDate>2009-12-17</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">THBA</businessCenter>
+								<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">USNY</businessCenter>
+							</businessCenters>
+						</dateAdjustments>
+					</terminationDate>
+					<calculationPeriodDatesAdjustments>
+						<businessDayConvention>MODFOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">THBA</businessCenter>
+							<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">USNY</businessCenter>
+						</businessCenters>
+					</calculationPeriodDatesAdjustments>
+					<calculationPeriodFrequency>
+						<periodMultiplier>6</periodMultiplier>
+						<period>M</period>
+						<rollConvention>17</rollConvention>
+					</calculationPeriodFrequency>
+				</calculationPeriodDates>
+				<paymentDates id="floatingLegPaymentDates">
+					<calculationPeriodDatesReference href="floatingRateCalculationPeriodDates1"/>
+					<paymentFrequency>
+						<periodMultiplier>6</periodMultiplier>
+						<period>M</period>
+					</paymentFrequency>
+					<payRelativeTo>CalculationPeriodEndDate</payRelativeTo>
+					<paymentDatesAdjustments>
+						<businessDayConvention>MODFOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">THBA</businessCenter>
+							<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">USNY</businessCenter>
+						</businessCenters>
+					</paymentDatesAdjustments>
+				</paymentDates>
+				<resetDates id="resetDates2">
+					<calculationPeriodDatesReference href="floatingRateCalculationPeriodDates1"/>
+					<resetRelativeTo>CalculationPeriodStartDate</resetRelativeTo>
+					<fixingDates>
+						<periodMultiplier>-2</periodMultiplier>
+						<period>D</period>
+						<dayType>Business</dayType>
+						<businessDayConvention>NONE</businessDayConvention>
+						<businessCenters>
+							<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">GBLO</businessCenter>
+						</businessCenters>
+						<dateRelativeTo href="resetDates2"/>
+					</fixingDates>
+					<resetFrequency>
+						<periodMultiplier>6</periodMultiplier>
+						<period>M</period>
+					</resetFrequency>
+					<resetDatesAdjustments>
+						<businessDayConvention>MODFOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">GBLO</businessCenter>
+						</businessCenters>
+					</resetDatesAdjustments>
+				</resetDates>
+				<calculationPeriodAmount>
+					<calculation>
+						<notionalSchedule>
+							<notionalStepSchedule>
+								<initialValue>100000000</initialValue>
+								<currency currencyScheme="http://www.fpml.org/ext/iso4217">USD</currency>
+							</notionalStepSchedule>
+						</notionalSchedule>
+						<floatingRateCalculation>
+							<floatingRateIndex floatingRateIndexScheme="http://www.fpml.org/coding-scheme/floating-rate-index-2-0">USD-LIBOR-BBA</floatingRateIndex>
+							<indexTenor>
+								<periodMultiplier>6</periodMultiplier>
+								<period>M</period>
+							</indexTenor>
+							<spreadSchedule>
+								<initialValue>0.000005</initialValue>
+							</spreadSchedule>
+						</floatingRateCalculation>
+						<dayCountFraction dayCountFractionScheme="http://www.fpml.org/coding-scheme/day-count-fraction-2-1">ACT/360</dayCountFraction>
+					</calculation>
+				</calculationPeriodAmount>
+				<principalExchanges>
+					<initialExchange>true</initialExchange>
+					<finalExchange>true</finalExchange>
+					<intermediateExchange>false</intermediateExchange>
+				</principalExchanges>
+			</swapStream>
+		</swap>
+		<documentation/>
+	</trade>
+	<party id="party2">
+		<partyId>party2</partyId>
+	</party>
+	<party id="party1">
+		<partyId>party1</partyId>
+	</party>
+</FpML>

@@ -1,0 +1,63 @@
+<nonpublicExecutionReport xmlns="http://www.fpml.org/FpML-5/recordkeeping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.fpml.org/FpML-5/recordkeeping ../fpml-main-5-3.xsd http://www.w3.org/2000/09/xmldsig# ../xmldsig-core-schema.xsd" fpmlVersion="5-3">
+	<header>
+		<messageId messageIdScheme="http://www.bankx.com/msg_id">XXZZ</messageId>
+		<sentBy>party1</sentBy>
+		<sendTo>MATCHSRV</sendTo>
+		<creationTimestamp>2012-11-27T13:54:11.000+01:00</creationTimestamp>
+	</header>
+	<isCorrection>false</isCorrection>
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<issuer issuerIdScheme="http://www.fpml.org/coding-scheme/external/iso17442">party1</issuer>
+				<tradeId tradeIdScheme="http://www.fpml.org/coding-scheme/external/unique-transaction-identifier">XX</tradeId>
+			</partyTradeIdentifier>
+			<partyTradeInformation>
+				<partyReference href="party1"/>
+				<executionDateTime>2012-11-27T13:54:11.000+01:00</executionDateTime>
+				<intentToClear>false</intentToClear>
+				<nonStandardTerms>true</nonStandardTerms>
+				<offMarketPrice>false</offMarketPrice>
+				<largeSizeTrade>false</largeSizeTrade>
+				<executionType>Electronic</executionType>
+				<executionVenueType>Off-Facility</executionVenueType>
+				<confirmationMethod>Written</confirmationMethod>
+			</partyTradeInformation>
+			<tradeDate>2008-12-15</tradeDate>
+		</tradeHeader>
+		<genericProduct>
+			<primaryAssetClass>ForeignExchange</primaryAssetClass>
+			<productType productTypeScheme="http://www.fpml.org/coding-scheme/product-taxonomy">ForeignExchange:ComplexExotic</productType>
+			<counterpartyReference href="party1"/>
+			<counterpartyReference href="party2"/>
+			<effectiveDate>
+				<unadjustedDate>2008-12-17</unadjustedDate>
+			</effectiveDate>
+			<terminationDate>
+				<unadjustedDate>2009-02-17</unadjustedDate>
+			</terminationDate>
+			<underlyer id="re1">
+				<quotedCurrencyPair>
+					<currency1>AUD</currency1>
+					<currency2>JPY</currency2>
+				</quotedCurrencyPair>
+			</underlyer>
+			<notional>
+				<currency>AUD</currency>
+				<amount>2000000</amount>
+			</notional>
+			<notional>
+				<currency>JPY</currency>
+				<amount>172880755.60532</amount>
+			</notional>
+			<settlementCurrency>AUD</settlementCurrency>
+			<settlementCurrency>JPY</settlementCurrency>
+		</genericProduct>
+	</trade>
+	<party id="party1">
+		<partyId partyIdScheme="http://www.fpml.org/coding-scheme/external/iso17442">party1</partyId>
+	</party>
+	<party id="party2">
+		<partyId partyIdScheme="http://www.fpml.org/coding-scheme/external/iso17442">party2</partyId>
+	</party>
+</nonpublicExecutionReport>

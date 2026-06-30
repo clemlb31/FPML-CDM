@@ -1,0 +1,292 @@
+{
+  "trade" : {
+    "product" : {
+      "taxonomy" : [ {
+        "source" : "ISDA",
+        "productQualifier" : "ForeignExchange_Swap"
+      } ],
+      "economicTerms" : {
+        "payout" : [ {
+          "SettlementPayout" : {
+            "payerReceiver" : {
+              "payer" : "Party1",
+              "receiver" : "Party2"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-1"
+                }
+              },
+              "priceSchedule" : [ {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "price-1"
+                }
+              } ]
+            },
+            "settlementTerms" : {
+              "settlementType" : "Cash",
+              "settlementCurrency" : {
+                "value" : "EUR"
+              },
+              "settlementDate" : {
+                "valueDate" : "2017-01-15"
+              }
+            },
+            "underlier" : {
+              "Observable" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "observable-1"
+                }
+              }
+            }
+          }
+        }, {
+          "SettlementPayout" : {
+            "payerReceiver" : {
+              "payer" : "Party2",
+              "receiver" : "Party1"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-2"
+                }
+              },
+              "priceSchedule" : [ {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "price-2"
+                }
+              } ]
+            },
+            "settlementTerms" : {
+              "settlementType" : "Cash",
+              "settlementDate" : {
+                "valueDate" : "2022-01-15"
+              }
+            },
+            "underlier" : {
+              "Observable" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "observable-2"
+                }
+              }
+            }
+          }
+        } ]
+      }
+    },
+    "tradeLot" : [ {
+      "priceQuantity" : [ {
+        "price" : [ {
+          "value" : {
+            "value" : 0.99758526,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            },
+            "perUnitOf" : {
+              "currency" : {
+                "value" : "INR"
+              }
+            },
+            "priceType" : "ExchangeRate"
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "price-1"
+            } ]
+          }
+        } ],
+        "quantity" : [ {
+          "value" : {
+            "value" : 100000,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-1"
+            } ]
+          }
+        }, {
+          "value" : {
+            "value" : 100242.05826418,
+            "unit" : {
+              "currency" : {
+                "value" : "INR"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-3"
+            } ]
+          }
+        } ],
+        "observable" : {
+          "value" : {
+            "Asset" : {
+              "Cash" : {
+                "identifier" : [ {
+                  "identifier" : {
+                    "value" : "EUR"
+                  },
+                  "identifierType" : "CurrencyCode"
+                } ]
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "observable-1"
+            } ]
+          }
+        }
+      }, {
+        "price" : [ {
+          "value" : {
+            "value" : 0.83119700,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            },
+            "perUnitOf" : {
+              "currency" : {
+                "value" : "INR"
+              }
+            },
+            "priceType" : "ExchangeRate"
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "price-2"
+            } ]
+          }
+        } ],
+        "quantity" : [ {
+          "value" : {
+            "value" : 100000,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-2"
+            } ]
+          }
+        }, {
+          "value" : {
+            "value" : 120308.42268973,
+            "unit" : {
+              "currency" : {
+                "value" : "INR"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-4"
+            } ]
+          }
+        } ],
+        "observable" : {
+          "value" : {
+            "Asset" : {
+              "Cash" : {
+                "identifier" : [ {
+                  "identifier" : {
+                    "value" : "EUR"
+                  },
+                  "identifierType" : "CurrencyCode"
+                } ]
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "observable-2"
+            } ]
+          }
+        }
+      } ]
+    } ],
+    "counterparty" : [ {
+      "role" : "Party1",
+      "partyReference" : {
+        "externalReference" : "BARCLAYS"
+      }
+    }, {
+      "role" : "Party2",
+      "partyReference" : {
+        "externalReference" : "party1"
+      }
+    } ],
+    "tradeIdentifier" : [ {
+      "issuerReference" : {
+        "externalReference" : "party1"
+      },
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX130622",
+          "meta" : {
+            "scheme" : "http://www.db.com/swaps/trade-id"
+          }
+        }
+      } ]
+    }, {
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX130622",
+          "meta" : {
+            "scheme" : "http://www.db.com/swaps/trade-id"
+          }
+        }
+      } ]
+    } ],
+    "tradeDate" : {
+      "value" : "2017-01-13"
+    },
+    "party" : [ {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "party1"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "party1"
+      }
+    }, {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "BARCLAYS"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "BARCLAYS"
+      }
+    } ]
+  }
+}

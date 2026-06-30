@@ -1,0 +1,93 @@
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:mx="http://murex.com/xslt/common">
+
+	<xsl:import href="mx.generic.errorHandling.assert" />
+	<xsl:import href="mx.xml2xml.extract.mxml.products.ird.templates" />
+	<xsl:import href="mx.xml2xml.extract.mxml.products.ird.fra.templates" />
+
+	<!-- swapStream1 : Payers and receivers  -->
+	<xsl:variable name="buyerPartyReference.href">
+		<xsl:call-template name="swapStream-payerPartyReferenceHref">
+			<xsl:with-param name="nbTradeNode" select="$nbTradeNode"/>
+			<xsl:with-param name="leg" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<xsl:variable name="sellerPartyReference.href">
+		<xsl:call-template name="swapStream-receiverPartyReferenceHref">
+			<xsl:with-param name="nbTradeNode" select="$nbTradeNode"/>
+			<xsl:with-param name="leg" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<!-- adjustedEffectiveDate -->
+	<xsl:variable name="adjustedEffectiveDate">
+		<xsl:variable name="adjustedEffectiveDateMx">
+			<xsl:call-template name="extract-calculationStartDate" />
+		</xsl:variable>
+		<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.utils.adaptDate', concat('date:',$adjustedEffectiveDateMx,',format:yyyymmdd,outputFormat:yyyy-mm-dd'))" />
+	</xsl:variable>
+
+	<!--adjustedTerminationDate-->
+	<xsl:variable name="adjustedTerminationDate">
+		<xsl:variable name="terminationDateMx">
+			<xsl:call-template name="extract-calculationEndDate" />
+		</xsl:variable>
+		<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.utils.adaptDate', concat('date:',$terminationDateMx,',format:yyyymmdd,outputFormat:yyyy-mm-dd'))" />
+	</xsl:variable>
+
+	<!--fixed rate-->    
+	<xsl:variable name="fraFixedRate">
+		<xsl:variable name="tmp">
+			<xsl:call-template name="extract-fixedRateFixFloat" />
+		</xsl:variable>     
+		<xsl:value-of select="format-number($tmp div 100, '##.########')" />
+	</xsl:variable>
+
+	<!--floating index-->
+	<xsl:variable name="fraFloatingIndexMx">
+		<xsl:call-template name="extract-floatingIndexFixFloat" />
+	</xsl:variable>
+
+	<!--index period multiplier-->
+	<xsl:variable name="fraIndexPeriodMultiplier">
+		<xsl:call-template name="extract-indexPeriodMultiplierFixFloat" />
+	</xsl:variable>
+
+	<!--reset period multiplier-->
+	<xsl:variable name="fraResetDatesPeriodMultiplier">
+		<xsl:call-template name="extract-shifter-periodMultiplier-generic">
+			<xsl:with-param name="legNb" select="1" />
+			<xsl:with-param name="payoutType" select="'floatingRate'" />
+			<xsl:with-param name="schedule" select="'resetSchedule'" />
+		</xsl:call-template>
+	</xsl:variable>
+	<!-- indexTenor.nodes -->   
+	<xsl:variable name="indexTenor.nodes">            
+		<xsl:if test="string-length($initialStub.floatingRate.params) &gt; 0 ">
+			<xsl:call-template name="create-period-indexTenor">
+				<xsl:with-param name="period" select="$initialStub.floatingRate.period" />  
+				<xsl:with-param name="periodMultiplier" select="$initialStub.floatingRate.periodMultiplier" />
+			</xsl:call-template>
+		</xsl:if>
+		<xsl:if test="string-length($initialStub.floatingRate2.params) &gt; 0">
+			<xsl:call-template name="create-period-indexTenor">
+				<xsl:with-param name="period" select="$initialStub.floatingRate2.period" />
+				<xsl:with-param name="periodMultiplier" select="$initialStub.floatingRate2.periodMultiplier" />
+			</xsl:call-template>  
+		</xsl:if>      
+
+		<xsl:if test="string-length(finalStub.floatingRate.params) &gt; 0 ">
+			<xsl:call-template name="create-period-indexTenor">
+				<xsl:with-param name="period" select="$finalStub.floatingRate.period" />
+				<xsl:with-param name="periodMultiplier" select="$finalStub.floatingRate.periodMultiplier" />
+			</xsl:call-template> 
+		</xsl:if>
+		<xsl:if test="string-length(finalStub.floatingRate.params) &gt; 0">    
+			<xsl:call-template name="create-period-indexTenor">
+				<xsl:with-param name="period" select="$finalStub.floatingRate2.period" />
+				<xsl:with-param name="periodMultiplier" select="$finalStub.floatingRate2.periodMultiplier" />       
+			</xsl:call-template>
+		</xsl:if>
+	</xsl:variable>       
+
+</xsl:stylesheet>

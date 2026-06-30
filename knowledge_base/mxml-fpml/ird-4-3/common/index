@@ -1,0 +1,134 @@
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+				xmlns:date="http://exslt.org/dates-and-times"
+				xmlns:mx="http://murex.com/xslt/common"
+				xmlns:exslt="http://exslt.org/common"
+				xmlns:str="http://exslt.org/strings" 
+				xmlns:exsl="http://exslt.org/common"
+				exclude-result-prefixes="mx exslt date str"
+				xmlns="http://www.fpml.org/2007/FpML-4-3" 
+				version="1.0">
+	
+	<xsl:import href="mx.generic.errorHandling.assert" />
+	
+	<!-- Some indices are represented by a unique one in MX.3 but diffeent one in ISDA -->
+	<!-- EUR-EURIBOR-Telerate became EUR-EURIBOR-Reuters when ISDA changed from ISDA 2000 to ISDA 2006 -->	
+	<!-- For CIBOR, the dealy in the reset date drives to a different index -->
+	
+	<xsl:template name="extract-isda2021FROModifierType"/>
+	<xsl:template name="extract-indexFormula-indexFormulaType"/>
+	
+	<!-- ================================================================================================== 
+		 *************************************    floating leg 	  ***************************************** 
+		 ================================================================================================== -->
+	<xsl:variable name="swapStream1.indexFormula.indexFormulaType.tmp">
+		<xsl:call-template name="extract-indexFormula-indexFormulaType">
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="tmpModifier1">
+		<xsl:call-template name="extract-isda2021FROModifierType">
+			<xsl:with-param name="froLabel" select="'true'"/>
+			<xsl:with-param name="index.formula.type" select="$swapStream1.indexFormula.indexFormulaType.tmp"/>
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="leg1.customizedRFR">
+		<xsl:if test="string-length($tmpModifier1) &gt; 0 ">
+			<xsl:value-of select="'true'"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.params" select="concat('interface:', $interface, ',index:', $leg1.floatingRateIndex, ',contractualDefinitions:', $contractualDefinitions, ',resetDateShifter:',$swapStream1.resetSchedule.dateShifterLabel,',legacyOIS:',$mwLegacyOIS,',customizedRFR:',$leg1.customizedRFR)" />
+	<xsl:variable name="swapStream1.result" select="mx:execute-formula($mapIndex, $swapStream1.params)" />
+	<xsl:variable name="swapStream1.resultPre" select="$swapStream1.result//row[1]" />
+
+	<xsl:variable name="swapStream1.floatingRateIndex">
+		<xsl:choose>
+			<xsl:when test="$leg1.payoutType = 'fixedRate'">
+				<xsl:value-of select="''" />
+			</xsl:when>
+			<xsl:when test="$swapStream1.resultPre = 'UNMAPPED' ">
+				<xsl:variable name="localParamstring" select="translate($swapStream1.params,'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ:,0123456789','abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ:;0123456789')"></xsl:variable>
+				<xsl:call-template name="AssertNotMapped">
+					<xsl:with-param name="value" select="$swapStream1.resultPre" />
+					<xsl:with-param name="message" select="concat('index (first leg)- ', $localParamstring,' not mapped')" />
+					<xsl:with-param name="formula" select="$mapIndex" />
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:when test="$leg1.payoutType = 'floatingRate'">
+				<xsl:value-of select="$swapStream1.result//row[1]" />
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.errorHandling.throwException', concat('errorMessage: payment type for stream 1 is incorrect. Returned value is: ', $leg1.payoutType))" />
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	
+	<xsl:variable name="froLabels" select="mx:execute-formula('public.xml2xml.mapping.mxml2fpml.ird.isda2021fro')"/>
+	<xsl:variable name="swapStream1.ISDA2021FROLabel">
+		<xsl:choose>
+			<xsl:when test="exsl:node-set($froLabels)//row/cell[text()=$swapStream1.floatingRateIndex]">
+				<xsl:value-of select="'true'"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="'false'"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	
+	<!-- ================================================================================================== 
+		 *************************************    floating leg 	  ***************************************** 
+		 ================================================================================================== -->
+	<xsl:variable name="swapStream2.indexFormula.indexFormulaType.tmp">
+		<xsl:call-template name="extract-indexFormula-indexFormulaType">
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="tmpModifier2">
+		<xsl:call-template name="extract-isda2021FROModifierType">
+			<xsl:with-param name="froLabel" select="'true'"/>
+			<xsl:with-param name="index.formula.type" select="$swapStream2.indexFormula.indexFormulaType.tmp"/>
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="leg2.customizedRFR">
+		<xsl:if test="string-length($tmpModifier2) &gt; 0 ">
+			<xsl:value-of select="'true'"/>
+		</xsl:if>
+	</xsl:variable>	<xsl:variable name="swapStream2.params" select="concat('interface:', $interface, ',index:', $leg2.floatingRateIndex, ',contractualDefinitions:', $contractualDefinitions, ',resetDateShifter:', $swapStream2.resetSchedule.dateShifterLabel,',legacyOIS:',$mwLegacyOIS,',customizedRFR:',$leg2.customizedRFR)" />
+	<xsl:variable name="swapStream2.result" select="mx:execute-formula($mapIndex, $swapStream2.params)" />
+	<xsl:variable name="swapStream2.resultPre" select="$swapStream2.result//row[1]" />
+
+	<xsl:variable name="swapStream2.floatingRateIndex">
+		<xsl:choose>
+			<xsl:when test="$leg2.payoutType = 'fixedRate'">
+				<xsl:value-of select="''" />
+			</xsl:when>
+			<xsl:when test="$swapStream2.resultPre = 'UNMAPPED' ">
+				<xsl:variable name="localParamstring" select="translate($swapStream2.params,'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ:,0123456789','abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ:;0123456789')"></xsl:variable>
+				<xsl:call-template name="AssertNotMapped">
+					<xsl:with-param name="value" select="$swapStream2.resultPre" />
+					<xsl:with-param name="message" select="concat('index (second leg)- ', $localParamstring,' not mapped')" />
+					<xsl:with-param name="formula" select="$mapIndex" />
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:when test="$leg2.payoutType = 'floatingRate'">
+				<xsl:value-of select="$swapStream2.result//row[1]" />
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.errorHandling.throwException', concat('errorMessage: payment type for stream 2 is incorrect. Returned value is: ', $leg2.payoutType))" />
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	
+	<xsl:variable name="swapStream2.ISDA2021FROLabel">
+		<xsl:choose>
+			<xsl:when test="exsl:node-set($froLabels)//row/cell[text()=$swapStream2.floatingRateIndex]">
+				<xsl:value-of select="'true'"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="'false'"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	
+</xsl:stylesheet>

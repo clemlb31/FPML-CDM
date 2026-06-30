@@ -1,0 +1,1823 @@
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+				xmlns:mx="http://murex.com/xslt/common" 
+				xmlns:exsl="http://exslt.org/common" 
+				version="1.0">
+
+	<xsl:import href="mx.xml2xml.transform.mxml2fpml.4-3.products.tradePosition"/>
+	<!-- ============================= -->
+	<!-- Readme:                       -->
+	<!-- Mapping formulas (XSL invoke) -->
+	<!-- Declare the mapping formulas in a seperate template and import it in the main transformation formula -->
+	<!-- e.g:   <xsl:import href="mx.xml2xml.ECN.import.FpML.transform.mxml2fpml.common.5-3.parameters" />
+                <xsl:import href="mx.xml2xml.transform.mxml2fpml.5-3.products.ird.utils.businessDayConventionsAndBusinessCenters" />
+              -->
+	<!-- ============================= -->
+
+	<xsl:template name="effectiveDate.businessDayConvention">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:choose>
+			<!-- drivingSchedule -->
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/startDateTreatment/dateTreatment='indifferent'">
+				<xsl:value-of select="'NONE'" />
+			</xsl:when>
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'drivingSchedule'">
+				<xsl:choose>
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+						<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="'FOLLOWING'" />
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<!-- deduceFrom or equal to-->
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'deducedFrom' or /MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'equalTo'">
+				<xsl:choose>
+					<!-- payment schedule -->
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/underlyingSchedule = 'paymentSchedule' ">
+						<xsl:choose>
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature='drivingSchedule'">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+										<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+									</xsl:when>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+										<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="'FOLLOWING'" />
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule='calculationEndSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="'FOLLOWING'" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="'FOLLOWING'" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule='resetSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="'FOLLOWING'" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="'FOLLOWING'" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+								</xsl:choose>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:when>
+					<!-- calculationEndSchedule -->
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/underlyingSchedule = 'calculationEndSchedule' ">
+						<xsl:choose>
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature='drivingSchedule'">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+										<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="'FOLLOWING'" />
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule='paymentSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+													</xsl:when>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="'FOLLOWING'" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="'FOLLOWING'" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule='resetSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="'FOLLOWING'" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+													</xsl:when>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="'FOLLOWING'" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+								</xsl:choose>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:when>
+					<!-- resetSchedule -->
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/underlyingSchedule = 'resetSchedule' ">
+						<xsl:choose>
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature='drivingSchedule'">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+										<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="'FOLLOWING'" />
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule='paymentSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+													</xsl:when>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="'FOLLOWING'" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="'FOLLOWING'" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule='calculationEndSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="'FOLLOWING'" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="'FOLLOWING'" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+								</xsl:choose>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:when>
+				</xsl:choose>
+			</xsl:when>
+		</xsl:choose>
+	</xsl:template>
+
+	<xsl:template name="terminationDate.businessDayConvention">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:choose>
+			<!-- drivingSchedule -->
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature= 'drivingSchedule'">
+				<xsl:choose>
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+						<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="'FOLLOWING'" />
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:choose>
+					<!-- businessDayConvention exists under the shifter node -->
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/shifter/businessDayConvention">
+						<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/shifter/businessDayConvention))" />
+					</xsl:when>
+					<!-- deduceFrom or equal to-->
+					<xsl:otherwise>
+						<xsl:choose>
+							<!-- payment schedule -->
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule = 'paymentSchedule' ">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature='drivingSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+												<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+											</xsl:when>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+												<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:value-of select="'FOLLOWING'" />
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule='calculationSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+															<xsl:otherwise>
+																<xsl:value-of select="'FOLLOWING'" />
+															</xsl:otherwise>
+														</xsl:choose>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+															<xsl:otherwise>
+																<xsl:value-of select="'FOLLOWING'" />
+															</xsl:otherwise>
+														</xsl:choose>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule='resetSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+															<xsl:otherwise>
+																<xsl:value-of select="'FOLLOWING'" />
+															</xsl:otherwise>
+														</xsl:choose>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+															<xsl:otherwise>
+																<xsl:value-of select="'FOLLOWING'" />
+															</xsl:otherwise>
+														</xsl:choose>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+										</xsl:choose>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<!-- calculationSchedule -->
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule = 'calculationSchedule' ">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature='drivingSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+												<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:value-of select="'FOLLOWING'" />
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/underlyingSchedule='paymentSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+															</xsl:when>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+															<xsl:otherwise>
+																<xsl:value-of select="'FOLLOWING'" />
+															</xsl:otherwise>
+														</xsl:choose>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+															<xsl:otherwise>
+																<xsl:value-of select="'FOLLOWING'" />
+															</xsl:otherwise>
+														</xsl:choose>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/underlyingSchedule='resetSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+															<xsl:otherwise>
+																<xsl:value-of select="'FOLLOWING'" />
+															</xsl:otherwise>
+														</xsl:choose>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+															</xsl:when>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+															<xsl:otherwise>
+																<xsl:value-of select="'FOLLOWING'" />
+															</xsl:otherwise>
+														</xsl:choose>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+										</xsl:choose>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<!-- resetSchedule -->
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule = 'resetSchedule' ">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature='drivingSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+												<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:value-of select="'FOLLOWING'" />
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule='paymentSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+															</xsl:when>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+															<xsl:otherwise>
+																<xsl:value-of select="'FOLLOWING'" />
+															</xsl:otherwise>
+														</xsl:choose>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+															<xsl:otherwise>
+																<xsl:value-of select="'FOLLOWING'" />
+															</xsl:otherwise>
+														</xsl:choose>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule='calculationSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+															<xsl:otherwise>
+																<xsl:value-of select="'FOLLOWING'" />
+															</xsl:otherwise>
+														</xsl:choose>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+															</xsl:when>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+															<xsl:otherwise>
+																<xsl:value-of select="'FOLLOWING'" />
+															</xsl:otherwise>
+														</xsl:choose>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+										</xsl:choose>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+						</xsl:choose>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+
+	<xsl:template name="calculationPeriodDatesAdjustments.businessDayConvention">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:choose>
+			<!-- drivingSchedule -->
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature= 'drivingSchedule'">
+				<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:choose>
+					<!-- businessDayConvention exists under the shifter node -->
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/shifter/businessDayConvention">
+						<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/shifter/businessDayConvention))" />
+					</xsl:when>
+					<!-- deduceFrom or equal to-->
+					<xsl:otherwise>
+						<xsl:choose>
+							<!-- payment schedule -->
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule = 'paymentSchedule' ">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature='drivingSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+												<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+											</xsl:when>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+												<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+											</xsl:when>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule='calculationSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule='resetSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+										</xsl:choose>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<!-- calculationSchedule -->
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule = 'calculationSchedule' ">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature='drivingSchedule'">
+										<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule='paymentSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+															</xsl:when>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+														</xsl:choose>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule='resetSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+															</xsl:when>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+														</xsl:choose>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+										</xsl:choose>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<!-- resetSchedule -->
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule = 'resetSchedule' ">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature='drivingSchedule'">
+										<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule='paymentSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+															</xsl:when>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+														</xsl:choose>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule='calculationSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+															</xsl:when>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+														</xsl:choose>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+										</xsl:choose>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+						</xsl:choose>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+
+	<xsl:template name="paymentDates.businessDayConvention">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:choose>
+			<!-- drivingSchedule -->
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature= 'drivingSchedule'">
+				<xsl:choose>
+					<xsl:when test="MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/singlePeriod='true'">
+						<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/adjustEndDate))"/>
+					</xsl:when>
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+						<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+					</xsl:when>
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+						<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+					</xsl:when>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:choose>
+					<!-- businessDayConvention exists under the shifter node -->
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+						<xsl:choose>
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+								<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+							</xsl:when>
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+								<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+							</xsl:when>
+						</xsl:choose>
+					</xsl:when>
+					<!-- deduceFrom or equal to-->
+					<xsl:otherwise>
+						<xsl:choose>
+							<!-- calculationSchedule -->
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule = 'calculationSchedule' ">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature='drivingSchedule'">
+										<xsl:variable name="businessDayConventionTmp">
+											<xsl:choose>
+												<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+													<xsl:value-of select="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention"/>
+												</xsl:when>
+												<xsl:otherwise>
+													<xsl:value-of select="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/shiftedScheduleGenerator/standardScheduleGenerator/businessDayConvention"/>
+												</xsl:otherwise>
+											</xsl:choose>
+										</xsl:variable>
+										<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:', $businessDayConventionTmp))" />
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/underlyingSchedule='resetSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/underlyingSchedule='calculationEndSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+										</xsl:choose>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<!-- calculationEndSchedule -->
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule = 'calculationEndSchedule' ">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature='drivingSchedule'">
+										<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule='calculationSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule='resetSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+										</xsl:choose>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<!-- resetSchedule -->
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule = 'resetSchedule' ">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature='drivingSchedule'">
+										<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule='calculationSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule='calculationEndSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+										</xsl:choose>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+						</xsl:choose>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+
+	<xsl:template name="resetDatesAdjusments.businessDayConvention">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:choose>
+			<!-- drivingSchedule -->
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature= 'drivingSchedule'">
+				<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:choose>
+					<!-- businessDayConvention exists under the shifter node -->
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/shifter/businessDayConvention">
+						<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/shifter/businessDayConvention))" />
+					</xsl:when>
+					<!-- deduceFrom or equal to-->
+					<xsl:otherwise>
+						<xsl:choose>
+							<!-- calculationSchedule -->
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule = 'calculationSchedule' ">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature='drivingSchedule'">
+										<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/underlyingSchedule='calculationEndSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+															</xsl:when>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+														</xsl:choose>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/underlyingSchedule='paymentSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+															</xsl:when>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+														</xsl:choose>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+										</xsl:choose>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<!-- calculationEndSchedule -->
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule = 'calculationEndSchedule' ">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature='drivingSchedule'">
+										<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule='calculationSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+															</xsl:when>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+														</xsl:choose>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule='paymentSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:choose>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+															</xsl:when>
+															<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+																<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+															</xsl:when>
+														</xsl:choose>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+										</xsl:choose>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<!-- resetSchedule -->
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule = 'paymentSchedule' ">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature='drivingSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention">
+												<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/shifter/businessDayConvention))" />
+											</xsl:when>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+												<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+											</xsl:when>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule='calculationSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule='calculationEndSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature= 'drivingSchedule'">
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+										</xsl:choose>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+						</xsl:choose>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+
+	<xsl:template name="fixingDates.businessDayConvention">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:choose>
+			<!-- drivingSchedule -->
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature= 'drivingSchedule'">
+				<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention))" />
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:choose>
+					<!-- businessDayConvention exists under the shifter node -->
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/shifter/businessDayConvention">
+						<xsl:value-of select="mx:execute-formula($mapBusinessDayConv,concat('businessDayConvention:',/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/shifter/businessDayConvention))" />
+					</xsl:when>
+					<!-- deduceFrom or equal to-->
+					<xsl:otherwise>
+						<xsl:value-of select="'NONE'" />
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+
+	<xsl:template name="calculationPeriodDatesAdjustments.businessCenter">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<!-- deduceFrom or equal to-->
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature= 'drivingSchedule'">
+				<xsl:call-template name="makePaymentBusinessCenterNodes">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature= 'deducedFrom' or /MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature= 'equalTo'">
+				<xsl:choose>
+					<!-- payment schedule -->
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule = 'paymentSchedule' ">
+						<xsl:choose>
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature='drivingSchedule'">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+										<xsl:call-template name="paymentSchedule.businessCenter">
+											<xsl:with-param name="legNumber" select="$legNumber" />
+											<xsl:with-param name="nbTrade" select="$nbTrade" />
+										</xsl:call-template>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:call-template name="makePaymentBusinessCenterNodes">
+											<xsl:with-param name="legNumber" select="$legNumber" />
+											<xsl:with-param name="nbTrade" select="$nbTrade" />
+										</xsl:call-template>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule='calculationSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+														<xsl:call-template name="calculationSchedule.businessCenter">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:call-template name="makePaymentBusinessCenterNodes">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+														<xsl:call-template name="resetSchedule.businessCenter">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:call-template name="makePaymentBusinessCenterNodes">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule='resetSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+														<xsl:call-template name="resetSchedule.businessCenter">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:call-template name="makePaymentBusinessCenterNodes">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+														<xsl:call-template name="calculationSchedule.businessCenter">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:call-template name="makePaymentBusinessCenterNodes">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+								</xsl:choose>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:when>
+					<!-- calculationSchedule -->
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule = 'calculationSchedule' ">
+						<xsl:choose>
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature='drivingSchedule'">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+										<xsl:call-template name="calculationSchedule.businessCenter">
+											<xsl:with-param name="legNumber" select="$legNumber" />
+											<xsl:with-param name="nbTrade" select="$nbTrade" />
+										</xsl:call-template>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:call-template name="makePaymentBusinessCenterNodes">
+											<xsl:with-param name="legNumber" select="$legNumber" />
+											<xsl:with-param name="nbTrade" select="$nbTrade" />
+										</xsl:call-template>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/underlyingSchedule='paymentSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+														<xsl:call-template name="paymentSchedule.businessCenter">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:call-template name="makePaymentBusinessCenterNodes">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+														<xsl:call-template name="resetSchedule.businessCenter">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:call-template name="makePaymentBusinessCenterNodes">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/underlyingSchedule='resetSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+														<xsl:call-template name="resetSchedule.businessCenter">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:call-template name="makePaymentBusinessCenterNodes">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+														<xsl:call-template name="paymentSchedule.businessCenter">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:call-template name="makePaymentBusinessCenterNodes">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+								</xsl:choose>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:when>
+					<!-- resetSchedule -->
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule = 'resetSchedule' ">
+						<xsl:choose>
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature='drivingSchedule'">
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+										<xsl:call-template name="resetSchedule.businessCenter">
+											<xsl:with-param name="legNumber" select="$legNumber" />
+											<xsl:with-param name="nbTrade" select="$nbTrade" />
+										</xsl:call-template>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:call-template name="makePaymentBusinessCenterNodes">
+											<xsl:with-param name="legNumber" select="$legNumber" />
+											<xsl:with-param name="nbTrade" select="$nbTrade" />
+										</xsl:call-template>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule='paymentSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+														<xsl:call-template name="paymentSchedule.businessCenter">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:call-template name="makePaymentBusinessCenterNodes">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+														<xsl:call-template name="calculationSchedule.businessCenter">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:call-template name="makePaymentBusinessCenterNodes">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule='calculationSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+														<xsl:call-template name="calculationSchedule.businessCenter">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:call-template name="makePaymentBusinessCenterNodes">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:choose>
+													<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+														<xsl:call-template name="paymentSchedule.businessCenter">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:call-template name="makePaymentBusinessCenterNodes">
+															<xsl:with-param name="legNumber" select="$legNumber" />
+															<xsl:with-param name="nbTrade" select="$nbTrade" />
+														</xsl:call-template>
+													</xsl:otherwise>
+												</xsl:choose>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+								</xsl:choose>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:when>
+				</xsl:choose>
+			</xsl:when>
+		</xsl:choose>
+	</xsl:template>
+
+	<xsl:template name="paymentDates.businessCenter">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature= 'drivingSchedule'">
+				<xsl:call-template name="makePaymentBusinessCenterNodes">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:when>
+			<!-- deduceFrom or equal to-->
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature= 'deducedFrom' or /MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature= 'equalTo'">
+				<xsl:choose>
+					<!-- calculationSchedule -->
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule = 'calculationSchedule' ">
+						<xsl:choose>
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature='drivingSchedule'">
+								<xsl:call-template name="paymentDates.businessCenter.calculationSchedule">
+									<xsl:with-param name="legNumber" select="$legNumber" />
+									<xsl:with-param name="nbTrade" select="$nbTrade" />
+								</xsl:call-template>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/underlyingSchedule='resetSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:call-template name="paymentDates.businessCenter.resetSchedule">
+													<xsl:with-param name="legNumber" select="$legNumber" />
+													<xsl:with-param name="nbTrade" select="$nbTrade" />
+												</xsl:call-template>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:call-template name="paymentDates.businessCenter.calculationEndSchedule">
+													<xsl:with-param name="legNumber" select="$legNumber" />
+													<xsl:with-param name="nbTrade" select="$nbTrade" />
+												</xsl:call-template>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/underlyingSchedule='calculationEndSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:call-template name="paymentDates.businessCenter.calculationEndSchedule">
+													<xsl:with-param name="legNumber" select="$legNumber" />
+													<xsl:with-param name="nbTrade" select="$nbTrade" />
+												</xsl:call-template>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:call-template name="paymentDates.businessCenter.resetSchedule">
+													<xsl:with-param name="legNumber" select="$legNumber" />
+													<xsl:with-param name="nbTrade" select="$nbTrade" />
+												</xsl:call-template>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+								</xsl:choose>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:when>
+					<!-- calculationEndSchedule -->
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule = 'calculationEndSchedule' ">
+						<xsl:choose>
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature='drivingSchedule'">
+								<xsl:call-template name="paymentDates.businessCenter.calculationEndSchedule">
+									<xsl:with-param name="legNumber" select="$legNumber" />
+									<xsl:with-param name="nbTrade" select="$nbTrade" />
+								</xsl:call-template>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule='calculationSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:call-template name="paymentDates.businessCenter.calculationSchedule">
+													<xsl:with-param name="legNumber" select="$legNumber" />
+													<xsl:with-param name="nbTrade" select="$nbTrade" />
+												</xsl:call-template>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:call-template name="paymentDates.businessCenter.resetSchedule">
+													<xsl:with-param name="legNumber" select="$legNumber" />
+													<xsl:with-param name="nbTrade" select="$nbTrade" />
+												</xsl:call-template>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule='resetSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:call-template name="paymentDates.businessCenter.resetSchedule">
+													<xsl:with-param name="legNumber" select="$legNumber" />
+													<xsl:with-param name="nbTrade" select="$nbTrade" />
+												</xsl:call-template>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:call-template name="paymentDates.businessCenter.calculationSchedule">
+													<xsl:with-param name="legNumber" select="$legNumber" />
+													<xsl:with-param name="nbTrade" select="$nbTrade" />
+												</xsl:call-template>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+								</xsl:choose>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:when>
+					<!-- resetSchedule -->
+					<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule = 'resetSchedule' ">
+						<xsl:choose>
+							<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature='drivingSchedule'">
+								<xsl:call-template name="paymentDates.businessCenter.resetSchedule">
+									<xsl:with-param name="legNumber" select="$legNumber" />
+									<xsl:with-param name="nbTrade" select="$nbTrade" />
+								</xsl:call-template>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:choose>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule='calculationSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:call-template name="paymentDates.businessCenter.calculationSchedule">
+													<xsl:with-param name="legNumber" select="$legNumber" />
+													<xsl:with-param name="nbTrade" select="$nbTrade" />
+												</xsl:call-template>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:call-template name="paymentDates.businessCenter.calculationEndSchedule">
+													<xsl:with-param name="legNumber" select="$legNumber" />
+													<xsl:with-param name="nbTrade" select="$nbTrade" />
+												</xsl:call-template>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule='calculationEndSchedule'">
+										<xsl:choose>
+											<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature= 'drivingSchedule'">
+												<xsl:call-template name="paymentDates.businessCenter.calculationEndSchedule">
+													<xsl:with-param name="legNumber" select="$legNumber" />
+													<xsl:with-param name="nbTrade" select="$nbTrade" />
+												</xsl:call-template>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:call-template name="paymentDates.businessCenter.calculationSchedule">
+													<xsl:with-param name="legNumber" select="$legNumber" />
+													<xsl:with-param name="nbTrade" select="$nbTrade" />
+												</xsl:call-template>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+								</xsl:choose>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:when>
+				</xsl:choose>
+			</xsl:when>
+		</xsl:choose>
+	</xsl:template>
+
+	<xsl:template name="fixingDates.businessCenter">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:if test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/shifter/businessCenters">
+			<xsl:for-each select="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/shifter/businessCenters/businessCenter">
+				<xsl:element name="businessCenter">
+					<xsl:value-of select="mx:execute-formula($mapBusinessCenter, concat('businessCenter:', .))" />
+				</xsl:element>
+			</xsl:for-each>
+		</xsl:if>
+	</xsl:template>
+
+	<xsl:template name="resetDates.businessCenter">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="'1'" />
+		<!-- deduceFrom or equal to-->
+		<xsl:if test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature= 'deducedFrom' or /MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleNature= 'equalTo'">
+			<xsl:choose>
+				<!-- calculationSchedule -->
+				<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule = 'calculationSchedule' ">
+					<xsl:choose>
+						<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature='drivingSchedule'">
+							<xsl:call-template name="resetDates.businessCenter.calculationSchedule">
+								<xsl:with-param name="legNumber" select="$legNumber" />
+								<xsl:with-param name="nbTrade" select="$nbTrade" />
+							</xsl:call-template>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:choose>
+								<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/underlyingSchedule='paymentSchedule'">
+									<xsl:choose>
+										<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature= 'drivingSchedule'">
+											<xsl:call-template name="resetDates.businessCenter.paymentSchedule">
+												<xsl:with-param name="legNumber" select="$legNumber" />
+												<xsl:with-param name="nbTrade" select="$nbTrade" />
+											</xsl:call-template>
+										</xsl:when>
+										<xsl:otherwise>
+											<xsl:call-template name="resetDates.businessCenter.calculationEndSchedule">
+												<xsl:with-param name="legNumber" select="$legNumber" />
+												<xsl:with-param name="nbTrade" select="$nbTrade" />
+											</xsl:call-template>
+										</xsl:otherwise>
+									</xsl:choose>
+								</xsl:when>
+								<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/underlyingSchedule='calculationEndSchedule'">
+									<xsl:choose>
+										<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature= 'drivingSchedule'">
+											<xsl:call-template name="resetDates.businessCenter.calculationEndSchedule">
+												<xsl:with-param name="legNumber" select="$legNumber" />
+												<xsl:with-param name="nbTrade" select="$nbTrade" />
+											</xsl:call-template>
+										</xsl:when>
+										<xsl:otherwise>
+											<xsl:call-template name="resetDates.businessCenter.resetSchedule">
+												<xsl:with-param name="legNumber" select="$legNumber" />
+												<xsl:with-param name="nbTrade" select="$nbTrade" />
+											</xsl:call-template>
+										</xsl:otherwise>
+									</xsl:choose>
+								</xsl:when>
+							</xsl:choose>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:when>
+				<!-- calculationEndSchedule -->
+				<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule = 'calculationEndSchedule' ">
+					<xsl:choose>
+						<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature='drivingSchedule'">
+							<xsl:call-template name="resetDates.businessCenter.calculationEndSchedule">
+								<xsl:with-param name="legNumber" select="$legNumber" />
+								<xsl:with-param name="nbTrade" select="$nbTrade" />
+							</xsl:call-template>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:choose>
+								<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule='calculationSchedule'">
+									<xsl:choose>
+										<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'drivingSchedule'">
+											<xsl:call-template name="resetDates.businessCenter.calculationSchedule">
+												<xsl:with-param name="legNumber" select="$legNumber" />
+												<xsl:with-param name="nbTrade" select="$nbTrade" />
+											</xsl:call-template>
+										</xsl:when>
+										<xsl:otherwise>
+											<xsl:call-template name="resetDates.businessCenter.paymentSchedule">
+												<xsl:with-param name="legNumber" select="$legNumber" />
+												<xsl:with-param name="nbTrade" select="$nbTrade" />
+											</xsl:call-template>
+										</xsl:otherwise>
+									</xsl:choose>
+								</xsl:when>
+								<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/underlyingSchedule='paymentSchedule'">
+									<xsl:choose>
+										<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature= 'drivingSchedule'">
+											<xsl:call-template name="resetDates.businessCenter.paymentSchedule">
+												<xsl:with-param name="legNumber" select="$legNumber" />
+												<xsl:with-param name="nbTrade" select="$nbTrade" />
+											</xsl:call-template>
+										</xsl:when>
+										<xsl:otherwise>
+											<xsl:call-template name="resetDates.businessCenter.calculationSchedule">
+												<xsl:with-param name="legNumber" select="$legNumber" />
+												<xsl:with-param name="nbTrade" select="$nbTrade" />
+											</xsl:call-template>
+										</xsl:otherwise>
+									</xsl:choose>
+								</xsl:when>
+							</xsl:choose>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:when>
+				<!-- resetSchedule -->
+				<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/underlyingSchedule = 'paymentSchedule' ">
+					<xsl:choose>
+						<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature='drivingSchedule'">
+							<xsl:call-template name="resetDates.businessCenter.paymentSchedule">
+								<xsl:with-param name="legNumber" select="$legNumber" />
+								<xsl:with-param name="nbTrade" select="$nbTrade" />
+							</xsl:call-template>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:choose>
+								<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule='calculationSchedule'">
+									<xsl:choose>
+										<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleNature= 'drivingSchedule'">
+											<xsl:call-template name="resetDates.businessCenter.calculationSchedule">
+												<xsl:with-param name="legNumber" select="$legNumber" />
+												<xsl:with-param name="nbTrade" select="$nbTrade" />
+											</xsl:call-template>
+										</xsl:when>
+										<xsl:otherwise>
+											<xsl:call-template name="resetDates.businessCenter.calculationEndSchedule">
+												<xsl:with-param name="legNumber" select="$legNumber" />
+												<xsl:with-param name="nbTrade" select="$nbTrade" />
+											</xsl:call-template>
+										</xsl:otherwise>
+									</xsl:choose>
+								</xsl:when>
+								<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule='calculationEndSchedule'">
+									<xsl:choose>
+										<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleNature= 'drivingSchedule'">
+											<xsl:call-template name="resetDates.businessCenter.calculationEndSchedule">
+												<xsl:with-param name="legNumber" select="$legNumber" />
+												<xsl:with-param name="nbTrade" select="$nbTrade" />
+											</xsl:call-template>
+										</xsl:when>
+										<xsl:otherwise>
+											<xsl:call-template name="resetDates.businessCenter.calculationSchedule">
+												<xsl:with-param name="legNumber" select="$legNumber" />
+												<xsl:with-param name="nbTrade" select="$nbTrade" />
+											</xsl:call-template>
+										</xsl:otherwise>
+									</xsl:choose>
+								</xsl:when>
+							</xsl:choose>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:when>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:template>
+
+	<!-- templates -->
+	<xsl:template name="resetDates.businessCenter.resetSchedule">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+				<xsl:call-template name="resetSchedule.businessCenter">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:call-template name="makeResetBusinessCenterNodes">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+	<xsl:template name="resetDates.businessCenter.paymentSchedule">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+				<xsl:call-template name="paymentSchedule.businessCenter">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:call-template name="makeResetBusinessCenterNodes">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+	<xsl:template name="resetDates.businessCenter.calculationEndSchedule">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+				<xsl:call-template name="calculationEndSchedule.businessCenter">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:call-template name="makeResetBusinessCenterNodes">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+	<xsl:template name="resetDates.businessCenter.calculationSchedule">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+				<xsl:call-template name="calculationSchedule.businessCenter">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:call-template name="makeResetBusinessCenterNodes">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+
+
+	<xsl:template name="calculationSchedule.businessCenter">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:for-each select="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+			<xsl:element name="businessCenter">
+				<xsl:value-of select="mx:execute-formula($mapBusinessCenter, concat('businessCenter:', .))" />
+			</xsl:element>
+		</xsl:for-each>
+	</xsl:template>
+	<xsl:template name="paymentSchedule.businessCenter">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:for-each select="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+			<xsl:element name="businessCenter">
+				<xsl:value-of select="mx:execute-formula($mapBusinessCenter, concat('businessCenter:', .))" />
+			</xsl:element>
+		</xsl:for-each>
+	</xsl:template>
+	<xsl:template name="calculationEndSchedule.businessCenter">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:for-each select="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+			<xsl:element name="businessCenter">
+				<xsl:value-of select="mx:execute-formula($mapBusinessCenter, concat('businessCenter:', .))" />
+			</xsl:element>
+		</xsl:for-each>
+	</xsl:template>
+	<xsl:template name="resetSchedule.businessCenter">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:for-each select="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+			<xsl:element name="businessCenter">
+				<xsl:value-of select="mx:execute-formula($mapBusinessCenter, concat('businessCenter:', .))" />
+			</xsl:element>
+		</xsl:for-each>
+	</xsl:template>
+
+	<xsl:template name="paymentDates.businessCenter.resetSchedule">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/resetSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+				<xsl:call-template name="resetSchedule.businessCenter">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:call-template name="makePaymentBusinessCenterNodes">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+	<xsl:template name="paymentDates.businessCenter.paymentSchedule">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/paymentSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+				<xsl:call-template name="paymentSchedule.businessCenter">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:call-template name="makePaymentBusinessCenterNodes">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+	<xsl:template name="paymentDates.businessCenter.calculationEndSchedule">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationEndSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+				<xsl:call-template name="calculationEndSchedule.businessCenter">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:call-template name="makePaymentBusinessCenterNodes">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+	<xsl:template name="paymentDates.businessCenter.calculationSchedule">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream[streamTemplate/leg = $legNumber]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/businessCenters/businessCenter">
+				<xsl:call-template name="calculationSchedule.businessCenter">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:call-template name="makePaymentBusinessCenterNodes">
+					<xsl:with-param name="legNumber" select="$legNumber" />
+					<xsl:with-param name="nbTrade" select="$nbTrade" />
+				</xsl:call-template>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+
+	<!--==-->
+	<xsl:template name="makeResetBusinessCenterNodes">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="number($tradePos)" />
+		<xsl:for-each select="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream/streamTemplate[leg=$legNumber]/floatingRateStreamTemplate/resetBusinessCenters/businessCenterItem">
+			<xsl:element name="businessCenter">
+				<xsl:value-of select="swiftCode" />
+			</xsl:element>
+		</xsl:for-each>
+	</xsl:template>
+	<!--==-->
+	<xsl:template name="makePaymentBusinessCenterNodes">
+		<xsl:param name="legNumber" />
+		<xsl:param name="nbTrade"  select="'1'" />
+		<xsl:for-each select="/MxML/trades/trade[position() = $nbTrade]/tradeBody/*/stream/streamTemplate[leg=$legNumber]/paymentBusinessCenters/businessCenterItem">
+			<xsl:element name="businessCenter">
+				<xsl:value-of select="swiftCode" />
+			</xsl:element>
+		</xsl:for-each>
+	</xsl:template>
+	<!--==-->
+
+</xsl:stylesheet>

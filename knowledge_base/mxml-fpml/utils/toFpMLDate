@@ -1,0 +1,3 @@
+<Operator Code="FpMLDate">
+	<Operand Code="ScalarString">MxCTX#mxmlDate#Mx</Operand>
+</Operator>

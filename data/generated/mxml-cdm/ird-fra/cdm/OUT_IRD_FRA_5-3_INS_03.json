@@ -1,0 +1,362 @@
+{
+  "trade" : {
+    "product" : {
+      "identifier" : [ {
+        "identifier" : {
+          "value" : "InterestRate:FRA",
+          "meta" : {
+            "scheme" : "http://www.fpml.org/coding-scheme/external/iso4914"
+          }
+        },
+        "source" : "Other"
+      } ],
+      "taxonomy" : [ {
+        "source" : "ISDA",
+        "productQualifier" : "InterestRate_Fra"
+      } ],
+      "economicTerms" : {
+        "payout" : [ {
+          "InterestRatePayout" : {
+            "payerReceiver" : {
+              "payer" : "Party1",
+              "receiver" : "Party2"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-1"
+                }
+              }
+            },
+            "rateSpecification" : {
+              "FixedRateSpecification" : {
+                "rateSchedule" : {
+                  "price" : {
+                    "address" : {
+                      "scope" : "DOCUMENT",
+                      "value" : "price-1"
+                    }
+                  }
+                }
+              }
+            },
+            "dayCountFraction" : {
+              "value" : "ACT/360"
+            },
+            "calculationPeriodDates" : {
+              "effectiveDate" : {
+                "adjustableDate" : {
+                  "adjustedDate" : {
+                    "value" : "2022-03-02"
+                  }
+                },
+                "meta" : {
+                  "externalKey" : "fraEffectiveDate"
+                }
+              },
+              "terminationDate" : {
+                "adjustableDate" : {
+                  "adjustedDate" : {
+                    "value" : "2022-08-31"
+                  }
+                }
+              }
+            },
+            "paymentDates" : {
+              "paymentFrequency" : {
+                "periodMultiplier" : 1,
+                "period" : "Y"
+              }
+            },
+            "paymentDate" : {
+              "unadjustedDate" : "2022-03-02",
+              "dateAdjustments" : {
+                "businessDayConvention" : "MODFOLLOWING",
+                "businessCenters" : {
+                  "businessCenter" : [ {
+                    "value" : "EUTA"
+                  } ]
+                }
+              },
+              "adjustedDate" : {
+                "value" : "0002-11-30"
+              }
+            },
+            "discountingMethod" : {
+              "discountingType" : "FRA"
+            }
+          }
+        }, {
+          "InterestRatePayout" : {
+            "payerReceiver" : {
+              "payer" : "Party2",
+              "receiver" : "Party1"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-2"
+                }
+              }
+            },
+            "rateSpecification" : {
+              "FloatingRateSpecification" : {
+                "rateOption" : {
+                  "address" : {
+                    "scope" : "DOCUMENT",
+                    "value" : "InterestRateIndex-1"
+                  }
+                }
+              }
+            },
+            "dayCountFraction" : {
+              "value" : "ACT/360"
+            },
+            "calculationPeriodDates" : {
+              "effectiveDate" : {
+                "adjustableDate" : {
+                  "adjustedDate" : {
+                    "value" : "2022-03-02"
+                  }
+                },
+                "meta" : {
+                  "externalKey" : "fraEffectiveDate"
+                }
+              },
+              "terminationDate" : {
+                "adjustableDate" : {
+                  "adjustedDate" : {
+                    "value" : "2022-08-31"
+                  }
+                }
+              }
+            },
+            "paymentDate" : {
+              "unadjustedDate" : "2022-03-02",
+              "dateAdjustments" : {
+                "businessDayConvention" : "MODFOLLOWING",
+                "businessCenters" : {
+                  "businessCenter" : [ {
+                    "value" : "EUTA"
+                  } ]
+                }
+              },
+              "adjustedDate" : {
+                "value" : "0002-11-30"
+              }
+            },
+            "resetDates" : {
+              "fixingDates" : {
+                "periodMultiplier" : -2,
+                "period" : "D",
+                "dayType" : "Business",
+                "businessDayConvention" : "NONE",
+                "businessCenters" : {
+                  "businessCenter" : [ {
+                    "value" : "EUTA"
+                  } ]
+                },
+                "dateRelativeTo" : {
+                  "externalReference" : "fraEffectiveDate"
+                }
+              }
+            },
+            "discountingMethod" : {
+              "discountingType" : "FRA"
+            }
+          }
+        } ]
+      }
+    },
+    "tradeLot" : [ {
+      "priceQuantity" : [ {
+        "price" : [ {
+          "value" : {
+            "value" : 0.012,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            },
+            "perUnitOf" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            },
+            "priceType" : "InterestRate"
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "price-2"
+            } ]
+          }
+        } ],
+        "quantity" : [ {
+          "value" : {
+            "value" : 10000000,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-1"
+            } ]
+          }
+        } ]
+      }, {
+        "quantity" : [ {
+          "value" : {
+            "value" : 10000000,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-2"
+            } ]
+          }
+        } ],
+        "observable" : {
+          "value" : {
+            "Index" : {
+              "InterestRateIndex" : {
+                "value" : {
+                  "FloatingRateIndex" : {
+                    "identifier" : [ {
+                      "identifier" : {
+                        "value" : "EUR-EURIBOR-Reuters"
+                      },
+                      "identifierType" : "Other"
+                    } ],
+                    "assetClass" : "InterestRate",
+                    "floatingRateIndex" : {
+                      "value" : "EUR-EURIBOR-Reuters"
+                    },
+                    "indexTenor" : {
+                      "periodMultiplier" : 1,
+                      "period" : "Y"
+                    }
+                  }
+                },
+                "meta" : {
+                  "location" : [ {
+                    "scope" : "DOCUMENT",
+                    "value" : "InterestRateIndex-1"
+                  } ]
+                }
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "observable-1"
+            } ]
+          }
+        }
+      } ]
+    } ],
+    "counterparty" : [ {
+      "role" : "Party1",
+      "partyReference" : {
+        "externalReference" : "MUREX-DEMO"
+      }
+    }, {
+      "role" : "Party2",
+      "partyReference" : {
+        "externalReference" : "_1160"
+      }
+    } ],
+    "tradeIdentifier" : [ {
+      "issuerReference" : {
+        "externalReference" : "MUREX-DEMO"
+      },
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX113",
+          "meta" : {
+            "scheme" : "http://www.murex.com/contract-id"
+          }
+        }
+      } ]
+    }, {
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX113",
+          "meta" : {
+            "scheme" : "http://www.murex.com/contract-id"
+          }
+        }
+      } ]
+    } ],
+    "tradeDate" : {
+      "value" : "2021-08-31"
+    },
+    "party" : [ {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "BARCLAYS"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "_1160"
+      }
+    }, {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "party1"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "MUREX-DEMO"
+      }
+    } ],
+    "contractDetails" : {
+      "documentation" : [ {
+        "legalAgreementIdentification" : {
+          "agreementName" : {
+            "agreementType" : "MasterAgreement",
+            "masterAgreementType" : {
+              "value" : "ISDAMaster",
+              "meta" : {
+                "scheme" : "http://www.fpml.org/coding-scheme/master-agreement-type"
+              }
+            }
+          }
+        },
+        "contractualParty" : [ {
+          "externalReference" : "MUREX-DEMO"
+        }, {
+          "externalReference" : "_1160"
+        } ]
+      }, {
+        "legalAgreementIdentification" : {
+          "agreementName" : {
+            "agreementType" : "Confirmation",
+            "contractualDefinitionsType" : [ {
+              "meta" : {
+                "scheme" : "http://www.fpml.org/coding-scheme/contractual-definitions-3-1"
+              }
+            } ]
+          }
+        },
+        "contractualParty" : [ {
+          "externalReference" : "MUREX-DEMO"
+        }, {
+          "externalReference" : "_1160"
+        } ]
+      } ]
+    }
+  }
+}

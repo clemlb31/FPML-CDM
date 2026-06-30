@@ -1,0 +1,292 @@
+{
+  "trade" : {
+    "product" : {
+      "taxonomy" : [ {
+        "source" : "ISDA",
+        "productQualifier" : "InterestRate_CapFloor"
+      } ],
+      "economicTerms" : {
+        "payout" : [ {
+          "InterestRatePayout" : {
+            "payerReceiver" : {
+              "payer" : "Party1",
+              "receiver" : "Party2"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-1"
+                }
+              }
+            },
+            "rateSpecification" : {
+              "FloatingRateSpecification" : {
+                "rateOption" : {
+                  "address" : {
+                    "scope" : "DOCUMENT",
+                    "value" : "InterestRateIndex-1"
+                  }
+                },
+                "capRateSchedule" : {
+                  "price" : {
+                    "address" : {
+                      "scope" : "DOCUMENT",
+                      "value" : "price-1"
+                    }
+                  }
+                }
+              }
+            },
+            "dayCountFraction" : {
+              "value" : "1/1"
+            },
+            "calculationPeriodDates" : {
+              "effectiveDate" : {
+                "adjustableDate" : {
+                  "unadjustedDate" : "2017-02-02",
+                  "dateAdjustments" : {
+                    "businessDayConvention" : "FOLLOWING",
+                    "businessCenters" : {
+                      "businessCenter" : [ {
+                        "value" : "EUTA"
+                      } ]
+                    }
+                  },
+                  "adjustedDate" : {
+                    "value" : "2017-02-02"
+                  }
+                }
+              },
+              "terminationDate" : {
+                "adjustableDate" : {
+                  "unadjustedDate" : "2020-02-02",
+                  "dateAdjustments" : {
+                    "businessDayConvention" : "NONE"
+                  },
+                  "adjustedDate" : {
+                    "value" : "2020-02-02"
+                  }
+                }
+              },
+              "calculationPeriodDatesAdjustments" : {
+                "businessDayConvention" : "NONE"
+              },
+              "calculationPeriodFrequency" : {
+                "periodMultiplier" : 1,
+                "period" : "T",
+                "rollConvention" : "NONE"
+              },
+              "meta" : {
+                "externalKey" : "floatingRateCalculationPeriodDates1"
+              }
+            },
+            "paymentDates" : {
+              "paymentFrequency" : {
+                "periodMultiplier" : 1,
+                "period" : "T"
+              },
+              "payRelativeTo" : "CalculationPeriodEndDate",
+              "paymentDatesAdjustments" : {
+                "businessDayConvention" : "FOLLOWING",
+                "businessCenters" : {
+                  "businessCenter" : [ {
+                    "value" : "EUTA"
+                  } ]
+                }
+              }
+            },
+            "resetDates" : {
+              "calculationPeriodDatesReference" : {
+                "externalReference" : "floatingRateCalculationPeriodDates1"
+              },
+              "resetRelativeTo" : "CalculationPeriodEndDate",
+              "fixingDates" : {
+                "periodMultiplier" : 0,
+                "period" : "D",
+                "businessDayConvention" : "FOLLOWING",
+                "businessCenters" : {
+                  "businessCenter" : [ {
+                    "value" : "EUTA"
+                  } ]
+                },
+                "dateRelativeTo" : {
+                  "externalReference" : "floatingRateCalculationPeriodDates1"
+                }
+              },
+              "resetFrequency" : {
+                "periodMultiplier" : 1,
+                "period" : "T"
+              },
+              "resetDatesAdjustments" : {
+                "businessDayConvention" : "NONE"
+              },
+              "meta" : {
+                "externalKey" : "resetDates"
+              }
+            },
+            "cashflowRepresentation" : {
+              "cashflowsMatchParameters" : true,
+              "paymentCalculationPeriod" : [ {
+                "adjustedPaymentDate" : "2020-02-03",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2017-02-02",
+                  "adjustedEndDate" : "2020-02-02",
+                  "unadjustedStartDate" : "2017-02-02",
+                  "unadjustedEndDate" : "2020-02-02",
+                  "notionalAmount" : 1000000,
+                  "floatingRateDefinition" : {
+                    "calculatedRate" : 0,
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2016-11-01",
+                      "observedRate" : 0,
+                      "observationWeight" : 1
+                    }, {
+                      "adjustedFixingDate" : "2019-11-01",
+                      "observedRate" : 0,
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 1
+                } ]
+              } ]
+            },
+            "stubPeriod" : {
+              "initialStub" : {
+                "stubRate" : 0
+              }
+            }
+          }
+        } ]
+      }
+    },
+    "tradeLot" : [ {
+      "priceQuantity" : [ {
+        "price" : [ {
+          "value" : {
+            "value" : 0.0011,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            },
+            "perUnitOf" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            },
+            "priceType" : "InterestRate",
+            "arithmeticOperator" : "Min"
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "price-1"
+            } ]
+          }
+        } ],
+        "quantity" : [ {
+          "value" : {
+            "value" : 1000000,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-1"
+            } ]
+          }
+        } ],
+        "observable" : {
+          "value" : {
+            "Index" : {
+              "InterestRateIndex" : {
+                "value" : {
+                  "InflationIndex" : {
+                    "assetClass" : "InterestRate",
+                    "inflationRateIndex" : {
+                      "value" : "EUR-EXT-CPI"
+                    }
+                  }
+                },
+                "meta" : {
+                  "location" : [ {
+                    "scope" : "DOCUMENT",
+                    "value" : "InterestRateIndex-1"
+                  } ]
+                }
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "observable-1"
+            } ]
+          }
+        }
+      } ]
+    } ],
+    "counterparty" : [ {
+      "role" : "Party1",
+      "partyReference" : {
+        "externalReference" : "_1637"
+      }
+    }, {
+      "role" : "Party2",
+      "partyReference" : {
+        "externalReference" : "MUREX-DEMO"
+      }
+    } ],
+    "tradeIdentifier" : [ {
+      "issuerReference" : {
+        "externalReference" : "MUREX-DEMO"
+      },
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX539927",
+          "meta" : {
+            "scheme" : "http://www.fpml.org/coding-scheme/external/unique-transaction-identifier"
+          }
+        }
+      } ],
+      "identifierType" : "UniqueTransactionIdentifier"
+    }, {
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX539927",
+          "meta" : {
+            "scheme" : "http://www.fpml.org/coding-scheme/external/unique-transaction-identifier"
+          }
+        }
+      } ],
+      "identifierType" : "UniqueTransactionIdentifier"
+    } ],
+    "tradeDate" : {
+      "value" : "2017-01-31"
+    },
+    "party" : [ {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "BARCLAYS"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "_1637"
+      }
+    }, {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "party1"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "MUREX-DEMO"
+      }
+    } ]
+  }
+}

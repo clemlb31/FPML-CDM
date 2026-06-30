@@ -1,0 +1,295 @@
+{
+  "trade" : {
+    "product" : {
+      "taxonomy" : [ {
+        "source" : "ISDA",
+        "productQualifier" : "ForeignExchange_Swap"
+      } ],
+      "economicTerms" : {
+        "payout" : [ {
+          "SettlementPayout" : {
+            "payerReceiver" : {
+              "payer" : "Party1",
+              "receiver" : "Party2"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-1"
+                }
+              },
+              "priceSchedule" : [ {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "price-1"
+                }
+              } ]
+            },
+            "settlementTerms" : {
+              "settlementType" : "Cash",
+              "settlementCurrency" : {
+                "value" : "EUR"
+              },
+              "settlementDate" : {
+                "valueDate" : "2016-05-20"
+              }
+            },
+            "underlier" : {
+              "Observable" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "observable-1"
+                }
+              }
+            }
+          }
+        }, {
+          "SettlementPayout" : {
+            "payerReceiver" : {
+              "payer" : "Party2",
+              "receiver" : "Party1"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-2"
+                }
+              },
+              "priceSchedule" : [ {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "price-2"
+                }
+              } ]
+            },
+            "settlementTerms" : {
+              "settlementType" : "Cash",
+              "settlementCurrency" : {
+                "value" : "EUR"
+              },
+              "settlementDate" : {
+                "valueDate" : "2019-05-20"
+              }
+            },
+            "underlier" : {
+              "Observable" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "observable-2"
+                }
+              }
+            }
+          }
+        } ]
+      }
+    },
+    "tradeLot" : [ {
+      "priceQuantity" : [ {
+        "price" : [ {
+          "value" : {
+            "value" : 0.79882617,
+            "unit" : {
+              "currency" : {
+                "value" : "GBP"
+              }
+            },
+            "perUnitOf" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            },
+            "priceType" : "ExchangeRate"
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "price-1"
+            } ]
+          }
+        } ],
+        "quantity" : [ {
+          "value" : {
+            "value" : 798826.17382617,
+            "unit" : {
+              "currency" : {
+                "value" : "GBP"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-1"
+            } ]
+          }
+        }, {
+          "value" : {
+            "value" : 1000000,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-3"
+            } ]
+          }
+        } ],
+        "observable" : {
+          "value" : {
+            "Asset" : {
+              "Cash" : {
+                "identifier" : [ {
+                  "identifier" : {
+                    "value" : "GBP"
+                  },
+                  "identifierType" : "CurrencyCode"
+                } ]
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "observable-1"
+            } ]
+          }
+        }
+      }, {
+        "price" : [ {
+          "value" : {
+            "value" : 0.05708415,
+            "unit" : {
+              "currency" : {
+                "value" : "GBP"
+              }
+            },
+            "perUnitOf" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            },
+            "priceType" : "ExchangeRate"
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "price-2"
+            } ]
+          }
+        } ],
+        "quantity" : [ {
+          "value" : {
+            "value" : 57084.14818932,
+            "unit" : {
+              "currency" : {
+                "value" : "GBP"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-2"
+            } ]
+          }
+        }, {
+          "value" : {
+            "value" : 1000000,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-4"
+            } ]
+          }
+        } ],
+        "observable" : {
+          "value" : {
+            "Asset" : {
+              "Cash" : {
+                "identifier" : [ {
+                  "identifier" : {
+                    "value" : "GBP"
+                  },
+                  "identifierType" : "CurrencyCode"
+                } ]
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "observable-2"
+            } ]
+          }
+        }
+      } ]
+    } ],
+    "counterparty" : [ {
+      "role" : "Party1",
+      "partyReference" : {
+        "externalReference" : "BARCLAYS"
+      }
+    }, {
+      "role" : "Party2",
+      "partyReference" : {
+        "externalReference" : "party2"
+      }
+    } ],
+    "tradeIdentifier" : [ {
+      "issuerReference" : {
+        "externalReference" : "party2"
+      },
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX162",
+          "meta" : {
+            "scheme" : "http://www.db.com/swaps/trade-id"
+          }
+        }
+      } ]
+    }, {
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX162",
+          "meta" : {
+            "scheme" : "http://www.db.com/swaps/trade-id"
+          }
+        }
+      } ]
+    } ],
+    "tradeDate" : {
+      "value" : "2016-05-18"
+    },
+    "party" : [ {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "party2"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "party2"
+      }
+    }, {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "BARCLAYS"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "BARCLAYS"
+      }
+    } ]
+  }
+}

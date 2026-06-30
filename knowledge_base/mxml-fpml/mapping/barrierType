@@ -1,0 +1,59 @@
+<?xml version="1.0" ?>
+<!DOCTYPE Operator>
+<Operator Code="BestMatching">
+	<Context Code="InputValues">
+		<Context Code="InputValue">
+			<Context Code="Column">0</Context>
+			<Context Code="Value">MxCTX#barrierType#Mx</Context>
+			<Context Code="Label">Barrier Type</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+	</Context>
+	<Operator Code="OrderBestMatching">
+		<Operand Code="Matrix">
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">downAndIn</Operand>
+				<Operand Code="ScalarString">Knockin</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">upAndIn</Operand>
+				<Operand Code="ScalarString">Knockin</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">downAndOut</Operand>
+				<Operand Code="ScalarString">Knockout</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">upAndOut</Operand>
+				<Operand Code="ScalarString">Knockout</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">in</Operand>
+				<Operand Code="ScalarString">Knockin</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">out</Operand>
+				<Operand Code="ScalarString">Knockout</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString"></Operand>
+				<Operand Code="ScalarString">UNMAPPED</Operand>
+			</Operand>
+		</Operand>
+		<Context Code="Priorities">
+			<Context Code="Column">0</Context>
+		</Context>
+	</Operator>
+	<Context Code="OutputColumns">
+		<Context Code="OutputColumn">
+			<Context Code="Column">1</Context>
+			<Context Code="Label">OutputColumn</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+	</Context>
+	<Context Code="ReturnType">
+		<Context Code="MultipleLineResult">false</Context>
+	</Context>
+</Operator>

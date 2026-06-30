@@ -1,0 +1,43 @@
+<?xml version="1.0" ?>
+<!DOCTYPE Operator>
+<Operator Code="BestMatching">
+	<Context Code="InputValues">
+		<Context Code="InputValue">
+			<Context Code="Column">0</Context>
+			<Context Code="Value">MxCTX#quoteBasis#Mx</Context>
+			<Context Code="Label">Murex Quote Basis</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+	</Context>
+	<Operator Code="OrderBestMatching">
+		<Operand Code="Matrix">
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">currency1PerCurrency2</Operand>
+				<Operand Code="ScalarString">Currency1PerCurrency2</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">currency2PerCurrency1</Operand>
+				<Operand Code="ScalarString">Currency2PerCurrency1</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString"></Operand>
+				<Operand Code="ScalarString">UNMAPPED</Operand>
+			</Operand>
+		</Operand>
+		<Context Code="Priorities">
+			<Context Code="Column">0</Context>
+		</Context>
+	</Operator>
+	<Context Code="OutputColumns">
+		<Context Code="OutputColumn">
+			<Context Code="Column">1</Context>
+			<Context Code="Label">FpML Quote Basis</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+	</Context>
+	<Context Code="ReturnType">
+		<Context Code="MultipleLineResult">false</Context>
+	</Context>
+</Operator>

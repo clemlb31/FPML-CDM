@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FpML xmlns="http://www.fpml.org/2007/FpML-4-3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:fpml="http://www.fpml.org/2007/FpML-4-3" xsi:type="RequestTradeConfirmation" xsi:schemaLocation="http://www.fpml.org/2007/FpML-4-3 ../fpml-main-4-3.xsd http://www.w3.org/2000/09/xmldsig# ../xmldsig-core-schema.xsd" version="4-3">
+	<header>
+		<messageId messageIdScheme="http://www.murex.com/message-id">MX12112</messageId>
+		<sentBy partyIdScheme="http://www.fpml.org/coding-scheme/external/iso9362">party1</sentBy>
+		<sendTo partyIdScheme="http://www.fpml.org/coding-scheme/external/iso9362">BARCLAYS</sendTo>
+		<creationTimestamp>2012-11-27T13:54:11.000+01:00</creationTimestamp>
+	</header>
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href=""/>
+				<tradeId tradeIdScheme="http://www.murex.com/contract-id">MX12112</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2008-12-15</tradeDate>
+		</tradeHeader>
+		<fra>
+			<buyerPartyReference href="BARCLAYS"/>
+			<sellerPartyReference href="party1"/>
+			<adjustedEffectiveDate id="fraEffectiveDate">2009-02-15</adjustedEffectiveDate>
+			<adjustedTerminationDate>2009-05-15</adjustedTerminationDate>
+			<paymentDate>
+				<unadjustedDate>2009-02-15</unadjustedDate>
+				<dateAdjustments>
+					<businessDayConvention>MODFOLLOWING</businessDayConvention>
+					<businessCenters>
+						<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">USNY</businessCenter>
+					</businessCenters>
+				</dateAdjustments>
+			</paymentDate>
+			<fixingDateOffset>
+				<periodMultiplier>-2</periodMultiplier>
+				<period>D</period>
+				<dayType>Business</dayType>
+				<businessDayConvention>NONE</businessDayConvention>
+				<businessCenters>
+					<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">GBLO</businessCenter>
+				</businessCenters>
+				<dateRelativeTo href="fraEffectiveDate"/>
+			</fixingDateOffset>
+			<dayCountFraction dayCountFractionScheme="http://www.fpml.org/coding-scheme/day-count-fraction-2-1">ACT/360</dayCountFraction>
+			<calculationPeriodNumberOfDays>89</calculationPeriodNumberOfDays>
+			<notional>
+				<currency currencyScheme="http://www.fpml.org/ext/iso4217">USD</currency>
+				<amount>100002041</amount>
+			</notional>
+			<fixedRate>0.00952</fixedRate>
+			<floatingRateIndex floatingRateIndexScheme="http://www.fpml.org/coding-scheme/floating-rate-index-2-0">USD-LIBOR-BBA</floatingRateIndex>
+			<indexTenor>
+				<periodMultiplier>3</periodMultiplier>
+				<period>M</period>
+			</indexTenor>
+			<fraDiscounting>ISDA</fraDiscounting>
+		</fra>
+	</trade>
+	<party id="party1">
+		<partyId>party1</partyId>
+	</party>
+	<party id="BARCLAYS">
+		<partyId>party2</partyId>
+	</party>
+</FpML>

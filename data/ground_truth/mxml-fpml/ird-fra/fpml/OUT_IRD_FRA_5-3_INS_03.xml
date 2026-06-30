@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataDocument xmlns="http://www.fpml.org/FpML-5/confirmation" fpmlVersion="5-3">
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="MUREX-DEMO"/>
+				<tradeId tradeIdScheme="http://www.murex.com/contract-id">MX113</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2021-08-31</tradeDate>
+		</tradeHeader>
+		<fra>
+			<productId productIdScheme="http://www.fpml.org/coding-scheme/external/iso4914">InterestRate:FRA</productId>
+			<buyerPartyReference href="MUREX-DEMO"/>
+			<sellerPartyReference href="_1160"/>
+			<adjustedEffectiveDate id="fraEffectiveDate">2022-03-02</adjustedEffectiveDate>
+			<adjustedTerminationDate>2022-08-31</adjustedTerminationDate>
+			<paymentDate>
+				<unadjustedDate>2022-03-02</unadjustedDate>
+				<dateAdjustments>
+					<businessDayConvention>MODFOLLOWING</businessDayConvention>
+					<businessCenters>
+						<businessCenter>EUTA</businessCenter>
+					</businessCenters>
+				</dateAdjustments>
+				<adjustedDate>0002-11-30</adjustedDate>
+			</paymentDate>
+			<fixingDateOffset>
+				<periodMultiplier>-2</periodMultiplier>
+				<period>D</period>
+				<dayType>Business</dayType>
+				<businessDayConvention>NONE</businessDayConvention>
+				<businessCenters>
+					<businessCenter>EUTA</businessCenter>
+				</businessCenters>
+				<dateRelativeTo href="fraEffectiveDate"/>
+				<adjustedDate>0002-11-30</adjustedDate>
+			</fixingDateOffset>
+			<dayCountFraction>ACT/360</dayCountFraction>
+			<calculationPeriodNumberOfDays>182</calculationPeriodNumberOfDays>
+			<notional>
+				<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+				<amount>10000000.</amount>
+			</notional>
+			<fixedRate>0.012</fixedRate>
+			<floatingRateIndex>EUR-EURIBOR-Reuters</floatingRateIndex>
+			<indexTenor>
+				<periodMultiplier>1</periodMultiplier>
+				<period>Y</period>
+			</indexTenor>
+			<fraDiscounting>ISDA</fraDiscounting>
+		</fra>
+		<documentation>
+			<masterAgreement>
+				<masterAgreementType masterAgreementTypeScheme="http://www.fpml.org/coding-scheme/master-agreement-type">ISDA</masterAgreementType>
+			</masterAgreement>
+			<contractualDefinitions contractualDefinitionsScheme="http://www.fpml.org/coding-scheme/contractual-definitions-3-1">ISDA2021</contractualDefinitions>
+		</documentation>
+	</trade>
+	<party id="_1160">
+		<partyId>BARCLAYS</partyId>
+	</party>
+	<party id="MUREX-DEMO">
+		<partyId>party1</partyId>
+	</party>
+</dataDocument>

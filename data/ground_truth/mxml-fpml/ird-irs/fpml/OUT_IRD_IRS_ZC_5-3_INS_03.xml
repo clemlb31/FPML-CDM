@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataDocument xmlns="http://www.fpml.org/FpML-5/confirmation" fpmlVersion="5-3">
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="MUREX-DEMO"/>
+				<tradeId tradeIdScheme="http://www.murex.com/contract-id">MX15119</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2008-12-15</tradeDate>
+		</tradeHeader>
+		<swap>
+			<swapStream id="fixedLeg">
+				<payerPartyReference href="MUREX-DEMO"/>
+				<receiverPartyReference href="_1121"/>
+				<calculationPeriodDates id="leg_1_calculationPeriodDates">
+					<effectiveDate>
+						<unadjustedDate>2008-12-17</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>NONE</businessDayConvention>
+						</dateAdjustments>
+						<adjustedDate>2008-12-17</adjustedDate>
+					</effectiveDate>
+					<terminationDate>
+						<unadjustedDate>2018-12-17</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>NONE</businessDayConvention>
+						</dateAdjustments>
+						<adjustedDate>2018-12-17</adjustedDate>
+					</terminationDate>
+					<calculationPeriodDatesAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</calculationPeriodDatesAdjustments>
+					<calculationPeriodFrequency>
+						<periodMultiplier>1</periodMultiplier>
+						<period>Y</period>
+						<rollConvention>17</rollConvention>
+					</calculationPeriodFrequency>
+				</calculationPeriodDates>
+				<paymentDates id="leg_1_paymentDates">
+					<calculationPeriodDatesReference href="leg_1_calculationPeriodDates"/>
+					<paymentFrequency>
+						<periodMultiplier>1</periodMultiplier>
+						<period>T</period>
+					</paymentFrequency>
+					<payRelativeTo>CalculationPeriodEndDate</payRelativeTo>
+					<paymentDaysOffset>
+						<periodMultiplier>2</periodMultiplier>
+						<period>D</period>
+						<dayType>Calendar</dayType>
+					</paymentDaysOffset>
+					<paymentDatesAdjustments>
+						<businessDayConvention>FOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter>EUTA</businessCenter>
+						</businessCenters>
+					</paymentDatesAdjustments>
+				</paymentDates>
+				<calculationPeriodAmount>
+					<calculation>
+						<notionalSchedule id="leg_1_notionalSchedule">
+							<notionalStepSchedule>
+								<initialValue>100000000</initialValue>
+								<currency>EUR</currency>
+							</notionalStepSchedule>
+						</notionalSchedule>
+						<fixedRateSchedule>
+							<initialValue>0.01</initialValue>
+						</fixedRateSchedule>
+						<dayCountFraction>1/1</dayCountFraction>
+						<compoundingMethod>Straight</compoundingMethod>
+					</calculation>
+				</calculationPeriodAmount>
+				<cashflows>
+					<cashflowsMatchParameters>true</cashflowsMatchParameters>
+					<paymentCalculationPeriod>
+						<adjustedPaymentDate>2018-12-17</adjustedPaymentDate>
+						<calculationPeriod>
+							<unadjustedStartDate>2008-12-17</unadjustedStartDate>
+							<unadjustedEndDate>2018-12-17</unadjustedEndDate>
+							<adjustedStartDate>2008-12-17</adjustedStartDate>
+							<adjustedEndDate>2018-12-17</adjustedEndDate>
+							<notionalAmount>100000000</notionalAmount>
+							<fixedRate>0.01</fixedRate>
+							<dayCountYearFraction>10</dayCountYearFraction>
+						</calculationPeriod>
+						<presentValueAmount>
+							<currency>EUR</currency>
+							<amount>10462212.54112045</amount>
+						</presentValueAmount>
+					</paymentCalculationPeriod>
+				</cashflows>
+			</swapStream>
+			<swapStream id="floatingLeg">
+				<payerPartyReference href="_1121"/>
+				<receiverPartyReference href="MUREX-DEMO"/>
+				<calculationPeriodDates id="leg_2_calculationPeriodDates">
+					<effectiveDate>
+						<unadjustedDate>2008-12-17</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>NONE</businessDayConvention>
+						</dateAdjustments>
+						<adjustedDate>2008-12-17</adjustedDate>
+					</effectiveDate>
+					<terminationDate>
+						<unadjustedDate>2018-12-17</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>NONE</businessDayConvention>
+						</dateAdjustments>
+						<adjustedDate>2018-12-17</adjustedDate>
+					</terminationDate>
+					<calculationPeriodDatesAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</calculationPeriodDatesAdjustments>
+					<calculationPeriodFrequency>
+						<periodMultiplier>2</periodMultiplier>
+						<period>T</period>
+						<rollConvention>NONE</rollConvention>
+					</calculationPeriodFrequency>
+				</calculationPeriodDates>
+				<paymentDates id="leg_2_paymentDates">
+					<calculationPeriodDatesReference href="leg_2_calculationPeriodDates"/>
+					<paymentFrequency>
+						<periodMultiplier>1</periodMultiplier>
+						<period>T</period>
+					</paymentFrequency>
+					<payRelativeTo>CalculationPeriodEndDate</payRelativeTo>
+					<paymentDaysOffset>
+						<periodMultiplier>2</periodMultiplier>
+						<period>D</period>
+						<dayType>Calendar</dayType>
+					</paymentDaysOffset>
+					<paymentDatesAdjustments>
+						<businessDayConvention>FOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter>EUTA</businessCenter>
+						</businessCenters>
+					</paymentDatesAdjustments>
+				</paymentDates>
+				<resetDates id="leg_2_resetDates">
+					<calculationPeriodDatesReference href="leg_2_calculationPeriodDates"/>
+					<resetRelativeTo>CalculationPeriodEndDate</resetRelativeTo>
+					<fixingDates>
+						<periodMultiplier>0</periodMultiplier>
+						<period>D</period>
+						<businessDayConvention>PRECEDING</businessDayConvention>
+						<businessCenters>
+							<businessCenter>EUTA</businessCenter>
+						</businessCenters>
+						<dateRelativeTo href="leg_2_calculationPeriodDates"/>
+					</fixingDates>
+					<resetFrequency>
+						<periodMultiplier>2</periodMultiplier>
+						<period>D</period>
+					</resetFrequency>
+					<resetDatesAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</resetDatesAdjustments>
+				</resetDates>
+				<calculationPeriodAmount>
+					<calculation>
+						<notionalSchedule id="leg_2_notionalSchedule">
+							<notionalStepSchedule>
+								<initialValue>100000000</initialValue>
+								<currency>EUR</currency>
+							</notionalStepSchedule>
+						</notionalSchedule>
+						<inflationRateCalculation>
+							<floatingRateIndex floatingRateIndexScheme="http://www.fpml.org/coding-scheme/inflation-index-description">
+
+		EUR-EXT-CPI
+
+	</floatingRateIndex>
+							<inflationLag>
+								<periodMultiplier>3</periodMultiplier>
+								<period>M</period>
+							</inflationLag>
+							<indexSource rateSourcePageScheme="http://www.fpml.org/coding-scheme/inflation-index-source">CPTFEMU</indexSource>
+							<interpolationMethod>LinearZeroYield</interpolationMethod>
+							<fallbackBondApplicable>true</fallbackBondApplicable>
+						</inflationRateCalculation>
+						<dayCountFraction>1/1</dayCountFraction>
+					</calculation>
+				</calculationPeriodAmount>
+				<cashflows>
+					<cashflowsMatchParameters>true</cashflowsMatchParameters>
+					<paymentCalculationPeriod>
+						<adjustedPaymentDate>2018-12-17</adjustedPaymentDate>
+						<calculationPeriod>
+							<unadjustedStartDate>2008-12-17</unadjustedStartDate>
+							<unadjustedEndDate>2018-12-17</unadjustedEndDate>
+							<adjustedStartDate>2008-12-17</adjustedStartDate>
+							<adjustedEndDate>2018-12-17</adjustedEndDate>
+							<notionalAmount>100000000</notionalAmount>
+							<floatingRateDefinition>
+								<spread>0</spread>
+							</floatingRateDefinition>
+							<dayCountYearFraction>1</dayCountYearFraction>
+						</calculationPeriod>
+						<presentValueAmount>
+							<currency>EUR</currency>
+							<amount>0</amount>
+						</presentValueAmount>
+					</paymentCalculationPeriod>
+				</cashflows>
+			</swapStream>
+		</swap>
+	</trade>
+	<party id="_1121">
+		<partyId>BARCLAYS</partyId>
+	</party>
+	<party id="MUREX-DEMO">
+		<partyId>party1</partyId>
+	</party>
+</dataDocument>

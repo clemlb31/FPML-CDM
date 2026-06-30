@@ -1,0 +1,2495 @@
+<?xml version="1.0"?>
+<MxML version="1-1">
+	<documentProperties>
+		<producedBy>
+			<partyName>UBS-RCSR</partyName>
+			<user>
+				<name>MUREXFO</name>
+				<group>FO</group>
+				<desk>EMEA</desk>
+				<code>43407426</code>
+			</user>
+		</producedBy>
+		<systemDate>20180824</systemDate>
+		<accountingDate>00000000</accountingDate>
+		<computerDate>20181204</computerDate>
+		<computerTime>16:43:48</computerTime>
+	</documentProperties>
+	<contracts>
+		<contract id="contract_1384322" mefClass="mxContractISINGLE" mefClassInstanceType="125.000000" mefClassInstanceLabel="Credit index option">
+			<businessObjectId mefClass="mxContractISINGLE" mefClassInstanceType="125">
+				<identifier>1384322</identifier>
+				<baseIdentifier>1384322</baseIdentifier>
+				<versionIdentifier>
+					<versionRevision>
+						<versionNumber>1</versionNumber>
+						<versionDateAndTime>
+							<date>00000000</date>
+						</versionDateAndTime>
+					</versionRevision>
+				</versionIdentifier>
+				<primarySystem>MX</primarySystem>
+			</businessObjectId>
+			<contractId>
+				<internalId>1384322</internalId>
+				<rootContract>1384322</rootContract>
+			</contractId>
+			<regulatoryInformation>
+				<regulatoryIdentifiers>
+					<partyTradeIdentifier>
+						<issuer/>
+						<tradeId/>
+					</partyTradeIdentifier>
+					<centralCounterpartyId/>
+				</regulatoryIdentifiers>
+				<clearingEligibility>false</clearingEligibility>
+				<clearingMandatory>false</clearingMandatory>
+				<clearingDecision>false</clearingDecision>
+				<nettingEligibility customized="false">false</nettingEligibility>
+			</regulatoryInformation>
+			<contractBusinessObjectTemplate>
+				<businessObjectId>
+					<identifier>562</identifier>
+					<displayLabel>CDS Index Option</displayLabel>
+				</businessObjectId>
+			</contractBusinessObjectTemplate>
+			<contractHeader>
+				<contractCategory>
+					<typology/>
+					<mainTypologyPath/>
+					<usage/>
+					<onshoreOffshore>NONE</onshoreOffshore>
+					<collateralAgreementCategory>USD_LIBOR_FLAT</collateralAgreementCategory>
+					<pricingCounterparty href="#_69243"/>
+				</contractCategory>
+				<contractAgreements>
+					<settlementMethod/>
+				</contractAgreements>
+				<contractSource>
+					<sourceSystem>Theoretical</sourceSystem>
+					<sourceModule>mx</sourceModule>
+					<originPublishingSystem>MX</originPublishingSystem>
+					<publishingSystem>MX</publishingSystem>
+					<packageReference mefClass=""/>
+					<contractEventReference mefClass="">
+						<contractEventId>
+							<internalId>0</internalId>
+						</contractEventId>
+					</contractEventReference>
+					<contractCreatorReference mefClass=""/>
+					<contractOriginReference mefClass="mxContractISINGLE">
+						<businessObjectId mefClass="mxContractISINGLE" mefClassInstanceType="125">
+							<identifier>1384322</identifier>
+							<primarySystem>MX</primarySystem>
+						</businessObjectId>
+						<contractId>
+							<internalId>1384322</internalId>
+							<rootContract>1384322</rootContract>
+						</contractId>
+					</contractOriginReference>
+					<version>1</version>
+					<lastContractEventReference mefClass="">
+						<contractEventId>
+							<internalId>0</internalId>
+						</contractEventId>
+					</lastContractEventReference>
+					<lastContractEventAction>INSERT</lastContractEventAction>
+					<originContractEventReference mefClass="">
+						<contractEventId>
+							<internalId>0</internalId>
+						</contractEventId>
+					</originContractEventReference>
+					<originDate>20180822</originDate>
+					<workflowParties>
+						<wopInitiator>
+							<role/>
+							<roleLabel/>
+							<name>MUREXFO</name>
+							<group>FO</group>
+						</wopInitiator>
+						<wopLastActor>
+							<role/>
+							<roleLabel/>
+							<name>MUREXFO</name>
+							<group>FO</group>
+						</wopLastActor>
+						<wopInternalTrader>
+							<name/>
+							<group/>
+						</wopInternalTrader>
+						<wopInternalPortfolio>
+							<wopIsBackToBack>N</wopIsBackToBack>
+						</wopInternalPortfolio>
+						<wopParties/>
+					</workflowParties>
+				</contractSource>
+			</contractHeader>
+			<inputConditions>
+				<inputBy/>
+				<areaCode>0</areaCode>
+				<timestamp>20181204 15:43:48:490</timestamp>
+				<modified>false</modified>
+			</inputConditions>
+			<contractComponents>
+				<contractComponent>
+					<typologyId>0</typologyId>
+					<tradeReference href="#trade_1306725"/>
+				</contractComponent>
+			</contractComponents>
+			<legalMasterAgreement/>
+			<legalMasterConfirmationAgreement/>
+		</contract>
+	</contracts>
+	<trades>
+		<trade id="trade_1306725" mefClass="mxContractITRADE" mefClassInstanceType="125.000000">
+			<businessObjectId mefClass="mxContractITRADE" mefClassInstanceType="125">
+				<identifier>1306725</identifier>
+				<baseIdentifier>1306725</baseIdentifier>
+				<versionIdentifier>
+					<versionRevision>
+						<versionNumber>1</versionNumber>
+						<versionDateAndTime>
+							<date>00000000</date>
+						</versionDateAndTime>
+					</versionRevision>
+				</versionIdentifier>
+				<primarySystem>MX</primarySystem>
+			</businessObjectId>
+			<parties>
+				<party id="UBS-RCSR">
+					<partyName>UBS-RCSR</partyName>
+					<partyFullName>UBS-RCSR</partyFullName>
+					<partyCode>UBS-RCSR22</partyCode>
+				</party>
+				<party id="_69243">
+					<partyName>7236800</partyName>
+				</party>
+			</parties>
+			<portfolios>
+				<portfolio id="EUSW03">
+					<portfolioLabel>EUSW03</portfolioLabel>
+				</portfolio>
+			</portfolios>
+			<tradeHeader>
+				<tradeDate>20180822</tradeDate>
+				<tradeCategory>
+					<tradeDestination>external</tradeDestination>
+					<tradeFamily>CRD</tradeFamily>
+					<tradeGroup>CRDIO</tradeGroup>
+					<typology/>
+					<mainTypologyPath/>
+					<usage customized="N"/>
+					<collateralAgreementCategory>USD_LIBOR_FLAT</collateralAgreementCategory>
+					<pricingCounterparty href="#_69243"/>
+				</tradeCategory>
+				<tradeSource>
+					<tradeOriginId>1306725</tradeOriginId>
+					<replacementDate>20180822</replacementDate>
+					<originPublishingSystemID>1306725</originPublishingSystemID>
+				</tradeSource>
+				<tradeViews>
+					<tradeView>
+						<partyReference href="#UBS-RCSR">
+							<portfolioReference href="#EUSW03"/>
+						</partyReference>
+						<userName>MUREXFO</userName>
+						<entity>CE_EMEA</entity>
+						<legalEntity>UBS AG LONDON</legalEntity>
+						<tradeId>
+							<tradeInternalId>1306725</tradeInternalId>
+							<hostingSystem>MX</hostingSystem>
+							<publishingSystemID>1306725</publishingSystemID>
+						</tradeId>
+					</tradeView>
+					<tradeView>
+						<partyReference href="#_69243"/>
+						<entity>CE_EMEA</entity>
+					</tradeView>
+				</tradeViews>
+				<tradeUserDefinedFields>
+					<userDefinedField>
+						<fieldLabel>ADDR_TYPE</fieldLabel>
+						<fieldIndex>0</fieldIndex>
+						<fieldValue>NONE</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>BOFOUREYE</fieldLabel>
+						<fieldIndex>5</fieldIndex>
+						<fieldValue>N</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>BOOK_MODEL</fieldLabel>
+						<fieldIndex>6</fieldIndex>
+						<fieldValue>External</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>BO_VAL</fieldLabel>
+						<fieldIndex>7</fieldIndex>
+						<fieldValue>Automatic</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>BRKUNMATD</fieldLabel>
+						<fieldIndex>8</fieldIndex>
+						<fieldValue>10</fieldValue>
+						<fieldType>numeric</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>BRK_DOC</fieldLabel>
+						<fieldIndex>10</fieldIndex>
+						<fieldValue>DOC</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>BRK_EVTNOT</fieldLabel>
+						<fieldIndex>12</fieldIndex>
+						<fieldValue>0</fieldValue>
+						<fieldType>numeric</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>BRK_EVTSPR</fieldLabel>
+						<fieldIndex>13</fieldIndex>
+						<fieldValue>0.</fieldValue>
+						<fieldType>numeric</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>BRK_MAT</fieldLabel>
+						<fieldIndex>14</fieldIndex>
+						<fieldValue>NONE</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>BRK_OLDMW</fieldLabel>
+						<fieldIndex>16</fieldIndex>
+						<fieldValue>0.</fieldValue>
+						<fieldType>numeric</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>BRK_OLDTH</fieldLabel>
+						<fieldIndex>17</fieldIndex>
+						<fieldValue>0</fieldValue>
+						<fieldType>numeric</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>BRK_SCEN</fieldLabel>
+						<fieldIndex>18</fieldIndex>
+						<fieldValue>No Chasing</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>CL_ORICTPY</fieldLabel>
+						<fieldIndex>28</fieldIndex>
+						<fieldValue>7236800</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>CONFORDER</fieldLabel>
+						<fieldIndex>35</fieldIndex>
+						<fieldValue>No order</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>CONF_VAL</fieldLabel>
+						<fieldIndex>42</fieldIndex>
+						<fieldValue>Automatic</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>CONF_VAL_B</fieldLabel>
+						<fieldIndex>43</fieldIndex>
+						<fieldValue>Automatic</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>CSACUSTOM</fieldLabel>
+						<fieldIndex>44</fieldIndex>
+						<fieldValue>NONE</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>CTPUNMATD</fieldLabel>
+						<fieldIndex>45</fieldIndex>
+						<fieldValue>0</fieldValue>
+						<fieldType>numeric</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>CTP_MAT</fieldLabel>
+						<fieldIndex>46</fieldIndex>
+						<fieldValue>NONE</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>CTP_SCEN</fieldLabel>
+						<fieldIndex>47</fieldIndex>
+						<fieldValue>No Chasing</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>DIST_STAT</fieldLabel>
+						<fieldIndex>49</fieldIndex>
+						<fieldValue>Tradable</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>DIST_TTL</fieldLabel>
+						<fieldIndex>50</fieldIndex>
+						<fieldValue>0</fieldValue>
+						<fieldType>numeric</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>DOC_TYPE</fieldLabel>
+						<fieldIndex>53</fieldIndex>
+						<fieldValue>NONE</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>EQUVNOMCHF</fieldLabel>
+						<fieldIndex>55</fieldIndex>
+						<fieldValue>0.</fieldValue>
+						<fieldType>numeric</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>EXOTIC</fieldLabel>
+						<fieldIndex>57</fieldIndex>
+						<fieldValue>No</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>EXT_IMPACT</fieldLabel>
+						<fieldIndex>58</fieldIndex>
+						<fieldValue>EXTERNAL</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>FEATURES</fieldLabel>
+						<fieldIndex>59</fieldIndex>
+						<fieldValue>No</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>FOFOUREYE</fieldLabel>
+						<fieldIndex>61</fieldIndex>
+						<fieldValue>N</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>FO_TIMER</fieldLabel>
+						<fieldIndex>64</fieldIndex>
+						<fieldValue>0</fieldValue>
+						<fieldType>numeric</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>FO_VAL</fieldLabel>
+						<fieldIndex>65</fieldIndex>
+						<fieldValue>Automatic</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>FUNDED_L</fieldLabel>
+						<fieldIndex>66</fieldIndex>
+						<fieldValue>Funding leg</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>IM_VALUE</fieldLabel>
+						<fieldIndex>72</fieldIndex>
+						<fieldValue>0.</fieldValue>
+						<fieldType>numeric</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>INITPRICTY</fieldLabel>
+						<fieldIndex>73</fieldIndex>
+						<fieldValue>7236800</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>MASTER_AGR</fieldLabel>
+						<fieldIndex>76</fieldIndex>
+						<fieldValue>NONE</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>MRG_VAL</fieldLabel>
+						<fieldIndex>81</fieldIndex>
+						<fieldValue>0.</fieldValue>
+						<fieldType>numeric</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>O_PRICE</fieldLabel>
+						<fieldIndex>90</fieldIndex>
+						<fieldValue>0.</fieldValue>
+						<fieldType>numeric</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>O_PRICE1</fieldLabel>
+						<fieldIndex>91</fieldIndex>
+						<fieldValue>0.</fieldValue>
+						<fieldType>numeric</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>PREM_LEG</fieldLabel>
+						<fieldIndex>95</fieldIndex>
+						<fieldValue>Premium leg</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>PROT_LEG</fieldLabel>
+						<fieldIndex>96</fieldIndex>
+						<fieldValue>Protection leg</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+					<userDefinedField>
+						<fieldLabel>UNFUNDED_L</fieldLabel>
+						<fieldIndex>119</fieldIndex>
+						<fieldValue>Bond leg</fieldValue>
+						<fieldType>character</fieldType>
+					</userDefinedField>
+				</tradeUserDefinedFields>
+				<tradeFees/>
+				<tradeAgreements>
+					<paymentNetting>false</paymentNetting>
+				</tradeAgreements>
+				<contractReference mefClass="mxContractISINGLE">
+					<businessObjectId mefClass="mxContractISINGLE" mefClassInstanceType="125">
+						<identifier>1384322</identifier>
+						<primarySystem>MX</primarySystem>
+					</businessObjectId>
+					<contractId>
+						<internalId>1384322</internalId>
+						<rootContract>1384322</rootContract>
+					</contractId>
+				</contractReference>
+				<tradeProcessing>
+					<nonUnwoundRatio>1.</nonUnwoundRatio>
+					<remainingLiveQuantity>1000000.</remainingLiveQuantity>
+				</tradeProcessing>
+				<tradeAccountingInfo>
+					<tradeHedging>
+						<hedgedTransactionSold>false</hedgedTransactionSold>
+					</tradeHedging>
+				</tradeAccountingInfo>
+			</tradeHeader>
+			<tradeBody>
+				<creditIndexOption>
+					<creationMode>template</creationMode>
+					<templateID>
+						<templateType>insDFLT_SWAP</templateType>
+						<templateLabel>EUR 3M IMM</templateLabel>
+						<templateNumber>73</templateNumber>
+						<templateDescription>EUR 3M for CDS deals</templateDescription>
+					</templateID>
+					<businessObjectId mefClass="mxStaticsStream_templatesITEMPLATE" mefClassInstanceType="insDFLT_SWAP">
+						<identifier>73</identifier>
+						<naturalIdentifiers>
+							<naturalIdentifier>
+								<accessorName>templateLabel</accessorName>
+								<accessorValue>EUR 3M IMM</accessorValue>
+							</naturalIdentifier>
+							<naturalIdentifier>
+								<accessorName>templateType</accessorName>
+								<accessorValue>9</accessorValue>
+							</naturalIdentifier>
+						</naturalIdentifiers>
+						<primarySystem>MX</primarySystem>
+						<displayLabel>EUR 3M IMM</displayLabel>
+					</businessObjectId>
+					<templateGenerationData>
+						<templateGenerationNature>0</templateGenerationNature>
+					</templateGenerationData>
+					<structure>
+						<numberOfPhases>1</numberOfPhases>
+						<numberOfLegs>1</numberOfLegs>
+						<stubPeriodPosition>upFront</stubPeriodPosition>
+						<settlementDateShifter>
+							<settlementDateShifterMode>Specific delay</settlementDateShifterMode>
+							<shifter>
+								<dateShifterLabel>+3 BD</dateShifterLabel>
+								<businessObjectId mefClass="mxStaticsDatesISHIFTER">
+									<identifier>+3 BD</identifier>
+									<primarySystem>MX</primarySystem>
+								</businessObjectId>
+								<dateShifterDirection>forward</dateShifterDirection>
+								<shift>
+									<periodUnit>businessDay</periodUnit>
+									<periodMultiplier>3</periodMultiplier>
+								</shift>
+								<businessDaysSource>weekend</businessDaysSource>
+								<shifterAlgorithm>union</shifterAlgorithm>
+							</shifter>
+						</settlementDateShifter>
+						<evaluationMode>default</evaluationMode>
+						<floatingRateEstimation>default</floatingRateEstimation>
+					</structure>
+					<payout>
+						<option>
+							<optionForm>optionToEnter</optionForm>
+							<optionStyle>european</optionStyle>
+							<optionHolderReference href="#UBS-RCSR">
+								<portfolioReference href="#EUSW03"/>
+							</optionHolderReference>
+							<optionWriterReference href="#_69243"/>
+							<optionMaturity>
+								<date>20180824</date>
+								<effectiveExercizeDate>00000000</effectiveExercizeDate>
+							</optionMaturity>
+							<strike>20</strike>
+							<optionExercizeMethod>delivery</optionExercizeMethod>
+							<underlyingCsa/>
+						</option>
+						<optionPackageType>call</optionPackageType>
+					</payout>
+					<settlement>
+						<settlementSign>pay</settlementSign>
+						<settlementFlow>
+							<flow>
+								<payerPartyReference href="#UBS-RCSR">
+									<portfolioReference href="#EUSW03"/>
+								</payerPartyReference>
+								<receiverPartyReference href="#_69243"/>
+								<date>20180827</date>
+								<currency>EUR</currency>
+								<amount>15000</amount>
+								<signedAmount>15000</signedAmount>
+							</flow>
+							<price>
+								<priceRate>1.5</priceRate>
+							</price>
+							<settlementMode>cashPremium</settlementMode>
+						</settlementFlow>
+					</settlement>
+					<stream>
+						<streamTemplate>
+							<phase>1</phase>
+							<leg>1</leg>
+							<payoutType>fixedRate</payoutType>
+							<paymentCurrency>EUR</paymentCurrency>
+							<initialCapitalCurrency>EUR</initialCapitalCurrency>
+							<initialPaymentCurrency>EUR</initialPaymentCurrency>
+							<intermediateCapitalCurrency>EUR</intermediateCapitalCurrency>
+							<finalCapitalCurrency>EUR</finalCapitalCurrency>
+							<startDateShifter>
+								<dateShifterLabel>+1 DAY CALENDAR</dateShifterLabel>
+								<businessObjectId mefClass="mxStaticsDatesISHIFTER">
+									<identifier>+1 DAY CALENDAR</identifier>
+									<primarySystem>MX</primarySystem>
+								</businessObjectId>
+								<dateShifterDirection>forward</dateShifterDirection>
+								<shift>
+									<periodUnit>day</periodUnit>
+									<periodMultiplier>1</periodMultiplier>
+								</shift>
+								<businessDayConvention>none</businessDayConvention>
+								<shifterAlgorithm>union</shifterAlgorithm>
+							</startDateShifter>
+							<upfrontPaymentDateShifter>
+								<upfrontPaymentDateShifterMode>Specific delay</upfrontPaymentDateShifterMode>
+								<shifter>
+									<dateShifterLabel>+3 BD</dateShifterLabel>
+									<businessObjectId mefClass="mxStaticsDatesISHIFTER">
+										<identifier>+3 BD</identifier>
+										<primarySystem>MX</primarySystem>
+									</businessObjectId>
+									<dateShifterDirection>forward</dateShifterDirection>
+									<shift>
+										<periodUnit>businessDay</periodUnit>
+										<periodMultiplier>3</periodMultiplier>
+									</shift>
+									<businessDaysSource>weekend</businessDaysSource>
+									<shifterAlgorithm>union</shifterAlgorithm>
+								</shifter>
+							</upfrontPaymentDateShifter>
+							<couponPaymentsAfterDefault>
+								<couponPaymentsAfterDefaultMode>Excluded</couponPaymentsAfterDefaultMode>
+							</couponPaymentsAfterDefault>
+							<paymentBusinessCenters>
+								<businessCenterLabel>LNB_TGT</businessCenterLabel>
+								<businessCenter>LNB</businessCenter>
+								<businessCenterItem>
+									<swiftCode>GBLO</swiftCode>
+								</businessCenterItem>
+								<businessCenter>TGT</businessCenter>
+								<businessCenterItem>
+									<swiftCode>EUTA</swiftCode>
+								</businessCenterItem>
+							</paymentBusinessCenters>
+							<streamSchedules>
+								<calculationSchedule>
+									<scheduleNature>drivingSchedule</scheduleNature>
+									<scheduleGenerator>
+										<scheduleGeneratorLabel>3M ISDA ROLL</scheduleGeneratorLabel>
+										<businessObjectId mefClass="mxStaticsDatesISCHEDULE_GENERATOR">
+											<identifier>3M ISDA ROLL</identifier>
+											<primarySystem>MX</primarySystem>
+										</businessObjectId>
+										<standardScheduleGenerator>
+											<creationMode>new</creationMode>
+											<defaultFrequency>
+												<periodUnit>month</periodUnit>
+												<periodMultiplier>3</periodMultiplier>
+											</defaultFrequency>
+											<dateShifterDirection>forward</dateShifterDirection>
+											<keepIdenticalDates>false</keepIdenticalDates>
+											<businessDayConvention>modifiedFollowing</businessDayConvention>
+											<startDateTreatment>
+												<dateTreatment>specificAdjustment</dateTreatment>
+												<dateAdjustmentRule>
+													<adjustmentRuleLabel>0M ADJ</adjustmentRuleLabel>
+													<conditionalAdjustmentRule>
+														<conditionLeftOperand>EndDate</conditionLeftOperand>
+														<conditionRightOperand>StartDate</conditionRightOperand>
+														<conditionExpressionDateTreatment>
+															<dateTreatment>shifted</dateTreatment>
+															<dateShifter>
+																<dateShifterLabel>+1 DAY</dateShifterLabel>
+																<businessObjectId mefClass="mxStaticsDatesISHIFTER">
+																	<identifier>+1 DAY</identifier>
+																	<primarySystem>MX</primarySystem>
+																</businessObjectId>
+																<dateShifterDirection>forward</dateShifterDirection>
+																<shift>
+																	<periodUnit>day</periodUnit>
+																	<periodMultiplier>1</periodMultiplier>
+																</shift>
+																<businessDaysSource>none</businessDaysSource>
+																<businessDayConvention>none</businessDayConvention>
+																<shifterAlgorithm>union</shifterAlgorithm>
+															</dateShifter>
+														</conditionExpressionDateTreatment>
+														<conditionSatisfiedDateTreatment>
+															<dateTreatment>adjusted</dateTreatment>
+															<dateAdjustmentRule>
+																<adjustmentRuleLabel>20TH 3RD MT PQ</adjustmentRuleLabel>
+																<unconditionalAdjustmentRule>
+																	<adjustmentPeriod>
+																		<periodType>quarter</periodType>
+																		<periodPosition>
+																			<relativePosition>previous</relativePosition>
+																		</periodPosition>
+																		<adjustmentSubPeriod>
+																			<periodType>month</periodType>
+																			<periodPosition>
+																				<absolutePosition>3</absolutePosition>
+																			</periodPosition>
+																			<periodDefinition>
+																				<periodMonth>
+																					<month>current</month>
+																				</periodMonth>
+																			</periodDefinition>
+																			<adjustmentSubPeriod>
+																				<periodType>monthDay</periodType>
+																				<periodPosition>
+																					<relativePosition>first</relativePosition>
+																				</periodPosition>
+																				<periodDefinition>
+																					<periodMonthDay>
+																						<monthDay>20</monthDay>
+																					</periodMonthDay>
+																				</periodDefinition>
+																			</adjustmentSubPeriod>
+																		</adjustmentSubPeriod>
+																	</adjustmentPeriod>
+																</unconditionalAdjustmentRule>
+															</dateAdjustmentRule>
+														</conditionSatisfiedDateTreatment>
+														<conditionNotSatisfiedDateTreatment>
+															<dateTreatment>adjusted</dateTreatment>
+															<dateAdjustmentRule>
+																<adjustmentRuleLabel>+00 CD/P</adjustmentRuleLabel>
+																<unconditionalAdjustmentRule>
+																	<adjustmentPeriod>
+																		<periodType>businessDay</periodType>
+																		<periodPosition>
+																			<relativePosition>current</relativePosition>
+																		</periodPosition>
+																	</adjustmentPeriod>
+																</unconditionalAdjustmentRule>
+															</dateAdjustmentRule>
+														</conditionNotSatisfiedDateTreatment>
+													</conditionalAdjustmentRule>
+												</dateAdjustmentRule>
+											</startDateTreatment>
+											<endDateTreatment>
+												<dateTreatment>specificAdjustment</dateTreatment>
+												<dateAdjustmentRule>
+													<adjustmentRuleLabel>ISDA ROLL</adjustmentRuleLabel>
+													<conditionalAdjustmentRule>
+														<conditionLeftOperand>StartDate</conditionLeftOperand>
+														<conditionRightOperand>StartDate</conditionRightOperand>
+														<conditionExpressionDateTreatment>
+															<dateTreatment>adjusted</dateTreatment>
+															<dateAdjustmentRule>
+																<adjustmentRuleLabel>S 21TH D 3RD M</adjustmentRuleLabel>
+																<unconditionalAdjustmentRule>
+																	<adjustmentPeriod>
+																		<periodType>semester</periodType>
+																		<periodPosition>
+																			<relativePosition>current</relativePosition>
+																		</periodPosition>
+																		<adjustmentSubPeriod>
+																			<periodType>month</periodType>
+																			<periodPosition>
+																				<absolutePosition>3</absolutePosition>
+																			</periodPosition>
+																			<periodDefinition>
+																				<periodMonth>
+																					<month>current</month>
+																				</periodMonth>
+																			</periodDefinition>
+																			<adjustmentSubPeriod>
+																				<periodType>monthDay</periodType>
+																				<periodPosition>
+																					<relativePosition>first</relativePosition>
+																				</periodPosition>
+																				<periodDefinition>
+																					<periodMonthDay>
+																						<monthDay>21</monthDay>
+																					</periodMonthDay>
+																				</periodDefinition>
+																			</adjustmentSubPeriod>
+																		</adjustmentSubPeriod>
+																	</adjustmentPeriod>
+																</unconditionalAdjustmentRule>
+															</dateAdjustmentRule>
+														</conditionExpressionDateTreatment>
+														<conditionSatisfiedDateTreatment>
+															<dateTreatment>adjusted</dateTreatment>
+															<dateAdjustmentRule>
+																<adjustmentRuleLabel>Q PREV 20TH DAY</adjustmentRuleLabel>
+																<unconditionalAdjustmentRule>
+																	<adjustmentPeriod>
+																		<periodType>quarter</periodType>
+																		<periodPosition>
+																			<relativePosition>previous</relativePosition>
+																		</periodPosition>
+																		<adjustmentSubPeriod>
+																			<periodType>month</periodType>
+																			<periodPosition>
+																				<absolutePosition>3</absolutePosition>
+																			</periodPosition>
+																			<periodDefinition>
+																				<periodMonth>
+																					<month>current</month>
+																				</periodMonth>
+																			</periodDefinition>
+																			<adjustmentSubPeriod>
+																				<periodType>monthDay</periodType>
+																				<periodPosition>
+																					<relativePosition>first</relativePosition>
+																				</periodPosition>
+																				<periodDefinition>
+																					<periodMonthDay>
+																						<monthDay>20</monthDay>
+																					</periodMonthDay>
+																				</periodDefinition>
+																			</adjustmentSubPeriod>
+																		</adjustmentSubPeriod>
+																	</adjustmentPeriod>
+																</unconditionalAdjustmentRule>
+															</dateAdjustmentRule>
+														</conditionSatisfiedDateTreatment>
+														<conditionNotSatisfiedDateTreatment>
+															<dateTreatment>adjusted</dateTreatment>
+															<dateAdjustmentRule>
+																<adjustmentRuleLabel>S 20TH LST M</adjustmentRuleLabel>
+																<conditionalAdjustmentRule>
+																	<conditionLeftOperand>StartDate</conditionLeftOperand>
+																	<conditionRightOperand>StartDate</conditionRightOperand>
+																	<conditionExpressionDateTreatment>
+																		<dateTreatment>adjusted</dateTreatment>
+																		<dateAdjustmentRule>
+																			<adjustmentRuleLabel>S 4TH M 1ST D/I</adjustmentRuleLabel>
+																			<unconditionalAdjustmentRule>
+																				<adjustmentPeriod>
+																					<periodType>semester</periodType>
+																					<periodPosition>
+																						<relativePosition>current</relativePosition>
+																					</periodPosition>
+																					<adjustmentSubPeriod>
+																						<periodType>month</periodType>
+																						<periodPosition>
+																							<absolutePosition>4</absolutePosition>
+																						</periodPosition>
+																						<periodDefinition>
+																							<periodMonth>
+																								<month>current</month>
+																							</periodMonth>
+																						</periodDefinition>
+																						<adjustmentSubPeriod>
+																							<periodType>monthDay</periodType>
+																							<periodPosition>
+																								<relativePosition>first</relativePosition>
+																							</periodPosition>
+																							<periodDefinition>
+																								<periodMonthDay>
+																									<monthDay>1</monthDay>
+																								</periodMonthDay>
+																							</periodDefinition>
+																						</adjustmentSubPeriod>
+																					</adjustmentSubPeriod>
+																				</adjustmentPeriod>
+																			</unconditionalAdjustmentRule>
+																		</dateAdjustmentRule>
+																	</conditionExpressionDateTreatment>
+																	<conditionSatisfiedDateTreatment>
+																		<dateTreatment>adjusted</dateTreatment>
+																		<dateAdjustmentRule>
+																			<adjustmentRuleLabel>Q NEXT 20TH DAY</adjustmentRuleLabel>
+																			<unconditionalAdjustmentRule>
+																				<adjustmentPeriod>
+																					<periodType>quarter</periodType>
+																					<periodPosition>
+																						<relativePosition>next</relativePosition>
+																					</periodPosition>
+																					<adjustmentSubPeriod>
+																						<periodType>month</periodType>
+																						<periodPosition>
+																							<relativePosition>last</relativePosition>
+																						</periodPosition>
+																						<periodDefinition>
+																							<periodMonth>
+																								<month>current</month>
+																							</periodMonth>
+																						</periodDefinition>
+																						<adjustmentSubPeriod>
+																							<periodType>monthDay</periodType>
+																							<periodPosition>
+																								<relativePosition>first</relativePosition>
+																							</periodPosition>
+																							<periodDefinition>
+																								<periodMonthDay>
+																									<monthDay>20</monthDay>
+																								</periodMonthDay>
+																							</periodDefinition>
+																						</adjustmentSubPeriod>
+																					</adjustmentSubPeriod>
+																				</adjustmentPeriod>
+																			</unconditionalAdjustmentRule>
+																		</dateAdjustmentRule>
+																	</conditionSatisfiedDateTreatment>
+																	<conditionNotSatisfiedDateTreatment>
+																		<dateTreatment>adjusted</dateTreatment>
+																		<dateAdjustmentRule>
+																			<adjustmentRuleLabel>Q 20TH DAY</adjustmentRuleLabel>
+																			<unconditionalAdjustmentRule>
+																				<adjustmentPeriod>
+																					<periodType>quarter</periodType>
+																					<periodPosition>
+																						<relativePosition>current</relativePosition>
+																					</periodPosition>
+																					<adjustmentSubPeriod>
+																						<periodType>month</periodType>
+																						<periodPosition>
+																							<relativePosition>last</relativePosition>
+																						</periodPosition>
+																						<periodDefinition>
+																							<periodMonth>
+																								<month>current</month>
+																							</periodMonth>
+																						</periodDefinition>
+																						<adjustmentSubPeriod>
+																							<periodType>monthDay</periodType>
+																							<periodPosition>
+																								<relativePosition>first</relativePosition>
+																							</periodPosition>
+																							<periodDefinition>
+																								<periodMonthDay>
+																									<monthDay>20</monthDay>
+																								</periodMonthDay>
+																							</periodDefinition>
+																						</adjustmentSubPeriod>
+																					</adjustmentSubPeriod>
+																				</adjustmentPeriod>
+																			</unconditionalAdjustmentRule>
+																		</dateAdjustmentRule>
+																	</conditionNotSatisfiedDateTreatment>
+																</conditionalAdjustmentRule>
+															</dateAdjustmentRule>
+														</conditionNotSatisfiedDateTreatment>
+													</conditionalAdjustmentRule>
+												</dateAdjustmentRule>
+											</endDateTreatment>
+											<adjustFirst>true</adjustFirst>
+										</standardScheduleGenerator>
+									</scheduleGenerator>
+									<frequency>
+										<periodUnit>month</periodUnit>
+										<periodMultiplier>3</periodMultiplier>
+									</frequency>
+								</calculationSchedule>
+								<calculationEndSchedule>
+									<scheduleNature>equalTo</scheduleNature>
+									<underlyingSchedule>calculationSchedule</underlyingSchedule>
+									<internalFrequencyRatio>1</internalFrequencyRatio>
+								</calculationEndSchedule>
+								<paymentSchedule>
+									<scheduleNature>deducedFrom</scheduleNature>
+									<underlyingSchedule>calculationSchedule</underlyingSchedule>
+									<internalFrequencyRatio>1</internalFrequencyRatio>
+									<shifter>
+										<dateShifterLabel>+0 DAY NEXT</dateShifterLabel>
+										<businessObjectId mefClass="mxStaticsDatesISHIFTER">
+											<identifier>+0 DAY NEXT</identifier>
+											<primarySystem>MX</primarySystem>
+										</businessObjectId>
+										<dateShifterDirection>forward</dateShifterDirection>
+										<shift>
+											<periodUnit>day</periodUnit>
+											<periodMultiplier>0</periodMultiplier>
+										</shift>
+										<businessDayConvention>following</businessDayConvention>
+										<shifterAlgorithm>union</shifterAlgorithm>
+									</shifter>
+								</paymentSchedule>
+								<deliverySchedule>
+									<scheduleNature>equalTo</scheduleNature>
+									<underlyingSchedule>calculationSchedule</underlyingSchedule>
+									<internalFrequencyRatio>1</internalFrequencyRatio>
+								</deliverySchedule>
+								<singlePeriod>false</singlePeriod>
+								<adjustEndDate>no</adjustEndDate>
+							</streamSchedules>
+							<fixedRateStreamTemplate>
+								<deliveryData/>
+							</fixedRateStreamTemplate>
+							<paymentPosition>inArrears</paymentPosition>
+							<calculationConventions>
+								<accrualCalculationConvention>
+									<accrualCalculationMethod>specificConvention</accrualCalculationMethod>
+									<accrualRateConvention>
+										<rateConventionLabel>LIN ACT/360 INC</rateConventionLabel>
+										<businessObjectId mefClass="mxStaticsRatesIRATE_CONVENTION">
+											<identifier>LIN ACT/360 INC</identifier>
+											<primarySystem>MX</primarySystem>
+										</businessObjectId>
+										<dayCountFraction>
+											<dayCountFractionLabel>ACT/360 INCL</dayCountFractionLabel>
+											<businessObjectId mefClass="mxStaticsDatesIDAY_COUNT_FRACTION">
+												<identifier>ACT/360 INCL</identifier>
+												<primarySystem>MX</primarySystem>
+											</businessObjectId>
+											<dayCountDescription/>
+											<numeratorConvention>ACT</numeratorConvention>
+											<denominatorConvention>360</denominatorConvention>
+											<dayCountBoundaries>inclusive</dayCountBoundaries>
+											<dayCountStandardDenomination>ACT/360</dayCountStandardDenomination>
+											<periodsBreakdown>
+												<dayCountPeriodicity>year</dayCountPeriodicity>
+											</periodsBreakdown>
+										</dayCountFraction>
+									</accrualRateConvention>
+								</accrualCalculationConvention>
+							</calculationConventions>
+							<amortizingType>no</amortizingType>
+							<rateConvention>
+								<rateConventionLabel>LIN ACT/360 L+1</rateConventionLabel>
+								<businessObjectId mefClass="mxStaticsRatesIRATE_CONVENTION">
+									<identifier>LIN ACT/360 L+1</identifier>
+									<primarySystem>MX</primarySystem>
+								</businessObjectId>
+								<dayCountFraction>
+									<dayCountFractionLabel>ACT/360 L+1</dayCountFractionLabel>
+									<businessObjectId mefClass="mxStaticsDatesIDAY_COUNT_FRACTION">
+										<identifier>ACT/360 L+1</identifier>
+										<primarySystem>MX</primarySystem>
+									</businessObjectId>
+									<dayCountDescription/>
+									<numeratorConvention>ACT</numeratorConvention>
+									<denominatorConvention>360</denominatorConvention>
+									<lastPeriodBasis>ACT/360 INCL</lastPeriodBasis>
+									<dayCountStandardDenomination>ACT/360</dayCountStandardDenomination>
+									<periodsBreakdown>
+										<dayCountPeriodicity>year</dayCountPeriodicity>
+									</periodsBreakdown>
+								</dayCountFraction>
+							</rateConvention>
+							<interestRatesRoundingRule>
+								<roundingDirection>none</roundingDirection>
+								<roundingPrecision>0</roundingPrecision>
+							</interestRatesRoundingRule>
+							<interestFlowsRoundingRule>
+								<roundingDirection>none</roundingDirection>
+								<roundingPrecision>0</roundingPrecision>
+							</interestFlowsRoundingRule>
+							<capitalExchanges>
+								<initialCapitalExchange>false</initialCapitalExchange>
+								<finalCapitalExchange>false</finalCapitalExchange>
+								<intermediateCapitalExchange>false</intermediateCapitalExchange>
+							</capitalExchanges>
+							<settlementNature>cashSettled</settlementNature>
+							<potentialStubs>
+								<initialStubCharacteristics>
+									<couponLength>fullCoupon</couponLength>
+								</initialStubCharacteristics>
+								<isdaStubConvention>
+									<isdaStubConventionIdentifier>
+										<isdaStubConventionReference>2</isdaStubConventionReference>
+										<isdaStubConventionLabel>Default Isda Convention</isdaStubConventionLabel>
+									</isdaStubConventionIdentifier>
+									<isdaStubConventionDetails>
+										<isdaStubProperties>
+											<isdaHistoricalDate>00000000</isdaHistoricalDate>
+											<isdaRollConvention>Index roll convention</isdaRollConvention>
+											<isdaCalendar>Index calendar</isdaCalendar>
+											<isdaTenorsSet>All</isdaTenorsSet>
+										</isdaStubProperties>
+									</isdaStubConventionDetails>
+								</isdaStubConvention>
+							</potentialStubs>
+							<proratize>Apply</proratize>
+							<indexed>false</indexed>
+							<rateFormula>standard</rateFormula>
+							<creditTemplate>
+								<protectionForm>paidOnDefaultDate</protectionForm>
+								<premiumPaymentUponDefault>paidOnDefaultDate</premiumPaymentUponDefault>
+								<protectionPaymentUponDefault>referencePriceFinalPrice</protectionPaymentUponDefault>
+								<digitalRate>0.</digitalRate>
+								<digitalAmount>0</digitalAmount>
+								<fixedRecoveryRate>0.</fixedRecoveryRate>
+								<protectionSettlementMode>auction</protectionSettlementMode>
+								<isdaVersion>isda14</isdaVersion>
+								<accrualRecoveryMode>100%</accrualRecoveryMode>
+							</creditTemplate>
+						</streamTemplate>
+						<payerPartyReference href="#UBS-RCSR">
+							<portfolioReference href="#EUSW03"/>
+						</payerPartyReference>
+						<receiverPartyReference href="#_69243"/>
+						<payReceive>pay</payReceive>
+						<effectiveDate>20180825</effectiveDate>
+						<maturity>20190620</maturity>
+						<adjustedEffectiveDate>20180825</adjustedEffectiveDate>
+						<adjustedMaturity>20190620</adjustedMaturity>
+						<rollDate>20190620</rollDate>
+						<capital>
+							<initialCapitalAmount>1000000.</initialCapitalAmount>
+							<initialCapitalCurrency>EUR</initialCapitalCurrency>
+							<initialPaymentCurrency>EUR</initialPaymentCurrency>
+							<intermediateCapitalCurrency>EUR</intermediateCapitalCurrency>
+							<finalCapitalCurrency>EUR</finalCapitalCurrency>
+							<referenceCapitalAmount>1000000.</referenceCapitalAmount>
+							<referenceCapitalCurrency>EUR</referenceCapitalCurrency>
+						</capital>
+						<fixedRateStream>
+							<fixedRate>20.</fixedRate>
+						</fixedRateStream>
+						<assetLiability>liability</assetLiability>
+						<creditStream>
+							<payerPartyReference href="#_69243"/>
+							<receiverPartyReference href="#UBS-RCSR">
+								<portfolioReference href="#EUSW03"/>
+							</receiverPartyReference>
+							<payReceive>receive</payReceive>
+							<knockOutOption>false</knockOutOption>
+						</creditStream>
+						<creditClause>
+							<creditClauseLabel>EU CORP XR14</creditClauseLabel>
+							<isdaVersion>isda14</isdaVersion>
+							<generalTerms>
+								<referenceEntities>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ELECTRICITE DE FRANCE</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>RWE AG</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ASSICURAZIONI GENERALI S P A</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>EON SE</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>CONTL AG</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>KONINKLIJKE DSM NV</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>TOTAL SA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>BRIT SKY BROADCASTING GP PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>LINDE AG</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>CIE DE ST GOBAIN</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>BCO BILBAO VIZCAYA ARGENTARIA S A</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>SIEMENS AG</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>SWISS REINS CO LTD</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>CARREFOUR</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>BERTELSMANN SE CO KGAA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>METRO AG</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>PEARSON PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>COMP FIN MICHELIN</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ITV PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>VINCI</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ANHEUSER BUSCH INBEV NV</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>STATOIL ASA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>CENTRICA PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>STANDARD CHARTERED BANK</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>LVMH MOET HENNESSY LOUIS VUITTON</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ORANGE SA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>SABMILLER PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>TELIASONERA AB</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>AB VOLVO</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>AXA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>NESTLE S A</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>WOLTERS KLUWER N V</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ENI SPA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ATLANTIA SPA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>VATTENFALL AB</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>REPSOL SA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>SOLVAY SA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>TELENOR ASA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>DEUTSCHE BANK</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>IMPERIAL TOB GP PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>GLENCORE INTL AG</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ANGLO AMERN PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>VODAFONE GP PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>BOUYGUES</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>RENTOKIL INITIAL PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>KERING</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>CASINO GUICHARD PERRACHON</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>IBERDROLA S A</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>DEUTSCHE TELEKOM AG</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>EURPN AERO DEFENCE &amp; SPACE CO EADS</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>TELEFONAB L M ERICSSON</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>UNICREDIT SPA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>LLOYDS BANK PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>EXPERIAN FIN PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>TELEKOM AUSTRIA AG</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ZURICH INS CO LTD</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>AB ELECTROLUX</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>CREDIT SUISSE GP LTD</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>AVIVA PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>KINGFISHER PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>SODEXO</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>SUEDZUCKER AG</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>WPP 2005 LTD</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>GECINA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>COMPASS GP PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>TATE &amp; LYLE PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>KONINKLIJKE PHILIPS ELECTRS N V</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>REED ELSEVIER PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>MARKS &amp; SPENCER P L C</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>NEXT PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ACCOR</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>KONINKLIJKE AHOLD N V</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>AKZO NOBEL N V</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>UBS AG</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>GDF SUEZ</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ROLLS ROYCE PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>DIAGEO PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ROYAL BK OF SCOTLAND PUB LTD CO</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>HENKEL AG &amp; CO KGAA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>BAE SYS PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>COMMERZBANK AG</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>SES</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>UNILEVER N V</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>UNIBAIL RODAMCO SE</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>LANXESS</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>HOLCIM LTD</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>VOLKSWAGEN AG</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>DANONE</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>BARCLAYS BK PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>SOCIETE GENERALE</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>HSBC BK PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>INTESA SANPAOLO SPA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>SANOFI</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>AEGON N.V.</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>PUBLICIS GROUPE SA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>GROUPE AUCHAN</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>BAY MOTOREN WERKE AG</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>BASF SE</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>FORTUM OYJ</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>PERNOD RICARD</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>UTD UTILS PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>CR AGRICOLE SA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>VALEO</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ENBW ENERGIE BADEN WUERTTEMBERG AG</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>KONINKLIJKE KPN N V</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ROYAL DUTCH SHELL PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ASTRAZENECA PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>TELEFONICA S A</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ENEL S P A</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>ALLIANZ SE</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>VEOLIA ENVIRONNEMENT</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>GAS NAT SDG SA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>NATL GRID PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>BRIT TELECOM PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>BAYER AG</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>VIVENDI</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>BCO SANTANDER SA</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>BNP PARIBAS S.A.</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>HANNOVER RUECK SE</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>SAFEWAY LTD</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>MUNICH RE</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>BRIT AMERN TOB PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>BP P.L.C.</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+									<creditEntity>
+										<riskType>groupTypeIssuer</riskType>
+										<issuerId>TESCO PLC</issuerId>
+										<seniority>Senior unsecured</seniority>
+										<weight>0.806451612903226</weight>
+									</creditEntity>
+								</referenceEntities>
+								<creditBasket>
+									<basketComputationType>dflt_basketTypeIndex</basketComputationType>
+									<label>ITRAXX-EUROPES21V2-5Y</label>
+									<basketType>index</basketType>
+									<version>1</version>
+									<subversion>1</subversion>
+									<weightType>relative</weightType>
+								</creditBasket>
+								<riskReferenceEntity>
+									<riskType>groupTypeIssuer</riskType>
+								</riskReferenceEntity>
+								<otherReferenceBonds/>
+								<payoutUponDefault>
+									<protectionForm>paidOnDefaultDate</protectionForm>
+									<referencePrice>100.</referencePrice>
+									<protectionPaymentUponDefault>referencePriceFinalPrice</protectionPaymentUponDefault>
+									<protectionRecoveryMode>100-R</protectionRecoveryMode>
+									<leverageFactor>1.</leverageFactor>
+									<premiumPaymentUponDefault>paidOnDefaultDate</premiumPaymentUponDefault>
+									<accrualRecoveryMode>100%</accrualRecoveryMode>
+								</payoutUponDefault>
+								<calculationAgent>
+									<agentName>seller</agentName>
+									<agentCities>
+										<agentCity isdaCityCode="GBLO">LONDON</agentCity>
+									</agentCities>
+								</calculationAgent>
+								<allGuarantees>applicable</allGuarantees>
+								<isSROApplicable>false</isSROApplicable>
+							</generalTerms>
+							<creditTerms>
+								<creditEvents>
+									<creditEvent>
+										<bankruptcy>true</bankruptcy>
+									</creditEvent>
+									<creditEvent>
+										<failureToPay>
+											<activated>true</activated>
+											<paymentRequirement>
+												<amount>1000000</amount>
+												<currency>USD</currency>
+											</paymentRequirement>
+										</failureToPay>
+									</creditEvent>
+								</creditEvents>
+								<conditionsToPayment>
+									<creditEventNotice>
+										<notifyingParty>buyerOrSeller</notifyingParty>
+									</creditEventNotice>
+									<noticeOfIntendedPhysicalSettlement>true</noticeOfIntendedPhysicalSettlement>
+									<noticeOfPubliclyAvailableInfo>
+										<publicSources/>
+										<specifiedNumber>2</specifiedNumber>
+									</noticeOfPubliclyAvailableInfo>
+								</conditionsToPayment>
+							</creditTerms>
+							<settlementTerms>
+								<protectionSettlementMode>cash</protectionSettlementMode>
+								<cashSettlementTerms>
+									<bondValuation>
+										<valuationDate>
+											<valuationLag>
+												<periodUnit>businessDays</periodUnit>
+												<periodMultiplier>0</periodMultiplier>
+											</valuationLag>
+										</valuationDate>
+										<valuationTime>00:00:00</valuationTime>
+										<valuationCity/>
+										<quotationMethod>bid</quotationMethod>
+										<quotationAmount>
+											<amount>0</amount>
+											<currency/>
+										</quotationAmount>
+										<minimumQuotationAmount>
+											<amount>0</amount>
+											<currency/>
+										</minimumQuotationAmount>
+										<dealers/>
+										<excludeAccruedInterest>excludeAccruedInterest</excludeAccruedInterest>
+										<valuationMethod>averageBlendedHighest</valuationMethod>
+									</bondValuation>
+									<protectionSettlementCurrency/>
+									<settlementLag>
+										<periodUnit>businessDays</periodUnit>
+										<periodMultiplier>0</periodMultiplier>
+									</settlementLag>
+								</cashSettlementTerms>
+							</settlementTerms>
+							<referenceObligations>
+								<referenceObligationsCategory>borrowedMoney</referenceObligationsCategory>
+								<specifiedObligations>
+									<otherObligations/>
+									<excludedObligations/>
+								</specifiedObligations>
+							</referenceObligations>
+							<deliverableObligations>
+								<deliverableObligationsCategory>bondOrLoan</deliverableObligationsCategory>
+								<deliverableObligationsCharacteristics>
+									<notSubordinated>true</notSubordinated>
+									<standardSpecifiedCurrencies>true</standardSpecifiedCurrencies>
+									<notContingent>true</notContingent>
+									<assignableLoan>true</assignableLoan>
+									<consentRequirementLoan>true</consentRequirementLoan>
+									<transferable>true</transferable>
+									<maximumMaturity>true</maximumMaturity>
+									<maturityLabel>30y</maturityLabel>
+									<notBearer>true</notBearer>
+								</deliverableObligationsCharacteristics>
+								<specifiedObligations>
+									<otherObligations/>
+									<excludedObligations/>
+								</specifiedObligations>
+								<partialSettlementOfLoans>false</partialSettlementOfLoans>
+								<partialSettlementOfAssignableLoans>false</partialSettlementOfAssignableLoans>
+								<partialSettlementOfParticipations>false</partialSettlementOfParticipations>
+								<escrow>true</escrow>
+								<disputeResolution>notApplicable</disputeResolution>
+							</deliverableObligations>
+						</creditClause>
+						<cashFlows>
+							<interestFlows>
+								<interestPaymentPeriod>
+									<paymentDate>20180920</paymentDate>
+									<calculationPeriod>
+										<notionalAmount>992000.</notionalAmount>
+										<calculationStartDate>20180825</calculationStartDate>
+										<calculationEndDate>20180920</calculationEndDate>
+										<unadjustedStartDate>20180620</unadjustedStartDate>
+										<periodDayCountFactor>0.0722222222222222</periodDayCountFactor>
+										<periodDayCountInitialFactor>0.0722222222222222</periodDayCountInitialFactor>
+										<fixedRatePeriod>
+											<fixedRate>20.</fixedRate>
+										</fixedRatePeriod>
+										<duration>1</duration>
+										<contributionFlows>
+											<contributionFlow>
+												<calculationPeriod>
+													<notionalAmount>992000.</notionalAmount>
+													<calculationStartDate>20180825</calculationStartDate>
+													<calculationEndDate>20180920</calculationEndDate>
+												</calculationPeriod>
+											</contributionFlow>
+										</contributionFlows>
+									</calculationPeriod>
+									<interestFlow>14328.88888889</interestFlow>
+									<currency>EUR</currency>
+								</interestPaymentPeriod>
+								<interestPaymentPeriod>
+									<paymentDate>20181220</paymentDate>
+									<calculationPeriod>
+										<notionalAmount>992000.</notionalAmount>
+										<calculationStartDate>20180920</calculationStartDate>
+										<calculationEndDate>20181220</calculationEndDate>
+										<periodDayCountFactor>0.252777777777778</periodDayCountFactor>
+										<periodDayCountInitialFactor>0.252777777777778</periodDayCountInitialFactor>
+										<fixedRatePeriod>
+											<fixedRate>20.</fixedRate>
+										</fixedRatePeriod>
+										<duration>1</duration>
+										<contributionFlows>
+											<contributionFlow>
+												<calculationPeriod>
+													<notionalAmount>992000.</notionalAmount>
+													<calculationStartDate>20180920</calculationStartDate>
+													<calculationEndDate>20181220</calculationEndDate>
+												</calculationPeriod>
+											</contributionFlow>
+										</contributionFlows>
+									</calculationPeriod>
+									<interestFlow>50151.11111111</interestFlow>
+									<currency>EUR</currency>
+								</interestPaymentPeriod>
+								<interestPaymentPeriod>
+									<paymentDate>20190320</paymentDate>
+									<calculationPeriod>
+										<notionalAmount>992000.</notionalAmount>
+										<calculationStartDate>20181220</calculationStartDate>
+										<calculationEndDate>20190320</calculationEndDate>
+										<periodDayCountFactor>0.25</periodDayCountFactor>
+										<periodDayCountInitialFactor>0.25</periodDayCountInitialFactor>
+										<fixedRatePeriod>
+											<fixedRate>20.</fixedRate>
+										</fixedRatePeriod>
+										<duration>1</duration>
+										<contributionFlows>
+											<contributionFlow>
+												<calculationPeriod>
+													<notionalAmount>992000.</notionalAmount>
+													<calculationStartDate>20181220</calculationStartDate>
+													<calculationEndDate>20190320</calculationEndDate>
+												</calculationPeriod>
+											</contributionFlow>
+										</contributionFlows>
+									</calculationPeriod>
+									<interestFlow>49600.</interestFlow>
+									<currency>EUR</currency>
+								</interestPaymentPeriod>
+								<interestPaymentPeriod>
+									<paymentDate>20190620</paymentDate>
+									<calculationPeriod>
+										<notionalAmount>992000.</notionalAmount>
+										<calculationStartDate>20190320</calculationStartDate>
+										<calculationEndDate>20190620</calculationEndDate>
+										<periodDayCountFactor>0.258333333333333</periodDayCountFactor>
+										<periodDayCountInitialFactor>0.258333333333333</periodDayCountInitialFactor>
+										<fixedRatePeriod>
+											<fixedRate>20.</fixedRate>
+										</fixedRatePeriod>
+										<duration>1</duration>
+										<contributionFlows>
+											<contributionFlow>
+												<calculationPeriod>
+													<notionalAmount>992000.</notionalAmount>
+													<calculationStartDate>20190320</calculationStartDate>
+													<calculationEndDate>20190620</calculationEndDate>
+												</calculationPeriod>
+											</contributionFlow>
+										</contributionFlows>
+									</calculationPeriod>
+									<interestFlow>51253.33333333</interestFlow>
+									<currency>EUR</currency>
+								</interestPaymentPeriod>
+							</interestFlows>
+							<eventInterestFlows/>
+							<capitalFlows/>
+						</cashFlows>
+					</stream>
+					<customized>true</customized>
+					<referFlag>false</referFlag>
+					<customizationsKeyType>backwardOffset</customizationsKeyType>
+					<customizations>
+						<customization>
+							<phase>1</phase>
+							<leg>1</leg>
+							<operationDate>20180824</operationDate>
+							<customizedObject>calculationStartDate</customizedObject>
+							<calculationStartDate>20180620</calculationStartDate>
+							<customizationBackwardOffset>4</customizationBackwardOffset>
+							<customizationType>memory</customizationType>
+							<customizationHorizontalOffset>0</customizationHorizontalOffset>
+							<customizedValue>20180825</customizedValue>
+						</customization>
+					</customizations>
+					<additionalFlowsLegDissociate>false</additionalFlowsLegDissociate>
+					<additionalFlowsSignDisableBSBased>false</additionalFlowsSignDisableBSBased>
+					<additionalFlows/>
+				</creditIndexOption>
+			</tradeBody>
+			<settlementInstructions>
+				<settlementInstruction>
+					<settlementInstructionKey>
+						<partyReference href="#_69243"/>
+						<flowSign>Debit</flowSign>
+						<flowCurrency>EUR</flowCurrency>
+						<flowNature>Capital</flowNature>
+						<settlementType>Cash</settlementType>
+						<flowTypologies>
+							<flowTypology>
+								<label>Typology0</label>
+								<value/>
+							</flowTypology>
+							<flowTypology>
+								<label>Typology1</label>
+								<value/>
+							</flowTypology>
+							<flowTypology>
+								<label>Typology2</label>
+								<value/>
+							</flowTypology>
+							<flowTypology>
+								<label>Typology3</label>
+								<value/>
+							</flowTypology>
+							<flowTypology>
+								<label>Typology4</label>
+								<value/>
+							</flowTypology>
+						</flowTypologies>
+						<physicalProductLabel/>
+						<locationLabel/>
+						<portfolio>EUSW03</portfolio>
+					</settlementInstructionKey>
+					<settlementInstructionDescription>
+						<flowConversion>false</flowConversion>
+						<nostroReferenceId>0</nostroReferenceId>
+						<specificNostro>false</specificNostro>
+						<customizedNostro>false</customizedNostro>
+						<nostroMatchingRulesCount>0</nostroMatchingRulesCount>
+						<vostroReferenceId>0</vostroReferenceId>
+						<specificVostro>false</specificVostro>
+						<customizedVostro>false</customizedVostro>
+						<vostroMatchingRulesCount>0</vostroMatchingRulesCount>
+						<date>20180822</date>
+					</settlementInstructionDescription>
+					<nostroInstructions>
+						<userDefinedField>
+							<fieldLabel>CSNOTREC</fieldLabel>
+							<fieldIndex>6</fieldIndex>
+							<fieldValue>Y</fieldValue>
+							<fieldType>character</fieldType>
+						</userDefinedField>
+					</nostroInstructions>
+					<vostroInstructions>
+						<userDefinedField>
+							<fieldLabel>CSNOTREC</fieldLabel>
+							<fieldIndex>6</fieldIndex>
+							<fieldValue>Y</fieldValue>
+							<fieldType>character</fieldType>
+						</userDefinedField>
+					</vostroInstructions>
+				</settlementInstruction>
+				<settlementInstruction>
+					<settlementInstructionKey>
+						<partyReference href="#_69243"/>
+						<flowSign>Credit</flowSign>
+						<flowCurrency>EUR</flowCurrency>
+						<flowNature>Revenue</flowNature>
+						<settlementType>Cash</settlementType>
+						<flowTypologies>
+							<flowTypology>
+								<label>Typology0</label>
+								<value/>
+							</flowTypology>
+							<flowTypology>
+								<label>Typology1</label>
+								<value/>
+							</flowTypology>
+							<flowTypology>
+								<label>Typology2</label>
+								<value/>
+							</flowTypology>
+							<flowTypology>
+								<label>Typology3</label>
+								<value/>
+							</flowTypology>
+							<flowTypology>
+								<label>Typology4</label>
+								<value/>
+							</flowTypology>
+						</flowTypologies>
+						<physicalProductLabel/>
+						<locationLabel/>
+						<portfolio>EUSW03</portfolio>
+					</settlementInstructionKey>
+					<settlementInstructionDescription>
+						<flowConversion>false</flowConversion>
+						<nostroReferenceId>0</nostroReferenceId>
+						<specificNostro>false</specificNostro>
+						<customizedNostro>false</customizedNostro>
+						<nostroMatchingRulesCount>0</nostroMatchingRulesCount>
+						<vostroReferenceId>0</vostroReferenceId>
+						<specificVostro>false</specificVostro>
+						<customizedVostro>false</customizedVostro>
+						<vostroMatchingRulesCount>0</vostroMatchingRulesCount>
+						<date>20180822</date>
+					</settlementInstructionDescription>
+					<nostroInstructions>
+						<userDefinedField>
+							<fieldLabel>CSNOTREC</fieldLabel>
+							<fieldIndex>6</fieldIndex>
+							<fieldValue>Y</fieldValue>
+							<fieldType>character</fieldType>
+						</userDefinedField>
+					</nostroInstructions>
+					<vostroInstructions>
+						<userDefinedField>
+							<fieldLabel>CSNOTREC</fieldLabel>
+							<fieldIndex>6</fieldIndex>
+							<fieldValue>Y</fieldValue>
+							<fieldType>character</fieldType>
+						</userDefinedField>
+					</vostroInstructions>
+				</settlementInstruction>
+				<settlementInstruction>
+					<settlementInstructionKey>
+						<partyReference href="#_69243"/>
+						<flowSign>Debit</flowSign>
+						<flowCurrency>EUR</flowCurrency>
+						<flowNature>Revenue</flowNature>
+						<settlementType>Cash</settlementType>
+						<flowTypologies>
+							<flowTypology>
+								<label>Typology0</label>
+								<value/>
+							</flowTypology>
+							<flowTypology>
+								<label>Typology1</label>
+								<value/>
+							</flowTypology>
+							<flowTypology>
+								<label>Typology2</label>
+								<value/>
+							</flowTypology>
+							<flowTypology>
+								<label>Typology3</label>
+								<value/>
+							</flowTypology>
+							<flowTypology>
+								<label>Typology4</label>
+								<value/>
+							</flowTypology>
+						</flowTypologies>
+						<physicalProductLabel/>
+						<locationLabel/>
+						<portfolio>EUSW03</portfolio>
+					</settlementInstructionKey>
+					<settlementInstructionDescription>
+						<flowConversion>false</flowConversion>
+						<nostroReferenceId>0</nostroReferenceId>
+						<specificNostro>false</specificNostro>
+						<customizedNostro>false</customizedNostro>
+						<nostroMatchingRulesCount>0</nostroMatchingRulesCount>
+						<vostroReferenceId>0</vostroReferenceId>
+						<specificVostro>false</specificVostro>
+						<customizedVostro>false</customizedVostro>
+						<vostroMatchingRulesCount>0</vostroMatchingRulesCount>
+						<date>20180822</date>
+					</settlementInstructionDescription>
+					<nostroInstructions>
+						<userDefinedField>
+							<fieldLabel>CSNOTREC</fieldLabel>
+							<fieldIndex>6</fieldIndex>
+							<fieldValue>Y</fieldValue>
+							<fieldType>character</fieldType>
+						</userDefinedField>
+					</nostroInstructions>
+					<vostroInstructions>
+						<userDefinedField>
+							<fieldLabel>CSNOTREC</fieldLabel>
+							<fieldIndex>6</fieldIndex>
+							<fieldValue>Y</fieldValue>
+							<fieldType>character</fieldType>
+						</userDefinedField>
+					</vostroInstructions>
+				</settlementInstruction>
+			</settlementInstructions>
+			<confirmationInstructions>
+				<confirmationInstruction>
+					<status>Default</status>
+					<label>ICELINK</label>
+					<ruleReference>6138</ruleReference>
+					<validity>true</validity>
+					<partyType>common</partyType>
+					<partyName>7236800</partyName>
+					<recipientName>7236800</recipientName>
+					<filterLabel>IceLink</filterLabel>
+					<documentTypeLabel>IceLink</documentTypeLabel>
+					<language/>
+					<customInformation/>
+					<notification>no</notification>
+					<address>
+						<streetAddress/>
+						<contacts/>
+						<comments/>
+					</address>
+					<negativeAffirmation>no</negativeAffirmation>
+					<chasing>no</chasing>
+					<confirmationCustomizations/>
+				</confirmationInstruction>
+				<confirmationInstruction>
+					<status>Default</status>
+					<label>TC_NOFILTER2</label>
+					<ruleReference>3</ruleReference>
+					<validity>true</validity>
+					<partyType>common</partyType>
+					<partyName>7236800</partyName>
+					<recipientName>7236800</recipientName>
+					<filterLabel/>
+					<documentTypeLabel>DOC</documentTypeLabel>
+					<language/>
+					<customInformation/>
+					<notification>no</notification>
+					<address>
+						<streetAddress/>
+						<contacts/>
+						<comments/>
+					</address>
+					<negativeAffirmation>no</negativeAffirmation>
+					<chasing>no</chasing>
+					<confirmationCustomizations/>
+				</confirmationInstruction>
+			</confirmationInstructions>
+			<tradeInputConditions>
+				<inputBy>
+					<userName>MUREXFO</userName>
+					<code>43407426</code>
+				</inputBy>
+				<systemDate>20180824</systemDate>
+				<computerDate>20180822</computerDate>
+				<validityDate>20180822</validityDate>
+				<computerTime>15:43:54</computerTime>
+				<areaCode>0</areaCode>
+				<lateTrading>lateTrading</lateTrading>
+				<timestamp>20181204 15:43:48:490</timestamp>
+				<modified>false</modified>
+				<initialData/>
+				<executionTimestamp>2018-12-04T15:43:48.490</executionTimestamp>
+			</tradeInputConditions>
+			<tradeStatus>
+				<physicalStatus>live</physicalStatus>
+			</tradeStatus>
+			<tradeVersions>
+				<tradeVersion>
+					<businessObjectId>
+						<identifier>1306725</identifier>
+						<baseIdentifier>1306725</baseIdentifier>
+						<versionIdentifier>
+							<versionRevision>
+								<versionNumber>1</versionNumber>
+								<versionDateAndTime>
+									<date>00000000</date>
+								</versionDateAndTime>
+							</versionRevision>
+						</versionIdentifier>
+						<primarySystem>MX</primarySystem>
+					</businessObjectId>
+					<contractEventReference mefClass="">
+						<contractEventId>
+							<internalId>0</internalId>
+						</contractEventId>
+					</contractEventReference>
+					<eventVersion>0</eventVersion>
+					<contractEventOriginReference mefClass="">
+						<contractEventId>
+							<internalId>0</internalId>
+							<businessObjectId>
+								<versionIdentifier>
+									<versionRevision>
+										<versionNumber>1</versionNumber>
+										<versionDateAndTime>
+											<date>00000000</date>
+										</versionDateAndTime>
+									</versionRevision>
+								</versionIdentifier>
+								<primarySystem>MX</primarySystem>
+							</businessObjectId>
+						</contractEventId>
+					</contractEventOriginReference>
+					<action>INSERT</action>
+					<date>20180822</date>
+					<validityDate>20180822</validityDate>
+					<timestamp>2018/12/04 15:43:48.490</timestamp>
+					<lateTrading>Y</lateTrading>
+					<tradePurpose>MfBJy44236</tradePurpose>
+					<tradePurposeDisplayedLabel>Contract</tradePurposeDisplayedLabel>
+					<tradePurposeId>0</tradePurposeId>
+					<stpStatuses>
+						<stpStatus>
+							<stpStatusKey>STP_STATUS_VALIDATION_LEVEL</stpStatusKey>
+							<stpStatusValue/>
+						</stpStatus>
+						<stpStatus>
+							<stpStatusKey>STP_STATUS</stpStatusKey>
+							<stpStatusValue/>
+						</stpStatus>
+						<stpStatus>
+							<stpStatusKey>STP_STATUS1</stpStatusKey>
+							<stpStatusValue/>
+						</stpStatus>
+						<stpStatus>
+							<stpStatusKey>STP_STATUS2</stpStatusKey>
+							<stpStatusValue/>
+						</stpStatus>
+						<stpStatus>
+							<stpStatusKey>STP_STATUS3</stpStatusKey>
+							<stpStatusValue/>
+						</stpStatus>
+						<stpStatus>
+							<stpStatusKey>STP_STATUS4</stpStatusKey>
+							<stpStatusValue/>
+						</stpStatus>
+					</stpStatuses>
+					<isActive>true</isActive>
+				</tradeVersion>
+			</tradeVersions>
+		</trade>
+	</trades>
+	<dealings>
+		<dealing>
+			<remoteEdition>
+				<businessObject mefClass="mxContractISINGLE" mefClassId="1.238" mefClassInstanceType="125" mefClassInstanceLabel="Credit index option" pattern="CDS Index Option" patternId="562" href="#contract_1384322">
+					<flatObject>
+						<memberValuePairs>
+							<member path="Risk viewer layout" type="string"/>
+							<member path="Bid/Ask" type="string">Mid</member>
+							<member path="One side" type="string">N</member>
+							<member path="Price on request" type="string">N</member>
+							<member path="Flat member based" type="string">Yes</member>
+							<member path="Title based" type="string">Yes</member>
+							<member path="Typology id based" type="string">Yes</member>
+							<member path="Trading date" type="date">20180822</member>
+							<member path="Evaluation date" type="date">20180824</member>
+							<member path="Sliding trading date" type="string">N</member>
+							<member path="Typology label" type="string"/>
+							<member path="RFQ group" type="string"/>
+						</memberValuePairs>
+					</flatObject>
+				</businessObject>
+				<modifiedMembers>
+					<memberValuePairs>
+						<member path="Type" type="string" source="0">#1  CDS Index Option</member>
+						<member path="Basket" type="string" source="0">ITRAXX-EUROPES21V2-5Y</member>
+						<member path="Buy/Sell" type="string" source="0">Buy</member>
+						<member path="Option style" type="string" source="0">European</member>
+						<member path="Option strike type" type="string" source="0">Strike premium</member>
+						<member path="Option expiration period" type="string" source="0"/>
+						<member path="Option expiration" type="date" source="0">20180824</member>
+						<member path="Exercise Mode" type="string" source="0">Delivery</member>
+						<member path="Maturity period" type="string" source="0"/>
+						<member path="Maturity" type="date" source="0">20190620</member>
+						<member path="Nominal" type="numeric" source="0">1000000.</member>
+						<member path="Nominal unit" type="string" source="0">EUR</member>
+						<member path="Strike" type="numeric" source="0">20.</member>
+						<member path="Payout" type="string" source="0">Pay premium</member>
+						<member path="Settlement type" type="string" source="0">Cash</member>
+						<member path="Protection payoff" type="string" source="0">Reference price - final price</member>
+						<member path="Digital amount" type="numeric" source="0">0.</member>
+						<member path="Digital rate" type="numeric" source="0">0.</member>
+						<member path="Fixed recovery rate" type="numeric" source="0">0.</member>
+						<member path="Digital amount by item" type="integer" source="0">0</member>
+						<member path="Digital rate by item" type="integer" source="0">0</member>
+						<member path="Fixed recovery rate by item" type="integer" source="0">0</member>
+						<member path="&apos;Ref. price&apos;" type="numeric" source="0">100.</member>
+						<member path="Amortizing" type="string" source="0">None</member>
+						<member path="Premium type" type="string" source="0">Paid on default date</member>
+						<member path="Protection type" type="string" source="0">Paid on default date</member>
+						<member path="Calc agent" type="string" source="0">Seller</member>
+						<member path="Calc agent city" type="string" source="0">LONDON</member>
+						<member path="Comment" type="string" source="0"/>
+						<member path="Internal" type="string" source="0">No</member>
+						<member path="Counterpart" type="string" source="0">7236800</member>
+						<member path="Block Trade" type="string" source="0">No</member>
+						<member path="Allocation Matrix" type="string" source="0"/>
+						<member path="TDELG_RAG" type="string" source="0"/>
+						<member path="Cnt Number" type="numeric" source="0">1384322.</member>
+						<member path="Origin Reference" type="numeric" source="0">1384322.</member>
+						<member path="Trading Date" type="date" source="0">20180822</member>
+						<member path="Trading Date Sliding" type="string" source="0">Fixed</member>
+						<member path="View" source="0"/>
+						<member path="TDELG_RSON" type="string" source="0"/>
+						<member path="CL_ELIGIBL" type="string" source="0"/>
+						<member path="CL_MDTORY" type="string" source="0"/>
+						<member path="CL_CHOICE" type="string" source="0"/>
+						<member path="CL_STYLE" type="string" source="0"/>
+						<member path="pf_crd_clearing_houses" source="0"/>
+						<member path="CCP_NAME" type="string" source="0"/>
+						<member path="SEF_MDTORY" type="string" source="0"/>
+						<member path="CL_BRK" type="string" source="0"/>
+						<member path="Portfolio" type="string" source="0">EUSW03</member>
+						<member path="Back to back" type="string" source="0">No</member>
+						<member path="Back to back portfolio" type="string" source="0"/>
+					</memberValuePairs>
+				</modifiedMembers>
+			</remoteEdition>
+			<dealingCode/>
+			<dealingId/>
+		</dealing>
+	</dealings>
+</MxML>

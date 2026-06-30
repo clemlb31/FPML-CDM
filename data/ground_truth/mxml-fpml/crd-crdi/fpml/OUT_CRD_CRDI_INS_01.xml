@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FpML xmlns="http://www.fpml.org/2010/FpML-4-9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:fpml="http://www.fpml.org/2010/FpML-4-9" xsi:schemaLocation="http://www.fpml.org/2010/FpML-4-9                               ../fpml-main-4-9.xsd                               http://www.w3.org/2000/09/xmldsig#                               ../xmldsig-core-schema.xsd" xsi:type="RequestTradeConfirmation" version="4-9">
+	<header>
+		<messageId messageIdScheme="perFpMLReqmt">MX215</messageId>
+		<sentBy>DTCC000003A7</sentBy>
+		<sendTo>party2</sendTo>
+		<creationTimestamp>2012-11-27T13:54:11.000+01:00</creationTimestamp>
+	</header>
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="DTCC000003A7"/>
+				<tradeId tradeIdScheme="http://www.murex.com/contract-id">MX215</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2005-01-24</tradeDate>
+		</tradeHeader>
+		<creditDefaultSwap>
+			<generalTerms>
+				<scheduledTerminationDate>
+					<adjustableDate>
+						<unadjustedDate>2016-06-20</unadjustedDate>
+					</adjustableDate>
+				</scheduledTerminationDate>
+				<sellerPartyReference href="DTCC000003A7"/>
+				<buyerPartyReference href="party2"/>
+				<indexReferenceInformation>
+					<indexName>ITX-EUROPE-5Y-SFBN</indexName>
+					<indexId>2I667DAO2</indexId>
+				</indexReferenceInformation>
+			</generalTerms>
+			<feeLeg>
+				<initialPayment>
+					<payerPartyReference href="DTCC000003A7"/>
+					<receiverPartyReference href="party2"/>
+					<paymentAmount>
+						<currency currencyScheme="http://www.fpml.org/ext/iso4217">USD</currency>
+						<amount>16000</amount>
+					</paymentAmount>
+				</initialPayment>
+				<periodicPayment>
+					<paymentFrequency>
+						<periodMultiplier>3</periodMultiplier>
+						<period>M</period>
+					</paymentFrequency>
+					<fixedAmountCalculation>
+						<fixedRate>0.0195</fixedRate>
+					</fixedAmountCalculation>
+				</periodicPayment>
+				<marketFixedRate>0.0295269992</marketFixedRate>
+				<quotationStyle>TradedSpread</quotationStyle>
+			</feeLeg>
+			<protectionTerms>
+				<calculationAmount>
+					<currency>USD</currency>
+					<amount>25000000</amount>
+				</calculationAmount>
+			</protectionTerms>
+		</creditDefaultSwap>
+		<calculationAgent>
+			<calculationAgentPartyReference href="DTCC000003A7"/>
+		</calculationAgent>
+	</trade>
+	<party id="party2">
+		<partyId>party2</partyId>
+	</party>
+	<party id="DTCC000003A7">
+		<partyId>DTCC000003A7</partyId>
+	</party>
+</FpML>

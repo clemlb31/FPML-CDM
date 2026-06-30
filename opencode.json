@@ -1,0 +1,40 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "serena": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "ide-assistant",
+        "--project",
+        "."
+      ],
+      "enabled": true
+    },
+    "context7": {
+      "type": "local",
+      "command": ["npx", "-y", "@upstash/context7-mcp"],
+      "enabled": true
+    }
+  },
+  "agent": {
+    "explore": {
+      "description": "Read-only code navigation/search agent. Use to locate code, mappers, usages and CDM API without touching files or running builds — keeps the main context small.",
+      "mode": "subagent",
+      "tools": {
+        "write": false,
+        "edit": false,
+        "patch": false,
+        "run-dataset-tests": false,
+        "diff-pair": false,
+        "category-report": false
+      },
+      "prompt": "You are a read-only explorer for the FpML↔CDM repo. Locate code and answer precisely with file:line references. Use grep/glob/read for the project, the serena MCP for semantic navigation, and the cdm-api / cdm-source tools to check the real CDM API. Never modify files or run Maven. Return conclusions, not file dumps."
+    }
+  }
+}

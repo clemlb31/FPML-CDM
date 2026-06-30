@@ -1,0 +1,519 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataDocument xmlns="http://www.fpml.org/FpML-5/confirmation" xmlns:exslt="http://exslt.org/common" xmlns:dyn="http://exslt.org/dynamic" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.fpml.org/FpML-5/confirmation ../../fpml-main-5-3.xsd http://www.w3.org/2000/09/xmldsig# ../../xmldsig-core-schema.xsd" fpmlVersion="5-3">
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="DTCC000003A7"/>
+				<tradeId tradeIdScheme="http://www.murex.com/contract-id">143115</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2017-01-10</tradeDate>
+		</tradeHeader>
+		<swaption>
+			<buyerPartyReference href="party1"/>
+			<sellerPartyReference href="BARCLAYS"/>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1250.0000000004</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2017-01-10</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1263.8888888894</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2017-04-10</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1277.7777777773</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2017-07-10</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1277.7777777773</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2017-10-10</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1250.0000000004</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2018-01-10</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1263.8888888894</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2018-04-10</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1277.7777777773</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2018-07-10</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1277.7777777773</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2018-10-10</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1250.0000000004</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2019-01-10</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1263.8888888894</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2019-04-10</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1277.7777777773</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2019-07-10</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1277.7777777773</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2019-10-10</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1319.4444444442</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2020-01-10</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1208.3333333335</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2020-04-14</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1305.5555555552</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2020-07-10</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1263.8888888894</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2020-10-12</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1263.8888888894</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2021-01-11</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1263.8888888894</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2021-04-12</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1263.8888888894</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2021-07-12</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>1263.8888888894</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2021-10-11</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>27.777777778</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2022-01-10</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</paymentDate>
+			</premium>
+			<europeanExercise>
+				<expirationDate>
+					<adjustableDate>
+						<unadjustedDate>2022-01-12</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>FOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+						</dateAdjustments>
+					</adjustableDate>
+				</expirationDate>
+				<relevantUnderlyingDate>
+					<adjustableDates>
+						<unadjustedDate>2022-01-19</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+						</dateAdjustments>
+					</adjustableDates>
+				</relevantUnderlyingDate>
+				<earliestExerciseTime>
+					<hourMinuteTime>14:00:00</hourMinuteTime>
+					<businessCenter>BEBR</businessCenter>
+				</earliestExerciseTime>
+				<expirationTime>
+					<hourMinuteTime>14:00:00</hourMinuteTime>
+					<businessCenter>BEBR</businessCenter>
+				</expirationTime>
+			</europeanExercise>
+			<exerciseProcedure>
+				<manualExercise>
+					<fallbackExercise>false</fallbackExercise>
+				</manualExercise>
+				<followUpConfirmation>false</followUpConfirmation>
+			</exerciseProcedure>
+			<calculationAgent>
+				<calculationAgentParty>AsSpecifiedInMasterAgreement</calculationAgentParty>
+			</calculationAgent>
+			<swaptionStraddle>false</swaptionStraddle>
+			<swap>
+				<swapStream id="fixedLeg">
+					<payerPartyReference href="party1"/>
+					<receiverPartyReference href="BARCLAYS"/>
+					<calculationPeriodDates id="fixedRateCalculationPeriodDates1">
+						<effectiveDate>
+							<unadjustedDate>2022-01-19</unadjustedDate>
+							<dateAdjustments>
+								<businessDayConvention>MODFOLLOWING</businessDayConvention>
+								<businessCenters>
+									<businessCenter>EUTA</businessCenter>
+								</businessCenters>
+							</dateAdjustments>
+						</effectiveDate>
+						<terminationDate>
+							<unadjustedDate>2027-07-19</unadjustedDate>
+							<dateAdjustments>
+								<businessDayConvention>MODFOLLOWING</businessDayConvention>
+								<businessCenters>
+									<businessCenter>EUTA</businessCenter>
+								</businessCenters>
+							</dateAdjustments>
+						</terminationDate>
+						<calculationPeriodDatesAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+						</calculationPeriodDatesAdjustments>
+						<calculationPeriodFrequency>
+							<periodMultiplier>1</periodMultiplier>
+							<period>Y</period>
+							<rollConvention>19</rollConvention>
+						</calculationPeriodFrequency>
+					</calculationPeriodDates>
+					<paymentDates>
+						<calculationPeriodDatesReference href="fixedRateCalculationPeriodDates1"/>
+						<paymentFrequency>
+							<periodMultiplier>1</periodMultiplier>
+							<period>Y</period>
+						</paymentFrequency>
+						<payRelativeTo>CalculationPeriodEndDate</payRelativeTo>
+						<paymentDaysOffset>
+							<periodMultiplier>0</periodMultiplier>
+							<period>D</period>
+						</paymentDaysOffset>
+						<paymentDatesAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+						</paymentDatesAdjustments>
+					</paymentDates>
+					<calculationPeriodAmount>
+						<calculation>
+							<notionalSchedule>
+								<notionalStepSchedule>
+									<initialValue>5000000.</initialValue>
+									<currency>EUR</currency>
+								</notionalStepSchedule>
+							</notionalSchedule>
+							<fixedRateSchedule>
+								<initialValue>0.0197</initialValue>
+							</fixedRateSchedule>
+							<dayCountFraction>30/360</dayCountFraction>
+						</calculation>
+					</calculationPeriodAmount>
+				</swapStream>
+				<swapStream id="floatingLeg">
+					<payerPartyReference href="party1"/>
+					<receiverPartyReference href="BARCLAYS"/>
+					<calculationPeriodDates id="floatingRateCalculationPeriodDates1">
+						<effectiveDate>
+							<unadjustedDate>2022-01-19</unadjustedDate>
+							<dateAdjustments>
+								<businessDayConvention>MODFOLLOWING</businessDayConvention>
+								<businessCenters>
+									<businessCenter>EUTA</businessCenter>
+								</businessCenters>
+							</dateAdjustments>
+						</effectiveDate>
+						<terminationDate>
+							<unadjustedDate>2027-07-19</unadjustedDate>
+							<dateAdjustments>
+								<businessDayConvention>MODFOLLOWING</businessDayConvention>
+								<businessCenters>
+									<businessCenter>EUTA</businessCenter>
+								</businessCenters>
+							</dateAdjustments>
+						</terminationDate>
+						<calculationPeriodDatesAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+						</calculationPeriodDatesAdjustments>
+						<calculationPeriodFrequency>
+							<periodMultiplier>3</periodMultiplier>
+							<period>M</period>
+							<rollConvention>19</rollConvention>
+						</calculationPeriodFrequency>
+					</calculationPeriodDates>
+					<paymentDates>
+						<calculationPeriodDatesReference href="floatingRateCalculationPeriodDates1"/>
+						<paymentFrequency>
+							<periodMultiplier>3</periodMultiplier>
+							<period>M</period>
+						</paymentFrequency>
+						<payRelativeTo>CalculationPeriodEndDate</payRelativeTo>
+						<paymentDaysOffset>
+							<periodMultiplier>0</periodMultiplier>
+							<period>D</period>
+						</paymentDaysOffset>
+						<paymentDatesAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+						</paymentDatesAdjustments>
+					</paymentDates>
+					<resetDates id="resetDates2">
+						<calculationPeriodDatesReference href="floatingRateCalculationPeriodDates1"/>
+						<resetRelativeTo>CalculationPeriodStartDate</resetRelativeTo>
+						<fixingDates>
+							<periodMultiplier>-2</periodMultiplier>
+							<period>D</period>
+							<dayType>Business</dayType>
+							<businessDayConvention>NONE</businessDayConvention>
+							<dateRelativeTo href="floatingRateCalculationPeriodDates1"/>
+						</fixingDates>
+						<resetFrequency>
+							<periodMultiplier>3</periodMultiplier>
+							<period>M</period>
+						</resetFrequency>
+						<resetDatesAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+						</resetDatesAdjustments>
+					</resetDates>
+					<calculationPeriodAmount>
+						<calculation>
+							<notionalSchedule>
+								<notionalStepSchedule>
+									<initialValue>5000000.</initialValue>
+									<currency>EUR</currency>
+								</notionalStepSchedule>
+							</notionalSchedule>
+							<floatingRateCalculation>
+								<floatingRateIndex>EUR-EURIBOR-Reuters</floatingRateIndex>
+								<indexTenor>
+									<periodMultiplier>3</periodMultiplier>
+									<period>M</period>
+								</indexTenor>
+							</floatingRateCalculation>
+							<dayCountFraction>ACT/360</dayCountFraction>
+						</calculation>
+					</calculationPeriodAmount>
+				</swapStream>
+			</swap>
+		</swaption>
+	</trade>
+	<party id="BARCLAYS">
+		<partyId>BARCLAYS</partyId>
+	</party>
+	<party id="party1">
+		<partyId>party1</partyId>
+	</party>
+</dataDocument>

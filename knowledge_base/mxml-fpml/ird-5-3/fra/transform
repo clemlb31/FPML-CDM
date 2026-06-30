@@ -1,0 +1,509 @@
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:dyn="http://exslt.org/dynamic" xmlns:mx="http://murex.com/xslt/common" xmlns:exslt="http://exslt.org/common" version="1.0" exclude-result-prefixes="mx exslt dyn">
+	<xsl:import href="mx.xml2xml.transform.mxml2fpml.5-3.products.common.correctableRequestMessage" />
+	<xsl:import href="mx.xml2xml.transform.any2fpml.5-3.products.common.party" />
+	<xsl:import href="mx.xml2xml.transform.any2fpml.5-3.products.ird.fra.tradeNode"/>
+	<xsl:import href="mx.xml2xml.transform.mxml2fpml.5-3.products.ird.variables" />
+	<xsl:import href="mx.xml2xml.transform.mxml2fpml.5-3.products.ird.fra.variables" />
+	<xsl:import href="mx.xml2xml.transform.mxml2fpml.5-3.events.variables" />
+	<xsl:import href="mx.xml2xml.transform.mxml2fpml.5-3.products.common.addNamespace" />
+	<xsl:import href="mx.xml2xml.transform.any2fpml.5-3.events.tradeAmendmentContent" />
+	<xsl:import href="mx.xml2xml.transform.any2fpml.5-3.events.tradeNovationContent" />
+	<xsl:import href="mx.xml2xml.transform.any2fpml.5-3.events.tradeNotionalChange" />
+	<xsl:import href="mx.generic.errorHandling.assert" />
+
+	<!--Generate FpML node-->
+	<xsl:template name="create-fpml-node-ird-fra">
+
+		<!-- ====== -->
+		<!-- params -->
+		<!-- ====== -->
+		<xsl:param name="fpmlType" />
+		<!-- Header -->
+		<xsl:param name="tradeId2" />
+		<xsl:param name="tradeId2.scheme" />
+		<!-- optional parameters -->
+		<xsl:param name="messageId" />
+		<xsl:param name="messageIdScheme" />
+		<xsl:param name="sendBy.partyIdScheme" />
+		<xsl:param name="sendTo.partyIdScheme" />
+		<xsl:param name="tradeId1" />
+		<xsl:param name="tradeId1.scheme" />
+		<!-- parties -->
+		<xsl:param name="party.partyId1" />
+		<xsl:param name="party.partyId2" />
+		<xsl:param name="party.partyIdScheme1" />
+		<xsl:param name="party.partyIdScheme2" />
+		<!-- specific for novations events -->
+		<xsl:param name="party.partyId3" />
+		<xsl:param name="party.partyIdScheme3" />
+		<!-- Mapping parameters -->
+		<xsl:param name="adjustableDate.dateAdjustments.businessDayConvention.defaultValue" />
+		<xsl:param name="fraFloatingIndex" />
+		<xsl:param name="fraDiscounting" />
+		<xsl:param name="fraDayCountFraction" />
+		<xsl:param name="fraResetDatesPeriodUnit" />
+		<xsl:param name="fraFloatingIndex" />
+		<xsl:param name="fraIndexPeriodUnit" />
+		<xsl:param name="fra.payment.businessDayConvention" />
+		<xsl:param name="fra.fixingDates.businessDayConvention" />
+		<xsl:param name="fraResetDatesDayType" />
+		<xsl:param name="dayCountFractionScheme" />
+		<xsl:param name="floatingRateIndexScheme" />
+		<!-- schemes -->
+		<xsl:param name="adjustableDate.dateAdjustments.businessCenter.businessCenterScheme" />
+		<xsl:param name="relativeDateOffSet.businessCenter.businessCenterScheme" />
+		<!-- specific amendment -->
+		<xsl:param name="isCorrection" />
+		<xsl:param name="sequenceNumber" />
+		<xsl:param name="correlationId" />
+		<xsl:param name="correlationIdScheme" />
+		<!-- Parameter used to change the direction of the deal -->
+		<xsl:param name="reversePayReceive"/>
+		<xsl:param name="productId.nodes"/>
+		<!-- ==========	 Deduced variables =========== -->
+		<!--adjustableDate.dateAdjustments.businessDayConvention-->
+		<xsl:variable name="adjustableDate.dateAdjustments.businessDayConvention">
+			<xsl:choose>
+				<xsl:when test="string-length($fra.payment.businessDayConvention) &gt; 0 and $fra.payment.businessDayConvention != 'NONE'">
+					<xsl:value-of select="$fra.payment.businessDayConvention" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="$adjustableDate.dateAdjustments.businessDayConvention.defaultValue" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<!-- fra.resetDatesAdjustments.businessCenter.nodes -->
+		<xsl:variable name="fra.resetDatesAdjustments.businessCenter.nodes">
+			<xsl:choose>
+				<xsl:when test="string-length($swapStream1.resetDatesAdjustments.businessCenter.nodes) &gt; 0">
+					<xsl:copy-of select="$swapStream1.resetDatesAdjustments.businessCenter.nodes" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:copy-of select="$swapStream2.resetDatesAdjustments.businessCenter.nodes" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="party.id1" select="$ctpNameRef" />
+		<xsl:variable name="party.id2" select="$ourNameRef" />
+		<!-- receiverPartyReference.href -->
+		<xsl:variable name="receiverPartyReference.href">
+			<xsl:variable name="receiver">
+				<xsl:call-template name="extract-eventCashFlow-receiverPartyID" />
+			</xsl:variable>
+			<xsl:variable name="payer">
+				<xsl:call-template name="extract-payPartyID" />
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="$reversePayReceive = 'true'">
+					<xsl:value-of select="substring-after($payer, '#')" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="substring-after($receiver, '#')" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<!-- payerPartyReference.href -->
+		<xsl:variable name="payerPartyReference.href">
+			<xsl:variable name="payer">
+				<xsl:call-template name="extract-payPartyID" />
+			</xsl:variable>
+			<xsl:variable name="receiver">
+				<xsl:call-template name="extract-eventCashFlow-receiverPartyID" />
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="$reversePayReceive = 'true'">
+					<xsl:value-of select="substring-after($receiver, '#')" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="substring-after($payer, '#')" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="payment.paymentType">
+			<xsl:value-of select="mx:execute-formula($mapPaymentType, concat('inValue:',$flowNature))" />
+		</xsl:variable>
+		<xsl:variable name="payment.node">
+			<xsl:variable name="contractEventFlowPath">
+				<xsl:choose>
+					<xsl:when test="/MxML/contractEvents/contractEvent/contractEventBody/*/contractEventFlows/contractEventFlow">
+						<xsl:value-of select="'/MxML/contractEvents/contractEvent/contractEventBody/*/contractEventFlows/contractEventFlow'" />
+					</xsl:when>
+					<xsl:when test="/MxML/contractEvents/contractEvent/contractEventFlows/contractEventFlow">
+						<xsl:value-of select="'/MxML/contractEvents/contractEvent/contractEventFlows/contractEventFlow'" />
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="''" />
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="string-length($contractEventFlowPath)&gt;0 and count(dyn:evaluate($contractEventFlowPath))&gt;1">
+					<xsl:for-each select="dyn:evaluate($contractEventFlowPath)">
+						<xsl:variable name="payerPartyReference.href" select="substring-after(dyn:evaluate(concat($contractEventFlowPath,'[',position(),']/contractEventFlowBody/cashFlow/payerPartyReference/@href')), '#')" />
+						<xsl:variable name="receiverPartyReference.href" select="substring-after(dyn:evaluate(concat($contractEventFlowPath,'[',position(),']/contractEventFlowBody/cashFlow/receiverPartyReference/@href')), '#')" />
+						<xsl:variable name="paymentAmount.currency" select="dyn:evaluate(concat($contractEventFlowPath,'[',position(),']/contractEventFlowBody/cashFlow/currency'))" />
+						<xsl:variable name="paymentAmount.amount" select="dyn:evaluate(concat($contractEventFlowPath,'[',position(),']/contractEventFlowBody/cashFlow/amount'))" />
+						<xsl:variable name="adjustedDate">
+							<xsl:variable name="dateMx" select="dyn:evaluate(concat($contractEventFlowPath,'[',position(),']/contractEventFlowBody/cashFlow/date'))" />
+							<xsl:value-of select="mx:execute-formula($adaptDateFormula, concat('date:',$dateMx,',format:yyyymmdd,outputFormat:yyyy-mm-dd'))" />
+						</xsl:variable>
+						<xsl:variable name="flowNature" select="dyn:evaluate(concat($contractEventFlowPath,'[',position(),']/contractEventFlowBody/cashFlow/flowNature'))" />
+						<xsl:variable name="paymentType">
+							<xsl:value-of select="mx:execute-formula($mapPaymentType, concat('inValue:',$flowNature))" />
+						</xsl:variable>
+						<payment>
+							<payerPartyReference href="{$payerPartyReference.href}" />
+							<receiverPartyReference href="{$receiverPartyReference.href}" />
+							<paymentAmount>
+								<currency currencyScheme="{'http://www.fpml.org/ext/iso4217'}">
+									<xsl:value-of select="$paymentAmount.currency" />
+								</currency>
+								<amount>
+									<xsl:value-of select="$paymentAmount.amount" />
+								</amount>
+							</paymentAmount>
+							<paymentDate>
+								<adjustedDate>
+									<xsl:value-of select="$adjustedDate" />
+								</adjustedDate>
+							</paymentDate>
+							<paymentType>
+								<xsl:value-of select="$paymentType" />
+							</paymentType>
+						</payment>
+					</xsl:for-each>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="''" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+
+		<!-- Settlement currency -->
+		<xsl:variable name="settlement.currency">
+			<xsl:choose>
+				<xsl:when test="string-length($cashFlow.settlementCurrency)&gt;0">
+					<xsl:value-of select="$cashFlow.settlementCurrency"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="$settlementCurrency"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+
+		<!-- FpML Root element Name -->
+		<xsl:variable name="fpmlRootNode">
+			<xsl:choose>
+				<xsl:when test="$fpmlType = 'RequestTradeConfirmation' or $fpmlType = 'NovationOld' or $fpmlType = 'NovationNew' or $fpmlType = 'Termination' ">
+					<xsl:value-of select="'requestConfirmation'" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="'dataDocument'" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<!-- ==========	End deduced variables =========== -->
+		<!-- ===================== -->
+		<!-- FpML Node Starts Here -->
+		<!-- ===================== -->
+		<xsl:variable name="fpmlNode">
+			<xsl:element name="{$fpmlRootNode}">
+				<xsl:attribute name="fpmlVersion">
+					<xsl:value-of select="'5-3'" />
+				</xsl:attribute>
+				<xsl:variable name="elementName" select="'trade'"/>
+				<!-- ============================ -->
+				<!-- Specific requestConfirmation -->
+				<!-- ============================ -->
+				<xsl:if test="($fpmlType='RequestTradeConfirmation' or $fpmlType = 'NovationOld' or $fpmlType = 'NovationNew' or $fpmlType = 'Termination')  and (string-length($messageId) or string-length($messageIdScheme)&gt;0)">
+					<xsl:call-template name="makeCorrectableRequestMessage">
+						<xsl:with-param name="messageId" select="$messageId" />
+						<xsl:with-param name="messageIdScheme" select="$messageIdScheme" />
+						<xsl:with-param name="sentBy.href" select="$party.id2" />
+						<xsl:with-param name="sentTo.href" select="$party.id1" />
+						<xsl:with-param name="sentBy" select="$party.partyId2" />
+						<xsl:with-param name="sendTo" select="$party.partyId1" />
+						<xsl:with-param name="sentBy.messageAddressScheme" select="$sendBy.partyIdScheme" />
+						<xsl:with-param name="sendTo.messageAddressScheme" select="$sendTo.partyIdScheme" />
+						<xsl:with-param name="creationTimestamp" select="$creationTimestamp" />
+						<xsl:with-param name="fpmlType" select="$fpmlType" />
+						<xsl:with-param name="isCorrection" select="$isCorrection" />
+						<xsl:with-param name="sequenceNumber" select="$sequenceNumber" />
+						<xsl:with-param name="correlationId" select="$correlationId" />
+						<xsl:with-param name="correlationIdScheme" select="$correlationIdScheme" />
+					</xsl:call-template>
+				</xsl:if>
+				<xsl:variable name="trade.nodes">
+					<!-- generate tradeNode -->
+					<xsl:call-template name="create-trade-ird-fra">
+						<xsl:with-param name="elementName" select="$elementName" />
+						<!-- Header -->
+						<xsl:with-param name="party.id2" select="$party.id2" />
+						<xsl:with-param name="tradeId2" select="$tradeId2" />
+						<xsl:with-param name="tradeIdScheme2" select="$tradeId2.scheme" />
+						<xsl:with-param name="tradeHeader.party.id2" select="$party.id2" />
+						<xsl:with-param name="messageId" select="$messageId" />
+						<xsl:with-param name="messageIdScheme" select="$messageIdScheme" />
+						<xsl:with-param name="tradeDate" select="$tradeDate" />
+						<!-- Financial Data -->
+						<!--buyerPartyReference-->
+						<xsl:with-param name="buyerPartyReference" select="$buyerPartyReference.href" />
+						<!--sellerPartyReference-->
+						<xsl:with-param name="sellerPartyReference" select="$sellerPartyReference.href" />
+						<!--adjustedEffectiveDate.id-->
+						<xsl:with-param name="adjustedEffectiveDate.id" select="'fraEffectiveDate'" />
+						<!--adjustedEffectiveDate-->
+						<xsl:with-param name="adjustedEffectiveDate.value" select="$adjustedEffectiveDate" />
+						<!--adjustedTerminationDate-->
+						<xsl:with-param name="adjustedTerminationDate" select="$adjustedTerminationDate" />
+						<!--paymentDate-->
+						<xsl:with-param name="adjustableDate.unadjustedDate" select="$firstPayment.interestFlows.unadjustedPaymentDate" />
+						<xsl:with-param name="adjustableDate.dateAdjustments.businessDayConvention" select="$adjustableDate.dateAdjustments.businessDayConvention" />
+						<xsl:with-param name="adjustableDate.dateAdjustments.businessCenter.nodes" select="$swapStream1.paymentBusinessCenter.nodes" />
+						<xsl:with-param name="adjustableDate.dateAdjustments.businessCenter.businessCenterScheme" select="$adjustableDate.dateAdjustments.businessCenter.businessCenterScheme" />
+						<xsl:with-param name="adjustableDate.adjustedDate" select="$fra.payment.adjustedDate" />
+						<!-- fixingDateOffset tag -->
+						<xsl:with-param name="relativeDateOffSet.period" select="$fraResetDatesPeriodUnit" />
+						<xsl:with-param name="relativeDateOffSet.periodMultiplier" select="$fraResetDatesPeriodMultiplier" />
+						<xsl:with-param name="relativeDateOffSet.dayType" select="$fraResetDatesDayType" />
+						<xsl:with-param name="relativeDateOffSet.businessDayConvention" select="$fra.fixingDates.businessDayConvention" />
+						<xsl:with-param name="relativeDateOffSet.businessCenter.nodes" select="$fra.resetDatesAdjustments.businessCenter.nodes" />
+						<xsl:with-param name="relativeDateOffSet.businessCenter.businessCenterScheme" select="$relativeDateOffSet.businessCenter.businessCenterScheme" />
+						<xsl:with-param name="relativeDateOffSet.dateRelativeTo.href" select="'fraEffectiveDate'" />
+						<xsl:with-param name="relativeDateOffSet.adjustableDate.adjustedDate" select="$fra.reset.adjustedDate" />
+						<!-- dayCountFraction tag -->
+						<xsl:with-param name="dayCountFraction" select="$fraDayCountFraction" />
+						<xsl:with-param name="dayCountFractionScheme" select="$dayCountFractionScheme"/>
+						<!-- calculationPeriodNumberOfDays -->
+						<xsl:with-param name="calculationPeriodNumberOfDays" select="$calculationPeriodNumberOfDays" />
+						<!-- notional tag -->
+						<xsl:with-param name="currency.currencyScheme" select="$currencyScheme" />
+						<xsl:with-param name="notional.currency" select="$swapStream1.notionalSchedule.notionalStepSchedule.currency" />
+						<xsl:with-param name="notional.amount">
+							<xsl:choose>
+								<xsl:when test="$fpmlType = 'NovationOld'">
+									<xsl:value-of select="$oldSwapStream1.notionalSchedule.notionalStepSchedule.initialValue" />
+								</xsl:when>
+								<xsl:when test="$fpmlType = 'RequestTradeConfirmation' or $fpmlType = 'Termination'">
+									<xsl:value-of select="$swapStream1.notionalSchedule.remainingLiveQuantity" />
+								</xsl:when>
+								<xsl:otherwise>
+									<xsl:value-of select="$swapStream1.notionalSchedule.notionalStepSchedule.initialValue" />
+								</xsl:otherwise>
+							</xsl:choose>
+						</xsl:with-param>
+						<!-- fixedRate tag -->
+						<xsl:with-param name="fixedRate" select="$fraFixedRate" />
+						<!-- floatingRateIndex tag -->
+						<xsl:with-param name="floatingRateIndex" select="$fraFloatingIndex" />
+						<xsl:with-param name="floatingRateIndexScheme" select="$floatingRateIndexScheme" />
+						<!-- indexTenor -->
+						<xsl:with-param name="indexTenor.nodes"  select="$indexTenor.nodes" />
+						<xsl:with-param name="indexTenor.period">
+							<xsl:if test="string-length ($indexTenor.nodes) = 0">
+								<xsl:value-of select="$fraIndexPeriodUnit" />
+							</xsl:if>
+						</xsl:with-param>
+						<xsl:with-param name="indexTenor.periodMultiplier">
+							<xsl:if test="string-length ($indexTenor.nodes) = 0">
+								<xsl:value-of select="$fraIndexPeriodMultiplier" />
+							</xsl:if>
+						</xsl:with-param>
+						<!-- fraDiscounting tag -->
+						<xsl:with-param name="fraDiscounting" select="$fraDiscounting" />
+						<xsl:with-param name="masterAgreementType" select="$masterAgreementType"/>
+						<xsl:with-param name="masterAgreementTypeScheme" select="$masterAgreementTypeScheme"/>
+						<xsl:with-param name="contractualDefinitionsScheme" select="$contractualDefinitionsScheme"/>
+						<xsl:with-param name="contractualDefinitions" select="$contractualDefinitions"/>
+						<xsl:with-param name="productId.nodes" select="$productId.nodes"/>								
+					</xsl:call-template>
+				</xsl:variable>
+				<xsl:variable name="originalTrade.nodes">
+					<!-- generate tradeNode -->
+					<xsl:call-template name="create-trade-ird-fra">
+						<xsl:with-param name="elementName" select="''" />
+						<!-- Header -->
+						<xsl:with-param name="party.id2" select="$party.id2" />
+						<xsl:with-param name="tradeId2" select="$tradeId2" />
+						<xsl:with-param name="tradeIdScheme2" select="$tradeId2.scheme" />
+						<xsl:with-param name="tradeHeader.party.id2" select="$party.id2" />
+						<xsl:with-param name="messageId" select="$messageId" />
+						<xsl:with-param name="messageIdScheme" select="$messageIdScheme" />
+						<xsl:with-param name="tradeDate" select="$tradeDate" />
+						<!-- Financial Data -->
+						<!--buyerPartyReference-->
+						<xsl:with-param name="buyerPartyReference" select="$buyerPartyReference.href" />
+						<!--sellerPartyReference-->
+						<xsl:with-param name="sellerPartyReference" select="$sellerPartyReference.href" />
+						<!--adjustedEffectiveDate.id-->
+						<xsl:with-param name="adjustedEffectiveDate.id" select="'fraEffectiveDate'" />
+						<!--adjustedEffectiveDate-->
+						<xsl:with-param name="adjustedEffectiveDate.value" select="$adjustedEffectiveDate" />
+						<!--adjustedTerminationDate-->
+						<xsl:with-param name="adjustedTerminationDate" select="$adjustedTerminationDate" />
+						<!--paymentDate-->
+						<xsl:with-param name="adjustableDate.unadjustedDate" select="$firstPayment.interestFlows.unadjustedPaymentDate" />
+						<xsl:with-param name="adjustableDate.dateAdjustments.businessDayConvention" select="$adjustableDate.dateAdjustments.businessDayConvention" />
+						<xsl:with-param name="adjustableDate.dateAdjustments.businessCenter.nodes" select="$swapStream1.paymentBusinessCenter.nodes" />
+						<xsl:with-param name="adjustableDate.dateAdjustments.businessCenter.businessCenterScheme" select="$adjustableDate.dateAdjustments.businessCenter.businessCenterScheme" />
+						<xsl:with-param name="adjustableDate.adjustedDate" select="$fra.payment.adjustedDate" />
+						<!-- fixingDateOffset tag -->
+						<xsl:with-param name="relativeDateOffSet.period" select="$fraResetDatesPeriodUnit" />
+						<xsl:with-param name="relativeDateOffSet.periodMultiplier" select="$fraResetDatesPeriodMultiplier" />
+						<xsl:with-param name="relativeDateOffSet.dayType" select="$fraResetDatesDayType" />
+						<xsl:with-param name="relativeDateOffSet.businessDayConvention" select="$fra.fixingDates.businessDayConvention" />
+						<xsl:with-param name="relativeDateOffSet.businessCenter.nodes" select="$fra.resetDatesAdjustments.businessCenter.nodes" />
+						<xsl:with-param name="relativeDateOffSet.businessCenter.businessCenterScheme" select="$relativeDateOffSet.businessCenter.businessCenterScheme" />
+						<xsl:with-param name="relativeDateOffSet.dateRelativeTo.href" select="'fraEffectiveDate'" />
+						<xsl:with-param name="relativeDateOffSet.adjustableDate.adjustedDate" select="$fra.reset.adjustedDate" />
+						<!-- dayCountFraction tag -->
+						<xsl:with-param name="dayCountFraction" select="$fraDayCountFraction" />
+						<xsl:with-param name="dayCountFractionScheme" select="$dayCountFractionScheme"/>
+						<!-- calculationPeriodNumberOfDays -->
+						<xsl:with-param name="calculationPeriodNumberOfDays" select="$calculationPeriodNumberOfDays" />
+						<!-- notional tag -->
+						<xsl:with-param name="currency.currencyScheme" select="$currencyScheme" />
+						<xsl:with-param name="notional.currency" select="$swapStream1.notionalSchedule.notionalStepSchedule.currency" />
+						<xsl:with-param name="notional.amount" select="$swapStream1.notionalSchedule.notionalStepSchedule.initialValue" />
+						<!-- fixedRate tag -->
+						<xsl:with-param name="fixedRate" select="$fraFixedRate" />
+						<!-- floatingRateIndex tag -->
+						<xsl:with-param name="floatingRateIndex" select="$fraFloatingIndex" />
+						<xsl:with-param name="floatingRateIndexScheme" select="$floatingRateIndexScheme" />
+						<!-- indexTenor -->
+						<xsl:with-param name="indexTenor.period"  select="$fraIndexPeriodUnit" />
+						<xsl:with-param name="indexTenor.periodMultiplier" select="$fraIndexPeriodMultiplier" />
+						<!-- fraDiscounting tag -->
+						<xsl:with-param name="fraDiscounting" select="$fraDiscounting" />
+						<xsl:with-param name="masterAgreementType" select="$masterAgreementType"/>
+						<xsl:with-param name="masterAgreementTypeScheme" select="$masterAgreementTypeScheme"/>
+						<xsl:with-param name="contractualDefinitionsScheme" select="$contractualDefinitionsScheme"/>
+						<xsl:with-param name="contractualDefinitions" select="$contractualDefinitions"/>
+						<xsl:with-param name="productId.nodes" select="$productId.nodes"/>								
+					</xsl:call-template>
+				</xsl:variable>
+				<xsl:choose>
+					<xsl:when test="$fpmlType = 'RequestTradeConfirmation' ">
+						<!-- Create amendment node -->
+						<xsl:call-template name="create-tradeAmendmentContent">
+							<xsl:with-param name="eventIdentifier.partyReference.href" select="$party.id2" />
+							<xsl:with-param name="eventIdentifier.eventId" select="$eventId" />
+							<xsl:with-param name="trade.nodes" select="$trade.nodes" />
+							<xsl:with-param name="executionDateTime" select="$contractEventDateTime" />
+							<xsl:with-param name="agreementDate" select="$contractEventDate" />
+							<xsl:with-param name="effectiveDate" select="$postTradeEffectiveDate" />
+							<!-- payment -->
+							<xsl:with-param name="payment.payerPartyReference.href" select="$payment.payerPartyReference.href" />
+							<xsl:with-param name="payment.receiverPartyReference.href" select="$payment.receiverPartyReference.href" />
+							<xsl:with-param name="payment.paymentAmount.currency" select="$payment.paymentAmount.currency" />
+							<xsl:with-param name="payment.paymentAmount.currency.currencyScheme" select="$currencyScheme" />
+							<xsl:with-param name="payment.paymentAmount.amount" select="$payment.paymentAmount.amount" />
+							<xsl:with-param name="payment.adjustedPaymentDate" select="$payment.adjustedDate" />
+							<xsl:with-param name="payment.paymentType" select="$payment.paymentType" />
+							<xsl:with-param name="payment.adjustableDateNode" select="'false'" />
+						</xsl:call-template>
+					</xsl:when>
+					<xsl:when test="$fpmlType = 'Termination' ">
+						<termination>
+							<!-- Create termination node -->
+							<xsl:call-template name="create-tradeNotionalChange">
+								<xsl:with-param name="tradeChangeBase.businessEventIdentifier.eventId" select="$eventId" />
+								<xsl:with-param name="tradeChangeBase.businessEventIdentifier.issuer.partyIdScheme" select="$party.partyIdScheme2" />
+								<xsl:with-param name="tradeChangeBase.businessEventIdentifier.partyReference.href" select="$party.id2" />
+								<xsl:with-param name="tradeChangeBase.tradeIdentifier.partyReference.href" select="$party.id2" />
+								<xsl:with-param name="tradeChangeBase.tradeIdentifier.tradeId" select="$tradeId2" />
+								<xsl:with-param name="tradeChangeBase.tradeIdentifier.tradeId.tradeIdScheme" select="$tradeId2.scheme" />
+								<xsl:with-param name="tradeChangeBase.executionDateTime" select="$contractEventDateTime" />
+								<xsl:with-param name="tradeChangeBase.agreementDate" select="$contractEventDate" />
+								<xsl:with-param name="tradeChangeBase.effectiveDate" select="$contractEventDate" />
+								<xsl:with-param name="tradeChangeBase.payment.payerPartyReference.href" select="$payment.payerPartyReference.href" />
+								<xsl:with-param name="tradeChangeBase.payment.receiverPartyReference.href" select="$payment.receiverPartyReference.href" />
+								<xsl:with-param name="tradeChangeBase.payment.paymentAmount.currency" select="$payment.paymentAmount.currency" />
+								<xsl:with-param name="tradeChangeBase.payment.paymentAmount.currency.currencyScheme" select="$currencyScheme" />
+								<xsl:with-param name="tradeChangeBase.payment.paymentAmount.amount" select="$payment.paymentAmount.amount" />
+								<xsl:with-param name="tradeChangeBase.payment.adjustableDateNode" select="'false'" />
+								<xsl:with-param name="tradeChangeBase.payment.adjustedPaymentDate" select="$payment.adjustedDate" />
+								<xsl:with-param name="tradeChangeBase.payment.paymentType" select="$payment.paymentType" />
+								<xsl:with-param name="changeInNotionalAmount.currency" select="$settlement.currency" />
+								<xsl:with-param name="changeInNotionalAmount.currency.currencyScheme" select="$currencyScheme" />
+								<xsl:with-param name="changeInNotionalAmount.amount" select="$impactQuantity" />
+								<xsl:with-param name="outstandingNotionalAmount.currency" select="$settlement.currency" />
+								<xsl:with-param name="outstandingNotionalAmount.currency.currencyScheme" select="$currencyScheme" />
+								<xsl:with-param name="outstandingNotionalAmount.amount" select="$outstandingQuantity" />
+								<xsl:with-param name="tradeChangeBase.originalTrade.nodes" select="$originalTrade.nodes" />
+								<xsl:with-param name="tradeChangeBase.payment.nodes" select="$payment.node" />
+							</xsl:call-template>
+						</termination>
+					</xsl:when>
+					<xsl:when test="$fpmlType = 'NovationNew' or $fpmlType = 'NovationOld'">
+						<xsl:call-template name="create-tradeNovationContent">
+							<xsl:with-param name="eventIdentifier.eventId" select="$eventIdRef" />
+							<xsl:with-param name="eventIdentifier.partyReference.href" select="$party.id2" />
+							<xsl:with-param name="newTrade.nodes">
+								<xsl:if test="$fpmlType = 'NovationNew'">
+									<xsl:element name="newTrade">
+										<xsl:copy-of select="exslt:node-set($trade.nodes)/*/*" />
+									</xsl:element>
+								</xsl:if>
+							</xsl:with-param>
+							<xsl:with-param name="oldTrade.nodes">
+								<xsl:if test="$fpmlType = 'NovationOld'">
+									<xsl:element name="oldTrade">
+										<xsl:copy-of select="exslt:node-set($trade.nodes)/*/*" />
+									</xsl:element>
+								</xsl:if>
+							</xsl:with-param>
+							<!-- executionDateTime -->
+							<xsl:with-param name="executionDateTime" select="$executionDateTime" />
+							<xsl:with-param name="novationDate" select="$novationDate" />
+							<xsl:with-param name="novationTradeDate" select="$novationTradeDate" />
+							<!-- novated amount -->
+							<xsl:with-param name="novatedAmount.amount" select="$impactQuantity" />
+							<xsl:with-param name="novatedAmount.currency" select="$novatedAmount.currency" />
+							<!-- remaining amount -->
+							<xsl:with-param name="remainingAmount.currency" select="$novatedAmount.currency" />
+							<xsl:with-param name="remainingAmount.amount" select="$remainingAmount.amount" />
+							<!-- parties -->
+							<xsl:with-param name="transferor.href" select="$transferor.href" />
+							<xsl:with-param name="transferee.href" select="$transferee.href" />
+							<xsl:with-param name="remainingParty.href" select="$remainingParty.href" />
+							<!-- payment -->
+							<xsl:with-param name="payment.payerPartyReference.href" select="$payment.payerPartyReference.href" />
+							<xsl:with-param name="payment.receiverPartyReference.href" select="$payment.receiverPartyReference.href" />
+							<xsl:with-param name="payment.paymentAmount.currency" select="$payment.paymentAmount.currency" />
+							<xsl:with-param name="payment.paymentAmount.currency.currencyScheme" select="$currencyScheme" />
+							<xsl:with-param name="payment.paymentAmount.amount" select="$payment.paymentAmount.amount" />
+							<xsl:with-param name="payment.adjustedPaymentDate" select="$payment.adjustedDate" />
+							<xsl:with-param name="payment.paymentType" select="$payment.paymentType" />
+							<xsl:with-param name="payment.adjustableDateNode" select="'false'" />
+						</xsl:call-template>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:copy-of select="$trade.nodes" />
+					</xsl:otherwise>
+				</xsl:choose>
+				<!-- Create the first party tag -->
+				<xsl:call-template name="create-trade-party">
+					<xsl:with-param name="party.id" select="$party.id1" />
+					<xsl:with-param name="party.partyId" select="$party.partyId1" />
+					<xsl:with-param name="party.partyIdScheme" select="$party.partyIdScheme1" />
+				</xsl:call-template>
+				<!-- Create the second party tag -->
+				<xsl:call-template name="create-trade-party">
+					<xsl:with-param name="party.id" select="$party.id2" />
+					<xsl:with-param name="party.partyId" select="$party.partyId2" />
+					<xsl:with-param name="party.partyIdScheme" select="$party.partyIdScheme2" />
+				</xsl:call-template>
+				<!-- specific for novation events -->
+				<xsl:if test="string-length($party3Id) &gt; 0">
+					<xsl:call-template name="create-trade-party">
+						<xsl:with-param name="party.id" select="$party3Id" />
+						<xsl:with-param name="party.partyId" select="$party.partyId3" />
+						<xsl:with-param name="party.partyIdScheme" select="$party.partyIdScheme3" />
+					</xsl:call-template>
+				</xsl:if>
+			</xsl:element>
+		</xsl:variable>
+		<xsl:apply-templates select="exslt:node-set($fpmlNode)" mode="change-ns" />
+	</xsl:template>
+</xsl:stylesheet> 

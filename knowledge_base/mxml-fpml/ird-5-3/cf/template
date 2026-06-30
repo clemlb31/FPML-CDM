@@ -1,0 +1,115 @@
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns="http://www.fpml.org/FpML-5/confirmation" xmlns:exsl="http://exslt.org/common" xmlns:exslt="http://exslt.org/common" xmlns:mx="http://murex.com/xslt/common" version="1.0" exclude-result-prefixes="mx">
+  <xsl:import href="mx.xml2xml.transform.mxml2fpml.5-3.products.common.addNamespace" />
+  <xsl:import href="mx.xml2xml.transform.mxml2fpml.5-3.products.ird.cf.transform" />
+  <xsl:param name="fpmlType" />
+  <xsl:param name="tradeIdScheme" />
+  <xsl:param name="isCorrection" />
+  <xsl:param name="sequenceNumber" />
+  <xsl:param name="correlationId" />
+  <xsl:param name="correlationIdScheme" />
+  <xsl:param name="generateCashFlows" />
+  <xsl:param name="messageId" />
+  <xsl:param name="messageIdScheme" />
+  <xsl:param name="sendBy.partyIdScheme" />
+  <xsl:param name="sendTo.partyIdScheme" />
+  <xsl:param name="productId.nodes"/>
+  
+  <!-- ============================== -->
+  <!-- For earlyTerminationProvision node -->
+  <!-- ============================== -->
+  <xsl:param name="earlyTerminationProvision.calculationAgentParty" />
+  <xsl:param name="earlyTerminationProvision.calculationAgentParty.nodes" />
+  <xsl:param name="earlyTerminationProvision.hourMinuteTime" />
+  <xsl:param name="earlyTerminationProvision.businessCenter.name" />
+  <xsl:param name="earlyTerminationProvision.cashSettlementPaymentDate.businessCenter.nodes" />
+  <xsl:param name="earlyTerminationProvision.cashSettlementValuationDate.businessCenter.businessCenterScheme" />
+  <xsl:param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSource" />
+  <xsl:param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSourcePage" />
+  <xsl:param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.quotationRateType" />
+  <xsl:param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.referenceBank.node" />
+  <xsl:param name="earlyTerminationProvision.cashPriceMethod.currency" />
+  <xsl:param name="earlyTerminationProvision.cashPriceMethod.quotationRateType" />
+  <xsl:param name="earlyTerminationProvision.cashPriceMethod.referenceBank.node" />
+  <xsl:param name="earlyTerminationProvision.cashPriceAlternateMethod.currency" />
+  <xsl:param name="earlyTerminationProvision.cashPriceAlternateMethod.quotationRateType" />
+  <xsl:param name="earlyTerminationProvision.cashPriceAlternateMethod.referenceBank.node" />
+  
+  <xsl:variable name="mapIndex" select="'public.xml2xml.mapping.mxml2fpml.ird.index'" />
+  <xsl:template match="/">
+    <xsl:variable name="tradeId" select="mx:execute-formula('public.ECN.import.FpML.mapping.outbound.tradeId', concat('contractId:', $contractID)) " />
+    <xsl:variable name="messageId" select="mx:execute-formula('public.ECN.import.FpML.mapping.outbound.messageId', concat('id:', $contractID))" />
+    <xsl:variable name="tradeIdScheme-local">
+      <xsl:choose>
+        <xsl:when test="string-length($tradeIdScheme) = 0 ">
+          <xsl:value-of select="'http://www.fpml.org/coding-scheme/external/unique-transaction-identifier'" />
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="$tradeIdScheme" />
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:variable name="fpmlNode">
+      <xsl:call-template name="create-dataDocument-node-ird-capFloor">
+        <xsl:with-param name="fpmlType" select="$fpmlType" />
+        <!--==========================-->
+        <!-- Mandatory mapping tables -->
+        <!--==========================-->
+        <xsl:with-param name="mapBusinessDayConv" select="'public.xml2xml.mapping.mxml2fpml.common.businessDayConvention'" />
+        <xsl:with-param name="mapDayCountBasis" select="'public.xml2xml.mapping.mxml2fpml.common.dayCountBasis'" />
+        <xsl:with-param name="mapCounterparty" select="'public.ECN.import.FpML.mapping.outbound.counterparty'" />
+        <xsl:with-param name="mapOurPartyLabel" select="'public.ECN.import.FpML.mapping.outbound.ourPartyLabel'" />
+        <xsl:with-param name="mapPeriodUnit" select="'public.xml2xml.mapping.mxml2fpml.common.periodUnit'" />
+        <!--==========================-->
+        <!-- Mandatory parameters     -->
+        <!--==========================-->
+        <xsl:with-param name="tradeId2" select="$tradeId" />
+        <xsl:with-param name="tradeId2.scheme" select="$tradeIdScheme-local" />
+        <xsl:with-param name="tradeId1" select="$tradeId" />
+        <xsl:with-param name="tradeId1.scheme" select="$tradeIdScheme-local" />
+        <!--==========================-->
+        <!-- Optional parameters      -->
+        <!--==========================-->
+        <xsl:with-param name="messageId" select="$messageId" />
+        <xsl:with-param name="messageIdScheme" select="$messageIdScheme" />
+        <xsl:with-param name="sendBy.partyIdScheme" select="$sendBy.partyIdScheme" />
+        <xsl:with-param name="sendTo.partyIdScheme" select="$sendTo.partyIdScheme" />
+        <xsl:with-param name="calculationPeriodDate.id" select="$swapStream1.calculationPeriodDatesReference.href" />
+        <xsl:with-param name="calculationPeriodDatesReference" select="$swapStream1.calculationPeriodDatesReference.href" />
+        <xsl:with-param name="paymentDate.calculationPeriodDatesReference" select="$swapStream1.calculationPeriodDatesReference.href" />
+        <xsl:with-param name="paymentDate.payRelativeTo" select="'paymentBusinessCenters0'" />
+        <xsl:with-param name="resetDate.calculationPeriodDatesReference" select="$swapStream1.calculationPeriodDatesReference.href" />
+        <xsl:with-param name="resetDate.resetRelativeTo" select="'resetDates0'" />
+        <xsl:with-param name="calculationAgentParty" select="''" />
+        <!-- Specific amendement -->
+        <xsl:with-param name="isCorrection" select="$isCorrection" />
+        <xsl:with-param name="sequenceNumber" select="$sequenceNumber" />
+        <xsl:with-param name="correlationId" select="$correlationId" />
+        <xsl:with-param name="correlationIdScheme" select="$correlationIdScheme" />
+        <xsl:with-param name="generateCashFlows" select="$generateCashFlows" />
+		<xsl:with-param name="productId.nodes" select="$productId.nodes"/>
+        <!-- ============================== -->
+        <!-- For earlyTerminationProvision node -->
+        <!-- ============================== -->
+		<xsl:with-param name="earlyTerminationProvision.cashPriceMethod.quotationRateType" select="$earlyTerminationProvision.cashPriceMethod.quotationRateType" />
+        <xsl:with-param name="earlyTerminationProvision.calculationAgentParty" select="$earlyTerminationProvision.calculationAgentParty" />
+        <xsl:with-param name="earlyTerminationProvision.calculationAgentParty.nodes" select="$earlyTerminationProvision.calculationAgentParty.nodes" />
+        <xsl:with-param name="earlyTerminationProvision.hourMinuteTime" select="$earlyTerminationProvision.hourMinuteTime" />
+        <xsl:with-param name="earlyTerminationProvision.businessCenter.name" select="$earlyTerminationProvision.businessCenter.name" />
+        <xsl:with-param name="earlyTerminationProvision.cashSettlementPaymentDate.businessCenter.nodes" select="$earlyTerminationProvision.cashSettlementPaymentDate.businessCenter.nodes" />
+        <xsl:with-param name="earlyTerminationProvision.cashSettlementValuationDate.businessCenter.businessCenterScheme" select="$earlyTerminationProvision.cashSettlementValuationDate.businessCenter.businessCenterScheme" />
+        <xsl:with-param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSource" select="$earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSource" />
+        <xsl:with-param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSourcePage" select="$earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSourcePage" />
+        <xsl:with-param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.quotationRateType" select="$earlyTerminationProvision.zeroCouponYieldAdjustedMethod.quotationRateType" />
+        <xsl:with-param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.referenceBank.node" select="$earlyTerminationProvision.zeroCouponYieldAdjustedMethod.referenceBank.node" />
+        <xsl:with-param name="earlyTerminationProvision.cashPriceMethod.currency" select="$earlyTerminationProvision.cashPriceMethod.currency" />
+        <xsl:with-param name="earlyTerminationProvision.cashPriceMethod.quotationRateType" select="$earlyTerminationProvision.cashPriceMethod.quotationRateType" />
+        <xsl:with-param name="earlyTerminationProvision.cashPriceMethod.referenceBank.node" select="$earlyTerminationProvision.cashPriceMethod.referenceBank.node" />
+        <xsl:with-param name="earlyTerminationProvision.cashPriceAlternateMethod.currency" select="$earlyTerminationProvision.cashPriceAlternateMethod.currency" />
+        <xsl:with-param name="earlyTerminationProvision.cashPriceAlternateMethod.quotationRateType" select="$earlyTerminationProvision.cashPriceAlternateMethod.quotationRateType" />
+        <xsl:with-param name="earlyTerminationProvision.cashPriceAlternateMethod.referenceBank.node" select="$earlyTerminationProvision.cashPriceAlternateMethod.referenceBank.node" />
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:apply-templates select="exslt:node-set($fpmlNode)" mode="change-ns" />
+  </xsl:template>
+</xsl:stylesheet>
+

@@ -1,0 +1,93 @@
+<Operator Code="BestMatching">
+	<Context Code="InputValues">
+		<Context Code="InputValue">
+			<Context Code="Column">0</Context>
+			<Context Code="Value">MxCTX#method#Mx</Context>
+			<Context Code="Label">MX Method</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+		<Context Code="InputValue">
+			<Context Code="Column">1</Context>
+			<Context Code="Value">MxCTX#isdaDefinitions#Mx</Context>
+			<Context Code="Label">ISDA Definitions</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+		<Context Code="InputValue">
+			<Context Code="Column">2</Context>
+			<Context Code="Value">MxCTX#informationSourcePopulated#Mx</Context>
+			<Context Code="Label">Information Source Populated</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+	</Context>
+	<Operator Code="OrderBestMatching">
+		<Operand Code="Matrix">
+			<Operand Code="Vector">
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">cashPrice</Operand>
+				<Operand Code="ScalarString">ISDA2021</Operand>
+				<Operand Code="ScalarString">NoBanks</Operand>
+				<Operand Code="ScalarString">MidMarketValuation-CalculationAgentDetermination</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">cashPrice</Operand>
+				<Operand Code="ScalarString">ISDA2021</Operand>
+				<Operand Code="ScalarString">NotDefault</Operand>
+				<Operand Code="ScalarString">MidMarketValuation-IndicativeQuotations</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">cashPrice</Operand>
+				<Operand Code="ScalarString">ISDA2021</Operand>
+				<Operand Code="ScalarString">True</Operand>
+				<Operand Code="ScalarString">MidMarketValuation-IndicativeQuotations</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">cashPrice</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">cashPriceAlternate</Operand>
+				<Operand Code="ScalarString">ISDA2021</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">MidMarketValuation-IndicativeQuotationsAlternate</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">collateralizedCashPrice</Operand>
+				<Operand Code="ScalarString">ISDA2021</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">CollateralizedCashPrice</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">parYieldCurveUnadjusted</Operand>
+				<Operand Code="ScalarString">ISDA2021</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">ParYieldCurveUnadjusted</Operand>
+			</Operand>
+		</Operand>
+		<Context Code="Priorities">
+			<Context Code="Column">0</Context>
+			<Context Code="Column">1</Context>
+			<Context Code="Column">2</Context>
+		</Context>
+	</Operator>
+	<Context Code="OutputColumns">
+		<Context Code="OutputColumn">
+			<Context Code="Column">3</Context>
+			<Context Code="Label">Cash Settlement Type (internal x-form label)</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+	</Context>
+	<Context Code="ReturnType">
+		<Context Code="MultipleLineResult">false</Context>
+	</Context>
+</Operator>

@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataDocument xmlns="http://www.fpml.org/FpML-5/confirmation" fpmlVersion="5-3">
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="UBS-RCSR"/>
+				<tradeId tradeIdScheme="http://www.fpml.org/coding-scheme/external/unique-transaction-identifier">MX53121795</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2010-09-01</tradeDate>
+		</tradeHeader>
+		<capFloor>
+			<capFloorStream>
+				<payerPartyReference href="UBS-RCSR"/>
+				<receiverPartyReference href="_2616"/>
+				<calculationPeriodDates id="floatingRateCalculationPeriodDates1">
+					<effectiveDate>
+						<unadjustedDate>2010-09-01</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+						</dateAdjustments>
+						<adjustedDate>2010-09-01</adjustedDate>
+					</effectiveDate>
+					<terminationDate>
+						<unadjustedDate>2022-09-01</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>NONE</businessDayConvention>
+						</dateAdjustments>
+						<adjustedDate>2022-09-01</adjustedDate>
+					</terminationDate>
+					<calculationPeriodDatesAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</calculationPeriodDatesAdjustments>
+					<calculationPeriodFrequency>
+						<periodMultiplier>1</periodMultiplier>
+						<period>T</period>
+						<rollConvention>NONE</rollConvention>
+					</calculationPeriodFrequency>
+				</calculationPeriodDates>
+				<paymentDates>
+					<calculationPeriodDatesReference href="floatingRateCalculationPeriodDates1"/>
+					<paymentFrequency>
+						<periodMultiplier>1</periodMultiplier>
+						<period>T</period>
+					</paymentFrequency>
+					<payRelativeTo>CalculationPeriodEndDate</payRelativeTo>
+					<paymentDatesAdjustments>
+						<businessDayConvention>MODFOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter>EUTA</businessCenter>
+						</businessCenters>
+					</paymentDatesAdjustments>
+				</paymentDates>
+				<resetDates id="resetDates">
+					<calculationPeriodDatesReference href="floatingRateCalculationPeriodDates1"/>
+					<resetRelativeTo>CalculationPeriodEndDate</resetRelativeTo>
+					<fixingDates>
+						<periodMultiplier>0</periodMultiplier>
+						<period>D</period>
+						<businessDayConvention>MODFOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter>EUTA</businessCenter>
+						</businessCenters>
+						<dateRelativeTo href="floatingRateCalculationPeriodDates1"/>
+					</fixingDates>
+					<resetFrequency>
+						<periodMultiplier>1</periodMultiplier>
+						<period>T</period>
+					</resetFrequency>
+					<resetDatesAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</resetDatesAdjustments>
+				</resetDates>
+				<calculationPeriodAmount>
+					<calculation>
+						<notionalSchedule>
+							<notionalStepSchedule>
+								<initialValue>100000000</initialValue>
+								<currency>EUR</currency>
+							</notionalStepSchedule>
+						</notionalSchedule>
+						<inflationRateCalculation>
+							<floatingRateIndex floatingRateIndexScheme="http://www.fpml.org/coding-scheme/inflation-index-description">EUR-EXT-CPI</floatingRateIndex>
+							<floorRateSchedule>
+								<initialValue>0</initialValue>
+								<buyer>Receiver</buyer>
+								<seller>Payer</seller>
+							</floorRateSchedule>
+							<inflationLag>
+								<periodMultiplier>3</periodMultiplier>
+								<period>M</period>
+							</inflationLag>
+							<indexSource rateSourcePageScheme="http://www.fpml.org/coding-scheme/inflation-index-source">CPTFEMU</indexSource>
+							<interpolationMethod>LinearZeroYield</interpolationMethod>
+							<initialIndexLevel>109.7</initialIndexLevel>
+							<fallbackBondApplicable>true</fallbackBondApplicable>
+						</inflationRateCalculation>
+						<dayCountFraction>1/1</dayCountFraction>
+					</calculation>
+				</calculationPeriodAmount>
+				<cashflows>
+					<cashflowsMatchParameters>true</cashflowsMatchParameters>
+					<paymentCalculationPeriod>
+						<adjustedPaymentDate>2022-09-01</adjustedPaymentDate>
+						<calculationPeriod>
+							<unadjustedStartDate>2010-09-01</unadjustedStartDate>
+							<unadjustedEndDate>2022-09-01</unadjustedEndDate>
+							<adjustedStartDate>2010-09-01</adjustedStartDate>
+							<adjustedEndDate>2022-09-01</adjustedEndDate>
+							<notionalAmount>100000000</notionalAmount>
+							<floatingRateDefinition>
+								<rateObservation>
+									<adjustedFixingDate>2010-06-01</adjustedFixingDate>
+									<observedRate>109.7</observedRate>
+									<observationWeight>30</observationWeight>
+								</rateObservation>
+								<rateObservation>
+									<adjustedFixingDate>2022-06-01</adjustedFixingDate>
+									<observationWeight>30</observationWeight>
+								</rateObservation>
+								<spread>0</spread>
+								<floorRate>
+									<strikeRate>0</strikeRate>
+								</floorRate>
+							</floatingRateDefinition>
+							<dayCountYearFraction>1</dayCountYearFraction>
+						</calculationPeriod>
+					</paymentCalculationPeriod>
+				</cashflows>
+			</capFloorStream>
+			<premium>
+				<payerPartyReference href="_2616"/>
+				<receiverPartyReference href="UBS-RCSR"/>
+				<paymentAmount>
+					<currency>EUR</currency>
+					<amount>30000</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2022-09-01</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>MODFOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter>EUTA</businessCenter>
+						</businessCenters>
+					</dateAdjustments>
+					<adjustedDate>2022-09-01</adjustedDate>
+				</paymentDate>
+			</premium>
+			<earlyTerminationProvision>
+				<optionalEarlyTermination>
+					<europeanExercise id="exerciseDate">
+						<expirationDate>
+							<adjustableDate>
+								<unadjustedDate>2020-08-24</unadjustedDate>
+								<dateAdjustments>
+									<businessDayConvention>MODFOLLOWING</businessDayConvention>
+								</dateAdjustments>
+							</adjustableDate>
+						</expirationDate>
+						<earliestExerciseTime>
+							<hourMinuteTime>14:00:00</hourMinuteTime>
+							<businessCenter>businessCenter</businessCenter>
+						</earliestExerciseTime>
+						<expirationTime>
+							<hourMinuteTime>14:00:00</hourMinuteTime>
+							<businessCenter>businessCenter</businessCenter>
+						</expirationTime>
+					</europeanExercise>
+					<followUpConfirmation>false</followUpConfirmation>
+					<calculationAgent>
+						<calculationAgentParty>ExercisingParty</calculationAgentParty>
+					</calculationAgent>
+					<cashSettlement>
+						<cashSettlementValuationTime>
+							<hourMinuteTime>14:00:00</hourMinuteTime>
+							<businessCenter>businessCenter</businessCenter>
+						</cashSettlementValuationTime>
+						<cashSettlementValuationDate>
+							<periodMultiplier>-2</periodMultiplier>
+							<period>D</period>
+							<dayType>Business</dayType>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>businessCenter</businessCenter>
+								<businessCenter>businessCenter</businessCenter>
+							</businessCenters>
+							<dateRelativeTo href="cashSettlementPaymentDate"/>
+						</cashSettlementValuationDate>
+						<cashSettlementPaymentDate id="cashSettlementPaymentDate">
+							<adjustableDates>
+								<unadjustedDate>2020-09-01</unadjustedDate>
+								<dateAdjustments>
+									<businessDayConvention>MODFOLLOWING</businessDayConvention>
+									<businessCenters>
+										<businessCenter>EUTA</businessCenter>
+									</businessCenters>
+								</dateAdjustments>
+								<adjustedDate>2020-09-01</adjustedDate>
+							</adjustableDates>
+						</cashSettlementPaymentDate>
+					</cashSettlement>
+					<optionalEarlyTerminationAdjustedDates>
+						<earlyTerminationEvent>
+							<adjustedExerciseDate>2020-08-24</adjustedExerciseDate>
+							<adjustedEarlyTerminationDate>2020-09-01</adjustedEarlyTerminationDate>
+							<adjustedCashSettlementValuationDate>2020-08-27</adjustedCashSettlementValuationDate>
+							<adjustedCashSettlementPaymentDate>2020-09-01</adjustedCashSettlementPaymentDate>
+							<adjustedExerciseFeePaymentDate>2020-09-01</adjustedExerciseFeePaymentDate>
+						</earlyTerminationEvent>
+					</optionalEarlyTerminationAdjustedDates>
+				</optionalEarlyTermination>
+			</earlyTerminationProvision>
+		</capFloor>
+	</trade>
+	<party id="_2616">
+		<partyId>BARCLAYS</partyId>
+	</party>
+	<party id="UBS-RCSR">
+		<partyId>BARCLAYS</partyId>
+	</party>
+</dataDocument>

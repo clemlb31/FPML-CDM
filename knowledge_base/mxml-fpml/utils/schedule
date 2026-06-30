@@ -1,0 +1,349 @@
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+				xmlns:exsl="http://exslt.org/common"
+				version="1.0">
+	
+	<!--uses generalized code from mx.xml2xml.matching.Swapswire.transformation.message.swdml.common -->
+
+	<!-- ================================================================================================== 
+		 ************************************  	  getRollConvention		*********************************** 
+		 ================================================================================================== -->
+	<xsl:template name="getRollConvention">
+		<xsl:param name="stream" />
+		<xsl:param name="stubPresence" />
+		<xsl:param name="stubPosition" />
+		
+		<xsl:variable name="rollDate"  >
+			<xsl:choose>
+				<xsl:when test="$stubPresence = 'true' and $stubPosition = 'inArrears'">
+					<xsl:value-of select="$stream/effectiveDate" />
+				</xsl:when>
+				<xsl:when test="$stubPresence = 'true' and $stubPosition = 'upFront'">
+					<xsl:value-of select="$stream/maturity" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="$stream/rollDate" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="rollDay" select="substring($rollDate, 7, 2)" />
+		<xsl:variable name="rollMonth" select="substring($rollDate, 5, 2)" />
+		<xsl:variable name="rollYear" select="substring($rollDate, 1, 4)" />
+		<xsl:variable name="endOfMonthTreatment">
+			<xsl:call-template name="namedScheduleEndOfMonthTreatment">
+				<xsl:with-param name="scheduleSet" select="$stream/streamTemplate/streamSchedules" />
+				<xsl:with-param name="scheduleName" select="'calculationSchedule'" />
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:variable name="isLastDay">
+			<xsl:call-template name="isLastDayOfMonth">
+				<xsl:with-param name="day" select="$rollDay" />
+				<xsl:with-param name="month" select="$rollMonth" />
+				<xsl:with-param name="year" select="$rollYear" />
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:variable name="isIMM">
+			<xsl:call-template name="isIMMSchedule">
+				<xsl:with-param name="stream" select="$stream" />
+			</xsl:call-template>
+		</xsl:variable>
+		
+		<xsl:choose>
+			<xsl:when test="$isLastDay = 'Y' and $endOfMonthTreatment = 'stickIfEndOfMonth'">EOM</xsl:when>
+			<xsl:when test="$isLastDay = 'Y' and $endOfMonthTreatment = 'stickIfUsualEndOfMonth'">EOM</xsl:when>
+			<xsl:when test="$isIMM = 'IMM'">IMM</xsl:when>
+			<xsl:when test="$isIMM = 'IMMAUD'">IMMAUD</xsl:when>
+			<xsl:when test="$isIMM = 'IMMCAD'">IMMCAD</xsl:when>      
+			<xsl:when test="$isIMM = 'IMMNZD'">IMMNZD</xsl:when>
+			<xsl:when test="$rollDay = '31'">EOM</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="number($rollDay)" />
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+	
+	<!-- ================================================================================================== 
+		 ************************************  	  isLastDayOfMonth		*********************************** 
+		 ================================================================================================== -->
+	<xsl:template name="isLastDayOfMonth">
+		<xsl:param name="day" />
+		<xsl:param name="month" />
+		<xsl:param name="year" />
+		
+		<xsl:choose>
+			<xsl:when test="$day = '31'">Y</xsl:when>
+			<xsl:when test="$day = '30' and (number($month) = 4 or number($month) = 6 or number($month) = 9 or number($month) = 11)">Y</xsl:when>
+			<xsl:when test="$day = '29' and number($month) = 2">Y</xsl:when>
+			<xsl:when test="$day = '28' and number($month) = 2 and number($year) mod 4 != 0">Y</xsl:when>
+			<xsl:otherwise>N</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+
+	<!-- ================================================================================================== 
+		 *******************************  namedScheduleEndOfMonthTreatment  ******************************* 
+		 ================================================================================================== -->
+	<xsl:template name="namedScheduleEndOfMonthTreatment">
+		<xsl:param name="scheduleSet" />
+		<xsl:param name="scheduleName" />
+		
+		<xsl:if test="string-length($scheduleName) &gt; 0 and string-length($scheduleSet) &gt; 0">
+			<xsl:variable name="endOfMonthTreatment">
+				<xsl:choose>
+					<xsl:when test="$scheduleName = 'calculationSchedule' and string-length($scheduleSet/calculationSchedule/scheduleGenerator) &gt; 0">
+						<xsl:value-of select="$scheduleSet/calculationSchedule/scheduleGenerator//standardScheduleGenerator/endOfMonthTreatment" />
+					</xsl:when>
+					<xsl:when test="$scheduleName = 'calculationEndSchedule' and string-length($scheduleSet/calculationEndSchedule/scheduleGenerator) &gt; 0">
+						<xsl:value-of select="$scheduleSet/calculationEndSchedule/scheduleGenerator//standardScheduleGenerator/endOfMonthTreatment" />
+					</xsl:when>
+					<xsl:when test="$scheduleName = 'resetSchedule' and string-length($scheduleSet/resetSchedule/scheduleGenerator) &gt; 0">
+						<xsl:value-of select="$scheduleSet/resetSchedule/scheduleGenerator//standardScheduleGenerator/endOfMonthTreatment" />
+					</xsl:when>
+					<xsl:when test="$scheduleName = 'paymentSchedule' and string-length($scheduleSet/paymentSchedule/scheduleGenerator) &gt; 0">
+						<xsl:value-of select="$scheduleSet/paymentSchedule/scheduleGenerator//standardScheduleGenerator/endOfMonthTreatment" />
+					</xsl:when>
+				</xsl:choose>
+			</xsl:variable>
+			
+			<xsl:choose>
+				<xsl:when test="string-length($endOfMonthTreatment) &gt; 0">
+					<xsl:value-of select="$endOfMonthTreatment" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:call-template name="namedScheduleEndOfMonthTreatment">
+						<xsl:with-param name="scheduleName">
+							<xsl:choose>
+								<xsl:when test="$scheduleName = 'calculationSchedule'">
+									<xsl:value-of select="$scheduleSet/calculationSchedule/underlyingSchedule" />
+								</xsl:when>
+								<xsl:when test="$scheduleName = 'calculationEndSchedule'">
+									<xsl:value-of select="$scheduleSet/calculationEndSchedule/underlyingSchedule" />
+								</xsl:when>
+								<xsl:when test="$scheduleName = 'resetSchedule'">
+									<xsl:value-of select="$scheduleSet/resetSchedule/underlyingSchedule" />
+								</xsl:when>
+								<xsl:when test="$scheduleName = 'paymentSchedule'">
+									<xsl:value-of select="$scheduleSet/paymentSchedule/underlyingSchedule" />
+								</xsl:when>
+							</xsl:choose>
+						</xsl:with-param>
+						<xsl:with-param name="scheduleSet" select="$scheduleSet" />
+					</xsl:call-template>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:template>
+
+	<!-- ================================================================================================== 
+		 ******************************************  isIMMSchedule  *************************************** 
+		 ================================================================================================== -->
+	<xsl:template name="isIMMSchedule">         
+		<xsl:param name="stream" />
+		
+		<xsl:if test="$stream/streamTemplate/streamSchedules/calculationSchedule/scheduleNature = 'drivingSchedule'">
+			<xsl:choose>
+				<xsl:when test="$stream/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator">
+					<xsl:apply-templates select="$stream/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:apply-templates select="$stream/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/shiftedScheduleGenerator" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:template>
+	
+	<!-- ================================================================================================== 
+		 ***************************************  scheduleGenerator  ************************************** 
+		 ================================================================================================== -->
+	<xsl:template match="scheduleGenerator">
+		<xsl:variable name="periodType" select="standardScheduleGenerator/adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/periodType" />
+		<xsl:variable name="periodPosition" select="standardScheduleGenerator/adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/periodPosition/relativePosition" />
+		<xsl:variable name="subPeriodType" select="standardScheduleGenerator/adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/adjustmentSubPeriod/periodType" />
+		<xsl:variable name="subPeriodPosition" select="standardScheduleGenerator/adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/adjustmentSubPeriod/periodPosition/absolutePosition" />
+		<xsl:variable name="subSubPeriodType" select="standardScheduleGenerator/adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/adjustmentSubPeriod/adjustmentSubPeriod/periodType" />
+		<xsl:variable name="subSubPeriodPosition" select="standardScheduleGenerator/adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/adjustmentSubPeriod/adjustmentSubPeriod/periodPosition/absolutePosition" />
+		<xsl:variable name="subSubPeriodWeekDay" select="standardScheduleGenerator/adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/adjustmentSubPeriod/adjustmentSubPeriod/periodDefinition/periodWeekDay/weekDay" />
+		<xsl:variable name="result">
+			<xsl:choose>
+				<xsl:when test="$subSubPeriodWeekDay = 'wednesday'  
+								and $subSubPeriodType = 'weekDay'     
+								and $subSubPeriodPosition = 3  
+								and $subPeriodType = 'month'    
+								and $subPeriodPosition = 3   
+								and $periodPosition = 'current'  
+								and $periodType = 'quarter'">
+					
+					<xsl:value-of select="'IMM'" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:variable name="subPeriodWeekDay" select="standardScheduleGenerator/adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/adjustmentSubPeriod/periodDefinition/periodWeekDay/weekDay" />
+					<xsl:choose>
+						<xsl:when test="$subPeriodWeekDay = 'wednesday' 
+										and $subPeriodType = 'weekDay'   
+										and $subPeriodPosition = 3   
+										and $periodPosition = 'current' 
+										and $periodType = 'month'">
+							
+							<xsl:value-of select="'IMM'" />
+						</xsl:when>
+						<xsl:otherwise>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		
+		<xsl:value-of select="$result" />
+	</xsl:template>
+
+	<!-- ================================================================================================== 
+		 ************************************  shiftedScheduleGenerator  ********************************** 
+		 ================================================================================================== -->
+	<xsl:template match="shiftedScheduleGenerator">
+		<xsl:variable name="result">
+			<xsl:choose>
+				<xsl:when test="underlyingScheduleGenerator/standardScheduleGenerator">
+					<xsl:variable name="firstTry">
+						<xsl:apply-templates select="underlyingScheduleGenerator/standardScheduleGenerator" />
+					</xsl:variable>
+					
+					<xsl:choose>
+						<xsl:when test="$firstTry = 'IMM' or $firstTry = 'IMMAUD' or $firstTry = 'IMMNZD' or $firstTry = 'IMMCAD'">
+							<xsl:value-of select="$firstTry" />
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:if test="standardScheduleGenerator">
+								<xsl:apply-templates select="standardScheduleGenerator" />
+							</xsl:if>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:when>
+				<xsl:when test="standardScheduleGenerator">
+					<xsl:apply-templates select="standardScheduleGenerator" />
+				</xsl:when>
+				<xsl:otherwise/>
+			</xsl:choose>
+		</xsl:variable>
+		
+		<xsl:value-of select="$result" />
+	</xsl:template>
+
+	<!-- ================================================================================================== 
+		 ***********************************  standardScheduleGenerator  ********************************** 
+		 ================================================================================================== -->
+	<xsl:template match="standardScheduleGenerator">
+		<xsl:variable name="periodType" select="adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/periodType" />
+		<xsl:variable name="subPeriodType" select="adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/adjustmentSubPeriod/periodType" />
+		<xsl:variable name="subSubPeriodType" select="adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/subPeriodMonth/adjustmentSubPeriod/periodType" />
+		<xsl:variable name="periodPosition" select="adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/periodPosition/relativePosition" />
+		<xsl:variable name="subPeriodPosition" select="adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/adjustmentSubPeriod/periodPosition/absolutePosition" />
+		<xsl:variable name="subSubPeriodPosition" select="adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/adjustmentSubPeriod/adjustmentSubPeriod/periodPosition/absolutePosition" />    
+		<xsl:variable name="subPeriodWeekDay" select="adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/adjustmentSubPeriod/periodDefinition/periodWeekDay/weekDay" />
+		<xsl:variable name="subSubPeriodWeekDay" select="adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/adjustmentSubPeriod/adjustmentSubPeriod/periodDefinition/periodWeekDay/weekDay" />
+		<xsl:variable name="subPeriodMonth" select="adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/adjustmentSubPeriod/periodDefinition/periodMonth" />
+		<xsl:variable name="subSubPeriodMonth" select="adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/adjustmentSubPeriod/adjustmentSubPeriod/periodDefinition/periodDefinition/periodMonth" />
+		<xsl:variable name="subSubPeriodRelativePosition" select="adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/adjustmentSubPeriod/adjustmentSubPeriod/periodPosition/relativePosition" />
+		<xsl:variable name="subSubPeriodPeriodMonthDay" select="adjustmentRule/unconditionalAdjustmentRule/adjustmentPeriod/adjustmentSubPeriod/adjustmentSubPeriod/periodDefinition/periodMonthDay" />    
+
+		<xsl:variable name="result">
+			<xsl:choose>
+				<xsl:when test="$subPeriodWeekDay = 'wednesday' 
+								and $subPeriodType = 'weekDay'   
+								and $subPeriodPosition = 3    
+								and $periodPosition = 'current'  
+								and $periodType = 'month'">
+					
+					<xsl:value-of select="'IMM'" />
+				</xsl:when>
+				<xsl:when test="$subSubPeriodWeekDay = 'friday' 
+								and $subPeriodType = 'month'   
+								and $subSubPeriodPosition = 2   
+								and $periodPosition = 'current'
+								and $periodType = 'quarter'">
+					
+					<xsl:value-of select="'IMMAUD'" />
+				</xsl:when>    
+				<xsl:when test="$periodType = 'quarter'
+								and $periodPosition = 'current'   
+								and $subPeriodType = 'month'
+								and $subPeriodPosition = 3   
+								and $subSubPeriodRelativePosition = 'first' 
+								and $subSubPeriodPeriodMonthDay = 9">
+					
+					<xsl:value-of select="'IMMNZD'" />
+				</xsl:when>           
+				<xsl:when test="$periodType = 'quarter' 
+								and $periodPosition = 'current'    
+								and $subPeriodType = 'month' 
+								and $subPeriodPosition = 3
+								and $subSubPeriodPosition = 3 
+								and $subPeriodMonth = 'current'">
+					
+					<xsl:value-of select="'IMMCAD'" />
+				</xsl:when>           
+			</xsl:choose>
+		</xsl:variable>
+		
+		<xsl:value-of select="$result" />
+	</xsl:template>  
+
+	<!-- ================================================================================================== 
+		 ****************************************  getBaseSchedule  *************************************** 
+		 ================================================================================================== -->
+	<xsl:template name="getBaseSchedule">
+		<xsl:param name="scheduleNodes" />
+		
+		<xsl:variable name="underlyingSchedule" select="exsl:node-set($scheduleNodes)/*/underlyingSchedule" />
+	
+		<xsl:choose>
+			<xsl:when test="$underlyingSchedule">
+				<xsl:call-template name="getBaseSchedule">
+					<xsl:with-param name="scheduleNodes">
+						<xsl:copy-of select="trade/tradeBody/interestRateSwap/stream[2]/streamTemplate/streamSchedules/*[name() = $underlyingSchedule]" />
+					</xsl:with-param>
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:copy-of select="$scheduleNodes" />
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+	
+	<!-- ================================================================================================== 
+		 *************************************  getRollConventionNode  ************************************ 
+		 ================================================================================================== -->
+	<xsl:template name="getRollConventionNode">
+		<xsl:param name="stream" />
+
+		<xsl:variable name="rollDate" select="exsl:node-set($stream)/stream/rollDate" />
+		<xsl:variable name="rollDay" select="substring($rollDate, 7, 2)" />
+		<xsl:variable name="rollMonth" select="substring($rollDate, 5, 2)" />
+		<xsl:variable name="rollYear" select="substring($rollDate, 1, 4)" />
+		<xsl:variable name="endOfMonthTreatment">
+			<xsl:call-template name="namedScheduleEndOfMonthTreatment">
+				<xsl:with-param name="scheduleSet" select="exsl:node-set($stream)/stream/streamTemplate/streamSchedules" />
+				<xsl:with-param name="scheduleName" select="'calculationSchedule'" />
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:variable name="isLastDay">
+			<xsl:call-template name="isLastDayOfMonth">
+				<xsl:with-param name="day" select="$rollDay" />
+				<xsl:with-param name="month" select="$rollMonth" />
+				<xsl:with-param name="year" select="$rollYear" />
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:variable name="isIMM">
+			<xsl:call-template name="isIMMSchedule">
+				<xsl:with-param name="stream" select="$stream" />
+			</xsl:call-template>
+		</xsl:variable>
+		
+		<xsl:choose>
+			<xsl:when test="$isLastDay = 'Y' and ($endOfMonthTreatment = 'stickIfEndOfMonth' or $endOfMonthTreatment = 'stickIfUsualEndOfMonth')">EOM</xsl:when>
+			<xsl:when test="$isIMM = 'Y'">IMM</xsl:when>
+            <xsl:when test="$rollDay = '31'">EOM</xsl:when>	
+			<xsl:otherwise>
+				<xsl:value-of select="number($rollDay)" />
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+	
+</xsl:stylesheet>

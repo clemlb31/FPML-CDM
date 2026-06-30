@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataDocument xmlns="http://www.fpml.org/FpML-5/confirmation" fpmlVersion="5-3">
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="MXpress"/>
+				<tradeId tradeIdScheme="http://www.murex.com/contract-id">MX429</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2008-12-15</tradeDate>
+		</tradeHeader>
+		<fra>
+			<buyerPartyReference href="MXpress"/>
+			<sellerPartyReference href="_1010"/>
+			<adjustedEffectiveDate id="fraEffectiveDate">2008-12-17</adjustedEffectiveDate>
+			<adjustedTerminationDate>2009-12-17</adjustedTerminationDate>
+			<paymentDate>
+				<unadjustedDate>2008-12-17</unadjustedDate>
+				<dateAdjustments>
+					<businessDayConvention>MODFOLLOWING</businessDayConvention>
+					<businessCenters>
+						<businessCenter>EUTA</businessCenter>
+					</businessCenters>
+				</dateAdjustments>
+				<adjustedDate>2008-12-17</adjustedDate>
+			</paymentDate>
+			<fixingDateOffset>
+				<periodMultiplier>-2</periodMultiplier>
+				<period>D</period>
+				<dayType>Business</dayType>
+				<businessDayConvention>NONE</businessDayConvention>
+				<businessCenters>
+					<businessCenter>EUTA</businessCenter>
+				</businessCenters>
+				<dateRelativeTo href="fraEffectiveDate"/>
+				<adjustedDate>2008-12-15</adjustedDate>
+			</fixingDateOffset>
+			<dayCountFraction>ACT/360</dayCountFraction>
+			<calculationPeriodNumberOfDays>365</calculationPeriodNumberOfDays>
+			<notional>
+				<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+				<amount>1000000</amount>
+			</notional>
+			<fixedRate>0.04</fixedRate>
+			<floatingRateIndex>EUR-EURIBOR-Reuters</floatingRateIndex>
+			<indexTenor>
+				<periodMultiplier>1</periodMultiplier>
+				<period>Y</period>
+			</indexTenor>
+			<fraDiscounting>ISDA</fraDiscounting>
+		</fra>
+	</trade>
+	<party id="_1010">
+		<partyId>party1</partyId>
+	</party>
+	<party id="MXpress">
+		<partyId>BARCLAYS</partyId>
+	</party>
+</dataDocument>

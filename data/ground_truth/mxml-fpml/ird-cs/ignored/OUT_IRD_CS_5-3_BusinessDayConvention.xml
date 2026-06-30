@@ -1,0 +1,5 @@
+<?xml version='1.0' ?><!DOCTYPE Customs SYSTEM "http://globalqa/svn/PAR/TPK/0000000/trunk/doc/qartkernel.dtd">
+<Customs>
+    <!-- Ignores all text differences of node "from" -->
+    <Path>/MxML/trades/trade/tradeInputConditions/systemDate/text()</Path>
+</Customs>

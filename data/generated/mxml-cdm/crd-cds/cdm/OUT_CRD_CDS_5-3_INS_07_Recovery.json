@@ -1,0 +1,352 @@
+{
+  "trade" : {
+    "product" : {
+      "taxonomy" : [ {
+        "source" : "ISDA",
+        "productQualifier" : "CreditDefaultSwap_SingleName"
+      } ],
+      "economicTerms" : {
+        "effectiveDate" : {
+          "adjustableDate" : {
+            "unadjustedDate" : "2018-08-16",
+            "dateAdjustments" : {
+              "businessDayConvention" : "MODFOLLOWING"
+            },
+            "adjustedDate" : {
+              "value" : "2018-06-20"
+            }
+          }
+        },
+        "terminationDate" : {
+          "adjustableDate" : {
+            "unadjustedDate" : "2023-06-20",
+            "dateAdjustments" : {
+              "businessDayConvention" : "MODFOLLOWING"
+            },
+            "adjustedDate" : {
+              "value" : "2023-06-20"
+            }
+          }
+        },
+        "dateAdjustments" : {
+          "businessDayConvention" : "MODFOLLOWING"
+        },
+        "payout" : [ {
+          "CreditDefaultPayout" : {
+            "payerReceiver" : {
+              "payer" : "Party1",
+              "receiver" : "Party2"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-1"
+                }
+              }
+            },
+            "settlementTerms" : {
+              "settlementType" : "Cash",
+              "cashSettlementTerms" : [ {
+                "recoveryFactor" : 1
+              } ]
+            },
+            "generalTerms" : {
+              "referenceInformation" : {
+                "referenceEntity" : {
+                  "name" : {
+                    "value" : "MUREX_BELLINI_CORP",
+                    "meta" : {
+                      "scheme" : "referenceEntity"
+                    }
+                  },
+                  "entityIdentifier" : [ {
+                    "identifier" : {
+                      "value" : "FG3991",
+                      "meta" : {
+                        "scheme" : "http://www.fpml.org/spec/2003/entity-id-RED-1-0"
+                      }
+                    },
+                    "identifierType" : "REDID"
+                  } ]
+                },
+                "referenceObligation" : [ {
+                  "security" : {
+                    "identifier" : [ {
+                      "identifier" : {
+                        "value" : "XSNOREFOBL00",
+                        "meta" : {
+                          "scheme" : "http://www.fpml.org/spec/2002/instrument-id-ISIN-1-0"
+                        }
+                      },
+                      "identifierType" : "ISIN"
+                    } ]
+                  }
+                } ],
+                "referencePrice" : {
+                  "value" : 100,
+                  "unit" : {
+                    "currency" : {
+                      "value" : "EUR"
+                    }
+                  },
+                  "perUnitOf" : {
+                    "currency" : {
+                      "value" : "EUR"
+                    }
+                  },
+                  "priceType" : "AssetPrice"
+                }
+              }
+            },
+            "protectionTerms" : [ {
+              "creditEvents" : {
+                "bankruptcy" : true,
+                "failureToPay" : {
+                  "applicable" : true,
+                  "paymentRequirement" : {
+                    "value" : 1000000,
+                    "unit" : {
+                      "currency" : {
+                        "value" : "USD",
+                        "meta" : {
+                          "scheme" : "http://www.fpml.org/ext/iso4217"
+                        }
+                      }
+                    }
+                  }
+                },
+                "restructuring" : {
+                  "applicable" : true,
+                  "restructuringType" : {
+                    "value" : "ModModR"
+                  }
+                },
+                "defaultRequirement" : {
+                  "value" : 10000000,
+                  "unit" : {
+                    "currency" : {
+                      "value" : "USD",
+                      "meta" : {
+                        "scheme" : "http://www.fpml.org/ext/iso4217"
+                      }
+                    }
+                  }
+                },
+                "creditEventNotice" : {
+                  "notifyingParty" : [ "Party1", "Party1" ]
+                }
+              },
+              "obligations" : {
+                "category" : "BorrowedMoney"
+              }
+            } ],
+            "transactedPrice" : {
+              "marketFixedRate" : 0.0295269992
+            }
+          }
+        }, {
+          "InterestRatePayout" : {
+            "payerReceiver" : {
+              "payer" : "Party2",
+              "receiver" : "Party1"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-1"
+                }
+              }
+            },
+            "rateSpecification" : {
+              "FixedRateSpecification" : {
+                "rateSchedule" : {
+                  "price" : {
+                    "address" : {
+                      "scope" : "DOCUMENT",
+                      "value" : "price-1"
+                    }
+                  }
+                }
+              }
+            },
+            "calculationPeriodDates" : {
+              "calculationPeriodFrequency" : {
+                "periodMultiplier" : 3,
+                "period" : "M",
+                "rollConvention" : "20"
+              }
+            },
+            "paymentDates" : {
+              "paymentFrequency" : {
+                "periodMultiplier" : 3,
+                "period" : "M"
+              },
+              "firstPaymentDate" : "2018-09-20"
+            }
+          }
+        } ],
+        "calculationAgent" : {
+          "calculationAgentParty" : "CalculationAgentIndependent"
+        }
+      }
+    },
+    "tradeLot" : [ {
+      "priceQuantity" : [ {
+        "price" : [ {
+          "value" : {
+            "value" : 0.01,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR",
+                "meta" : {
+                  "scheme" : "http://www.fpml.org/ext/iso4217"
+                }
+              }
+            },
+            "perUnitOf" : {
+              "currency" : {
+                "value" : "EUR",
+                "meta" : {
+                  "scheme" : "http://www.fpml.org/ext/iso4217"
+                }
+              }
+            },
+            "priceType" : "InterestRate"
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "price-1"
+            } ]
+          }
+        } ]
+      }, {
+        "quantity" : [ {
+          "value" : {
+            "value" : 1000000,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR",
+                "meta" : {
+                  "scheme" : "http://www.fpml.org/ext/iso4217"
+                }
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-1"
+            } ]
+          }
+        } ]
+      } ]
+    } ],
+    "counterparty" : [ {
+      "role" : "Party1",
+      "partyReference" : {
+        "externalReference" : "BARCLAYS"
+      }
+    } ],
+    "ancillaryParty" : [ {
+      "role" : "CalculationAgentIndependent",
+      "partyReference" : [ {
+        "externalReference" : "BARCLAYS"
+      } ]
+    } ],
+    "tradeIdentifier" : [ {
+      "issuerReference" : {
+        "externalReference" : "BARCLAYS"
+      },
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX3977314",
+          "meta" : {
+            "scheme" : "http://www.murex.com/contract-id"
+          }
+        }
+      } ]
+    }, {
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX3977314",
+          "meta" : {
+            "scheme" : "http://www.murex.com/contract-id"
+          }
+        }
+      } ]
+    } ],
+    "tradeDate" : {
+      "value" : "2018-08-15"
+    },
+    "party" : [ {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "BARCLAYS"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "BARCLAYS"
+      }
+    }, {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "BARCLAYS"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "BARCLAYS"
+      }
+    } ],
+    "contractDetails" : {
+      "documentation" : [ {
+        "legalAgreementIdentification" : {
+          "agreementName" : {
+            "agreementType" : "Confirmation",
+            "contractualDefinitionsType" : [ {
+              "meta" : {
+                "scheme" : "http://www.fpml.org/coding-scheme/contractual-definitions"
+              }
+            } ]
+          }
+        },
+        "contractualParty" : [ {
+          "externalReference" : "BARCLAYS"
+        } ]
+      } ]
+    }
+  },
+  "transferHistory" : [ {
+    "transfer" : {
+      "quantity" : {
+        "value" : 50830.8801,
+        "unit" : {
+          "currency" : {
+            "value" : "EUR",
+            "meta" : {
+              "scheme" : "http://www.fpml.org/ext/iso4217"
+            }
+          }
+        }
+      },
+      "asset" : {
+        "Cash" : {
+          "identifier" : [ {
+            "identifier" : {
+              "value" : "EUR"
+            },
+            "identifierType" : "CurrencyCode"
+          } ]
+        }
+      },
+      "settlementDate" : {
+        "unadjustedDate" : "2018-08-20"
+      },
+      "transferExpression" : {
+        "priceTransfer" : "Upfront"
+      }
+    }
+  } ]
+}

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<requestConfirmation xmlns="http://www.fpml.org/FpML-5/confirmation" fpmlVersion="5-3">
+	<header>
+		<messageId messageIdScheme="http://www.murex.com/message-id">MX660</messageId>
+		<sentBy>party1</sentBy>
+		<sendTo>BARCLAYS</sendTo>
+		<creationTimestamp>2012-11-27T13:54:11.000+01:00</creationTimestamp>
+	</header>
+	<isCorrection>false</isCorrection>
+	<correlationId correlationIdScheme="http://www.murex.com/correlation-id">1234</correlationId>
+	<sequenceNumber>1</sequenceNumber>
+	<onBehalfOf>
+		<partyReference href="MUREX-DEMO"/>
+	</onBehalfOf>
+	<amendment>
+		<eventIdentifier>
+			<partyReference href="MUREX-DEMO"/>
+			<eventId>170</eventId>
+		</eventIdentifier>
+		<trade>
+			<tradeHeader>
+				<partyTradeIdentifier>
+					<partyReference href="MUREX-DEMO"/>
+					<tradeId tradeIdScheme="http://www.murex.com/contract-id">MX660</tradeId>
+				</partyTradeIdentifier>
+				<tradeDate>2008-12-15</tradeDate>
+			</tradeHeader>
+			<fra>
+				<buyerPartyReference href="_1124"/>
+				<sellerPartyReference href="MUREX-DEMO"/>
+				<adjustedEffectiveDate id="fraEffectiveDate">2009-03-17</adjustedEffectiveDate>
+				<adjustedTerminationDate>2009-06-17</adjustedTerminationDate>
+				<paymentDate>
+					<unadjustedDate>2009-03-17</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>MODFOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter>USNY</businessCenter>
+						</businessCenters>
+					</dateAdjustments>
+					<adjustedDate>2009-03-17</adjustedDate>
+				</paymentDate>
+				<fixingDateOffset>
+					<periodMultiplier>-2</periodMultiplier>
+					<period>D</period>
+					<dayType>Business</dayType>
+					<businessDayConvention>NONE</businessDayConvention>
+					<businessCenters>
+						<businessCenter>GBLO</businessCenter>
+					</businessCenters>
+					<dateRelativeTo href="fraEffectiveDate"/>
+					<adjustedDate>2009-03-15</adjustedDate>
+				</fixingDateOffset>
+				<dayCountFraction>ACT/360</dayCountFraction>
+				<calculationPeriodNumberOfDays>92</calculationPeriodNumberOfDays>
+				<notional>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">CHF</currency>
+					<amount>25000000</amount>
+				</notional>
+				<fixedRate>0.04</fixedRate>
+				<floatingRateIndex>CHF-LIBOR-BBA</floatingRateIndex>
+				<indexTenor>
+					<periodMultiplier>3</periodMultiplier>
+					<period>M</period>
+				</indexTenor>
+				<fraDiscounting>ISDA</fraDiscounting>
+			</fra>
+		</trade>
+		<agreementDate>2008-12-15</agreementDate>
+		<executionDateTime>2008-12-15T09:14:29Z</executionDateTime>
+		<effectiveDate>2009-03-17</effectiveDate>
+		<payment>
+			<payerPartyReference href="_1124"/>
+			<receiverPartyReference href="MUREX-DEMO"/>
+			<paymentAmount>
+				<currency currencyScheme="http://www.fpml.org/ext/iso4217">CHF</currency>
+				<amount>1500</amount>
+			</paymentAmount>
+			<paymentDate>
+				<adjustedDate>2008-12-15</adjustedDate>
+			</paymentDate>
+			<paymentType>CAPITAL</paymentType>
+		</payment>
+	</amendment>
+	<party id="_1124">
+		<partyId>BARCLAYS</partyId>
+	</party>
+	<party id="MUREX-DEMO">
+		<partyId>party1</partyId>
+	</party>
+</requestConfirmation>

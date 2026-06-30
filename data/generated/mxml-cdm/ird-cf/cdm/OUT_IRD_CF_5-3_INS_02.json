@@ -1,0 +1,520 @@
+{
+  "trade" : {
+    "product" : {
+      "taxonomy" : [ {
+        "source" : "ISDA",
+        "productQualifier" : "InterestRate_CapFloor"
+      } ],
+      "economicTerms" : {
+        "payout" : [ {
+          "InterestRatePayout" : {
+            "payerReceiver" : {
+              "payer" : "Party1",
+              "receiver" : "Party2"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-1"
+                }
+              }
+            },
+            "rateSpecification" : {
+              "FloatingRateSpecification" : {
+                "rateOption" : {
+                  "address" : {
+                    "scope" : "DOCUMENT",
+                    "value" : "InterestRateIndex-1"
+                  }
+                },
+                "capRateSchedule" : {
+                  "price" : {
+                    "address" : {
+                      "scope" : "DOCUMENT",
+                      "value" : "price-1"
+                    }
+                  }
+                }
+              }
+            },
+            "dayCountFraction" : {
+              "value" : "ACT/360"
+            },
+            "calculationPeriodDates" : {
+              "effectiveDate" : {
+                "adjustableDate" : {
+                  "unadjustedDate" : "2021-09-02",
+                  "dateAdjustments" : {
+                    "businessDayConvention" : "MODFOLLOWING",
+                    "businessCenters" : {
+                      "businessCenter" : [ {
+                        "value" : "EUTA"
+                      } ]
+                    }
+                  },
+                  "adjustedDate" : {
+                    "value" : "2021-09-02"
+                  }
+                }
+              },
+              "terminationDate" : {
+                "adjustableDate" : {
+                  "unadjustedDate" : "2024-09-02",
+                  "dateAdjustments" : {
+                    "businessDayConvention" : "MODFOLLOWING",
+                    "businessCenters" : {
+                      "businessCenter" : [ {
+                        "value" : "EUTA"
+                      } ]
+                    }
+                  },
+                  "adjustedDate" : {
+                    "value" : "2024-09-02"
+                  }
+                }
+              },
+              "calculationPeriodDatesAdjustments" : {
+                "businessDayConvention" : "MODFOLLOWING",
+                "businessCenters" : {
+                  "businessCenter" : [ {
+                    "value" : "EUTA"
+                  } ]
+                }
+              },
+              "calculationPeriodFrequency" : {
+                "periodMultiplier" : 3,
+                "period" : "M",
+                "rollConvention" : "2"
+              },
+              "meta" : {
+                "externalKey" : "floatingRateCalculationPeriodDates1"
+              }
+            },
+            "paymentDates" : {
+              "paymentFrequency" : {
+                "periodMultiplier" : 3,
+                "period" : "M"
+              },
+              "payRelativeTo" : "CalculationPeriodEndDate",
+              "paymentDatesAdjustments" : {
+                "businessDayConvention" : "MODFOLLOWING",
+                "businessCenters" : {
+                  "businessCenter" : [ {
+                    "value" : "EUTA"
+                  } ]
+                }
+              }
+            },
+            "resetDates" : {
+              "calculationPeriodDatesReference" : {
+                "externalReference" : "floatingRateCalculationPeriodDates1"
+              },
+              "resetRelativeTo" : "CalculationPeriodStartDate",
+              "fixingDates" : {
+                "periodMultiplier" : -2,
+                "period" : "D",
+                "dayType" : "Business",
+                "businessDayConvention" : "MODFOLLOWING",
+                "businessCenters" : {
+                  "businessCenter" : [ {
+                    "value" : "GBLO"
+                  } ]
+                },
+                "dateRelativeTo" : {
+                  "externalReference" : "floatingRateCalculationPeriodDates1"
+                }
+              },
+              "resetFrequency" : {
+                "periodMultiplier" : 3,
+                "period" : "M"
+              },
+              "resetDatesAdjustments" : {
+                "businessDayConvention" : "MODFOLLOWING",
+                "businessCenters" : {
+                  "businessCenter" : [ {
+                    "value" : "GBLO"
+                  } ]
+                }
+              },
+              "meta" : {
+                "externalKey" : "resetDates"
+              }
+            },
+            "cashflowRepresentation" : {
+              "cashflowsMatchParameters" : true,
+              "paymentCalculationPeriod" : [ {
+                "adjustedPaymentDate" : "2021-12-02",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2021-09-02",
+                  "adjustedEndDate" : "2021-12-02",
+                  "unadjustedStartDate" : "2021-09-02",
+                  "unadjustedEndDate" : "2021-12-02",
+                  "notionalAmount" : 6000000,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2021-08-31",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.252777777777778
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2022-03-02",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2021-12-02",
+                  "adjustedEndDate" : "2022-03-02",
+                  "unadjustedStartDate" : "2021-12-02",
+                  "unadjustedEndDate" : "2022-03-02",
+                  "notionalAmount" : 6000000,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2021-11-30",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.25
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2022-06-02",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2022-03-02",
+                  "adjustedEndDate" : "2022-06-02",
+                  "unadjustedStartDate" : "2022-03-02",
+                  "unadjustedEndDate" : "2022-06-02",
+                  "notionalAmount" : 6000000,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2022-02-28",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.255555555555556
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2022-09-02",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2022-06-02",
+                  "adjustedEndDate" : "2022-09-02",
+                  "unadjustedStartDate" : "2022-06-02",
+                  "unadjustedEndDate" : "2022-09-02",
+                  "notionalAmount" : 6000000,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2022-05-31",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.255555555555556
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2022-12-02",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2022-09-02",
+                  "adjustedEndDate" : "2022-12-02",
+                  "unadjustedStartDate" : "2022-09-02",
+                  "unadjustedEndDate" : "2022-12-02",
+                  "notionalAmount" : 6000000,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2022-08-31",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.252777777777778
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2023-03-02",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2022-12-02",
+                  "adjustedEndDate" : "2023-03-02",
+                  "unadjustedStartDate" : "2022-12-02",
+                  "unadjustedEndDate" : "2023-03-02",
+                  "notionalAmount" : 6000000,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2022-11-30",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.25
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2023-06-02",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2023-03-02",
+                  "adjustedEndDate" : "2023-06-02",
+                  "unadjustedStartDate" : "2023-03-02",
+                  "unadjustedEndDate" : "2023-06-02",
+                  "notionalAmount" : 6000000,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2023-02-28",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.255555555555556
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2023-09-04",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2023-06-02",
+                  "adjustedEndDate" : "2023-09-04",
+                  "unadjustedStartDate" : "2023-06-02",
+                  "unadjustedEndDate" : "2023-09-02",
+                  "notionalAmount" : 6000000,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2023-05-31",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.261111111111111
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2023-12-04",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2023-09-04",
+                  "adjustedEndDate" : "2023-12-04",
+                  "unadjustedStartDate" : "2023-09-02",
+                  "unadjustedEndDate" : "2023-12-02",
+                  "notionalAmount" : 6000000,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2023-08-31",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.252777777777778
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2024-03-04",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2023-12-04",
+                  "adjustedEndDate" : "2024-03-04",
+                  "unadjustedStartDate" : "2023-12-02",
+                  "unadjustedEndDate" : "2024-03-02",
+                  "notionalAmount" : 6000000,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2023-11-30",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.252777777777778
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2024-06-03",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2024-03-04",
+                  "adjustedEndDate" : "2024-06-03",
+                  "unadjustedStartDate" : "2024-03-02",
+                  "unadjustedEndDate" : "2024-06-02",
+                  "notionalAmount" : 6000000,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2024-02-29",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.252777777777778
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2024-09-02",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2024-06-03",
+                  "adjustedEndDate" : "2024-09-02",
+                  "unadjustedStartDate" : "2024-06-02",
+                  "unadjustedEndDate" : "2024-09-02",
+                  "notionalAmount" : 6000000,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2024-05-30",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.252777777777778
+                } ]
+              } ]
+            }
+          }
+        } ]
+      }
+    },
+    "tradeLot" : [ {
+      "priceQuantity" : [ {
+        "price" : [ {
+          "value" : {
+            "value" : 0.012,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            },
+            "perUnitOf" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            },
+            "priceType" : "InterestRate",
+            "arithmeticOperator" : "Min"
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "price-1"
+            } ]
+          }
+        } ],
+        "quantity" : [ {
+          "value" : {
+            "value" : 6000000,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-1"
+            } ]
+          }
+        } ],
+        "observable" : {
+          "value" : {
+            "Index" : {
+              "InterestRateIndex" : {
+                "value" : {
+                  "FloatingRateIndex" : {
+                    "identifier" : [ {
+                      "identifier" : {
+                        "value" : "EUR-EURIBOR-Reuters"
+                      },
+                      "identifierType" : "Other"
+                    } ],
+                    "assetClass" : "InterestRate",
+                    "floatingRateIndex" : {
+                      "value" : "EUR-EURIBOR-Reuters"
+                    },
+                    "indexTenor" : {
+                      "periodMultiplier" : 3,
+                      "period" : "M"
+                    }
+                  }
+                },
+                "meta" : {
+                  "location" : [ {
+                    "scope" : "DOCUMENT",
+                    "value" : "InterestRateIndex-1"
+                  } ]
+                }
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "observable-1"
+            } ]
+          }
+        }
+      } ]
+    } ],
+    "counterparty" : [ {
+      "role" : "Party1",
+      "partyReference" : {
+        "externalReference" : "_1160"
+      }
+    }, {
+      "role" : "Party2",
+      "partyReference" : {
+        "externalReference" : "MUREX-DEMO"
+      }
+    } ],
+    "tradeIdentifier" : [ {
+      "issuerReference" : {
+        "externalReference" : "MUREX-DEMO"
+      },
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX112",
+          "meta" : {
+            "scheme" : "http://www.fpml.org/coding-scheme/external/unique-transaction-identifier"
+          }
+        }
+      } ],
+      "identifierType" : "UniqueTransactionIdentifier"
+    }, {
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX112",
+          "meta" : {
+            "scheme" : "http://www.fpml.org/coding-scheme/external/unique-transaction-identifier"
+          }
+        }
+      } ],
+      "identifierType" : "UniqueTransactionIdentifier"
+    } ],
+    "tradeDate" : {
+      "value" : "2021-08-31"
+    },
+    "party" : [ {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "BARCLAYS"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "_1160"
+      }
+    }, {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "party1"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "MUREX-DEMO"
+      }
+    } ],
+    "contractDetails" : {
+      "documentation" : [ {
+        "legalAgreementIdentification" : {
+          "agreementName" : {
+            "agreementType" : "MasterAgreement",
+            "masterAgreementType" : {
+              "value" : "ISDAMaster",
+              "meta" : {
+                "scheme" : "http://www.fpml.org/coding-scheme/master-agreement-type"
+              }
+            }
+          }
+        },
+        "contractualParty" : [ {
+          "externalReference" : "_1160"
+        }, {
+          "externalReference" : "MUREX-DEMO"
+        } ]
+      }, {
+        "legalAgreementIdentification" : {
+          "agreementName" : {
+            "agreementType" : "Confirmation",
+            "contractualDefinitionsType" : [ {
+              "value" : "ISDA2006",
+              "meta" : {
+                "scheme" : "http://www.fpml.org/coding-scheme/contractual-definitions-3-1"
+              }
+            } ]
+          }
+        },
+        "contractualParty" : [ {
+          "externalReference" : "_1160"
+        }, {
+          "externalReference" : "MUREX-DEMO"
+        } ]
+      } ]
+    }
+  }
+}

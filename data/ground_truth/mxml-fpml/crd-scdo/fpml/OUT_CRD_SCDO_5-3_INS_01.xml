@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataDocument xmlns="http://www.fpml.org/FpML-5/confirmation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.fpml.org/FpML-5/confirmation                                         ../../fpml-main-5-3.xsd http://www.w3.org/2000/09/xmldsig#                                         ../../xmldsig-core-schema.xsd" fpmlVersion="5-3">
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="party1"/>
+				<tradeId tradeIdScheme="http://www.murex.com/contract-id">MX1248</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2008-12-15</tradeDate>
+		</tradeHeader>
+		<creditDefaultSwap>
+			<generalTerms>
+				<effectiveDate>
+					<unadjustedDate>2008-12-16</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>FOLLOWING</businessDayConvention>
+					</dateAdjustments>
+					<adjustedDate>2008-09-22</adjustedDate>
+				</effectiveDate>
+				<scheduledTerminationDate>
+					<unadjustedDate>2010-09-20</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>FOLLOWING</businessDayConvention>
+					</dateAdjustments>
+					<adjustedDate>2010-09-20</adjustedDate>
+				</scheduledTerminationDate>
+				<buyerPartyReference href="party2"/>
+				<sellerPartyReference href="party1"/>
+				<indexReferenceInformation>
+					<indexName>ITX-EUROPE-5Y-SFBN</indexName>
+					<indexId>2I667DAO2</indexId>
+					<tranche>
+						<attachmentPoint>0</attachmentPoint>
+						<exhaustionPoint>3</exhaustionPoint>
+					</tranche>
+				</indexReferenceInformation>
+			</generalTerms>
+			<feeLeg>
+				<periodicPayment>
+					<paymentFrequency>
+						<periodMultiplier>3</periodMultiplier>
+						<period>M</period>
+					</paymentFrequency>
+					<firstPaymentDate>2008-12-22</firstPaymentDate>
+					<fixedAmountCalculation>
+						<fixedRate>0.02</fixedRate>
+					</fixedAmountCalculation>
+					<adjustedPaymentDates>
+						<adjustedPaymentDate>2008-12-22</adjustedPaymentDate>
+						<paymentAmount>
+							<currency>EUR</currency>
+							<amount>7583.3333333334</amount>
+						</paymentAmount>
+					</adjustedPaymentDates>
+					<adjustedPaymentDates>
+						<adjustedPaymentDate>2009-03-20</adjustedPaymentDate>
+						<paymentAmount>
+							<currency>EUR</currency>
+							<amount>7333.3333333334</amount>
+						</paymentAmount>
+					</adjustedPaymentDates>
+					<adjustedPaymentDates>
+						<adjustedPaymentDate>2009-06-22</adjustedPaymentDate>
+						<paymentAmount>
+							<currency>EUR</currency>
+							<amount>7833.3333333334</amount>
+						</paymentAmount>
+					</adjustedPaymentDates>
+					<adjustedPaymentDates>
+						<adjustedPaymentDate>2009-09-21</adjustedPaymentDate>
+						<paymentAmount>
+							<currency>EUR</currency>
+							<amount>7583.3333333334</amount>
+						</paymentAmount>
+					</adjustedPaymentDates>
+					<adjustedPaymentDates>
+						<adjustedPaymentDate>2009-12-21</adjustedPaymentDate>
+						<paymentAmount>
+							<currency>EUR</currency>
+							<amount>7583.3333333334</amount>
+						</paymentAmount>
+					</adjustedPaymentDates>
+					<adjustedPaymentDates>
+						<adjustedPaymentDate>2010-03-22</adjustedPaymentDate>
+						<paymentAmount>
+							<currency>EUR</currency>
+							<amount>7583.3333333334</amount>
+						</paymentAmount>
+					</adjustedPaymentDates>
+					<adjustedPaymentDates>
+						<adjustedPaymentDate>2010-06-21</adjustedPaymentDate>
+						<paymentAmount>
+							<currency>EUR</currency>
+							<amount>7583.3333333334</amount>
+						</paymentAmount>
+					</adjustedPaymentDates>
+					<adjustedPaymentDates>
+						<adjustedPaymentDate>2010-09-20</adjustedPaymentDate>
+						<paymentAmount>
+							<currency>EUR</currency>
+							<amount>7666.6666666666</amount>
+						</paymentAmount>
+					</adjustedPaymentDates>
+				</periodicPayment>
+				<marketFixedRate>0.0295269992</marketFixedRate>
+				<quotationStyle>TradedSpread</quotationStyle>
+			</feeLeg>
+			<protectionTerms>
+				<calculationAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>50000000</amount>
+				</calculationAmount>
+				<creditEvents>
+					<bankruptcy>true</bankruptcy>
+					<failureToPay>
+						<applicable>true</applicable>
+						<paymentRequirement>
+							<currency currencyScheme="http://www.fpml.org/ext/iso4217">USD</currency>
+							<amount>1000000</amount>
+						</paymentRequirement>
+					</failureToPay>
+					<restructuring>
+						<applicable>true</applicable>
+					</restructuring>
+					<defaultRequirement>
+						<currency currencyScheme="http://www.fpml.org/ext/iso4217">USD</currency>
+						<amount>10000000</amount>
+					</defaultRequirement>
+					<creditEventNotice>
+						<notifyingParty>
+							<buyerPartyReference href="party2"/>
+							<sellerPartyReference href="party1"/>
+						</notifyingParty>
+					</creditEventNotice>
+				</creditEvents>
+				<obligations>
+					<category>BorrowedMoney</category>
+				</obligations>
+			</protectionTerms>
+			<physicalSettlementTerms>
+				<settlementCurrency>EUR</settlementCurrency>
+				<physicalSettlementPeriod>
+					<businessDays>30</businessDays>
+				</physicalSettlementPeriod>
+				<deliverableObligations>
+					<accruedInterest>false</accruedInterest>
+				</deliverableObligations>
+				<escrow>true</escrow>
+			</physicalSettlementTerms>
+		</creditDefaultSwap>
+		<calculationAgent>
+			<calculationAgentPartyReference href="party1"/>
+		</calculationAgent>
+	</trade>
+	<party id="party2">
+		<partyId>party2</partyId>
+	</party>
+	<party id="party1">
+		<partyId>party1</partyId>
+	</party>
+</dataDocument>

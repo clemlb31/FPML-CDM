@@ -1,0 +1,9 @@
+<Operator Code="Plus">
+  <Operator Code="DateToStr">
+    <Operand Code="ScalarDate">MxCTX#date#Mx</Operand>
+    <Operand Code="ScalarString">yyyy-MM-dd</Operand>
+  </Operator>  
+  <Operand Code="ScalarString">T</Operand>
+  <Operand Code="ScalarString">MxCTX#time#Mx</Operand>
+  <Operand Code="ScalarString">Z</Operand>
+</Operator>

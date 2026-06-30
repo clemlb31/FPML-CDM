@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<requestConfirmation xmlns="http://www.fpml.org/FpML-5/confirmation" fpmlVersion="5-3">
+	<header>
+		<messageId messageIdScheme="http://www.matchingservice.com/coding-scheme/messageId">MX11168</messageId>
+		<sentBy messageAddressScheme="http://www.matchingservice.com/partyId">party1</sentBy>
+		<sendTo messageAddressScheme="http://www.matchingservice.com/partyId">MATCHSRV</sendTo>
+		<creationTimestamp>2012-11-27T13:54:11.000+01:00</creationTimestamp>
+	</header>
+	<isCorrection>false</isCorrection>
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="party1"/>
+				<tradeId tradeIdScheme="http://www.murex.com/contract-id">MX11168</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2014-04-21</tradeDate>
+		</tradeHeader>
+		<fxSingleLeg>
+			<exchangedCurrency1>
+				<payerPartyReference href="party2"/>
+				<receiverPartyReference href="party1"/>
+				<paymentAmount>
+					<currency>USD</currency>
+					<amount>577207.35115838</amount>
+				</paymentAmount>
+			</exchangedCurrency1>
+			<exchangedCurrency2>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="party2"/>
+				<paymentAmount>
+					<currency>GBP</currency>
+					<amount>343698.55374442</amount>
+				</paymentAmount>
+			</exchangedCurrency2>
+			<valueDate>2014-04-23</valueDate>
+			<exchangeRate>
+				<quotedCurrencyPair>
+					<currency1>USD</currency1>
+					<currency2>GBP</currency2>
+					<quoteBasis>Currency1PerCurrency2</quoteBasis>
+				</quotedCurrencyPair>
+				<rate>1.67940000</rate>
+			</exchangeRate>
+			<nonDeliverableSettlement>
+				<settlementCurrency>USD</settlementCurrency>
+				<fixing>
+					<quotedCurrencyPair>
+						<currency1>GBP</currency1>
+						<currency2>USD</currency2>
+						<quoteBasis>Currency2PerCurrency1</quoteBasis>
+					</quotedCurrencyPair>
+					<fixingDate>2014-04-21</fixingDate>
+				</fixing>
+			</nonDeliverableSettlement>
+		</fxSingleLeg>
+	</trade>
+	<party id="party2">
+		<partyId>party2</partyId>
+	</party>
+	<party id="party1">
+		<partyId>party1</partyId>
+	</party>
+</requestConfirmation>

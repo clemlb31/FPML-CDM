@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataDocument xmlns="http://www.fpml.org/FpML-5/confirmation" fpmlVersion="5-3">
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="UBS-RCSR"/>
+				<tradeId tradeIdScheme="http://www.fpml.org/coding-scheme/external/unique-transaction-identifier">MX41000083</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2016-09-30</tradeDate>
+		</tradeHeader>
+		<capFloor>
+			<capFloorStream>
+				<payerPartyReference href="_4013"/>
+				<receiverPartyReference href="UBS-RCSR"/>
+				<calculationPeriodDates id="floatingRateCalculationPeriodDates1">
+					<effectiveDate>
+						<unadjustedDate>2016-10-01</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>FOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+						</dateAdjustments>
+						<adjustedDate>2016-10-01</adjustedDate>
+					</effectiveDate>
+					<terminationDate>
+						<unadjustedDate>2017-10-01</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>NONE</businessDayConvention>
+						</dateAdjustments>
+						<adjustedDate>2017-10-01</adjustedDate>
+					</terminationDate>
+					<calculationPeriodDatesAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</calculationPeriodDatesAdjustments>
+					<calculationPeriodFrequency>
+						<periodMultiplier>1</periodMultiplier>
+						<period>T</period>
+						<rollConvention>NONE</rollConvention>
+					</calculationPeriodFrequency>
+				</calculationPeriodDates>
+				<paymentDates>
+					<calculationPeriodDatesReference href="floatingRateCalculationPeriodDates1"/>
+					<paymentFrequency>
+						<periodMultiplier>1</periodMultiplier>
+						<period>T</period>
+					</paymentFrequency>
+					<payRelativeTo>CalculationPeriodEndDate</payRelativeTo>
+					<paymentDatesAdjustments>
+						<businessDayConvention>FOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter>EUTA</businessCenter>
+						</businessCenters>
+					</paymentDatesAdjustments>
+				</paymentDates>
+				<resetDates id="resetDates">
+					<calculationPeriodDatesReference href="floatingRateCalculationPeriodDates1"/>
+					<resetRelativeTo>CalculationPeriodEndDate</resetRelativeTo>
+					<fixingDates>
+						<periodMultiplier>0</periodMultiplier>
+						<period>D</period>
+						<businessDayConvention>FOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter>EUTA</businessCenter>
+						</businessCenters>
+						<dateRelativeTo href="floatingRateCalculationPeriodDates1"/>
+					</fixingDates>
+					<resetFrequency>
+						<periodMultiplier>1</periodMultiplier>
+						<period>T</period>
+					</resetFrequency>
+					<resetDatesAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</resetDatesAdjustments>
+				</resetDates>
+				<calculationPeriodAmount>
+					<calculation>
+						<notionalSchedule>
+							<notionalStepSchedule>
+								<initialValue>1000000</initialValue>
+								<currency>EUR</currency>
+							</notionalStepSchedule>
+						</notionalSchedule>
+						<inflationRateCalculation>
+							<floatingRateIndex floatingRateIndexScheme="http://www.fpml.org/coding-scheme/inflation-index-description">EUR-EXT-CPI</floatingRateIndex>
+							<capRateSchedule>
+								<initialValue>1.02</initialValue>
+								<buyer>Receiver</buyer>
+								<seller>Payer</seller>
+							</capRateSchedule>
+							<inflationLag>
+								<periodMultiplier>3</periodMultiplier>
+								<period>M</period>
+							</inflationLag>
+							<indexSource rateSourcePageScheme="http://www.fpml.org/coding-scheme/inflation-index-source">CPTFEMU</indexSource>
+							<interpolationMethod>None</interpolationMethod>
+							<initialIndexLevel>0.23</initialIndexLevel>
+							<fallbackBondApplicable>true</fallbackBondApplicable>
+						</inflationRateCalculation>
+						<dayCountFraction>1/1</dayCountFraction>
+					</calculation>
+				</calculationPeriodAmount>
+				<cashflows>
+					<cashflowsMatchParameters>true</cashflowsMatchParameters>
+					<paymentCalculationPeriod>
+						<adjustedPaymentDate>2017-10-02</adjustedPaymentDate>
+						<calculationPeriod>
+							<unadjustedStartDate>2016-10-01</unadjustedStartDate>
+							<unadjustedEndDate>2017-10-01</unadjustedEndDate>
+							<adjustedStartDate>2016-10-01</adjustedStartDate>
+							<adjustedEndDate>2017-10-01</adjustedEndDate>
+							<notionalAmount>1000000</notionalAmount>
+							<floatingRateDefinition>
+								<rateObservation>
+									<adjustedFixingDate>2016-07-01</adjustedFixingDate>
+									<observedRate>0.23</observedRate>
+									<observationWeight>1</observationWeight>
+								</rateObservation>
+								<rateObservation>
+									<adjustedFixingDate>2017-07-01</adjustedFixingDate>
+									<observationWeight>1</observationWeight>
+								</rateObservation>
+								<spread>0</spread>
+								<capRate>
+									<strikeRate>1.02</strikeRate>
+								</capRate>
+							</floatingRateDefinition>
+							<dayCountYearFraction>1</dayCountYearFraction>
+						</calculationPeriod>
+					</paymentCalculationPeriod>
+				</cashflows>
+			</capFloorStream>
+			<premium>
+				<payerPartyReference href="UBS-RCSR"/>
+				<receiverPartyReference href="_4013"/>
+				<paymentAmount>
+					<currency>EUR</currency>
+					<amount>21000</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2016-10-05</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>FOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter>EUTA</businessCenter>
+						</businessCenters>
+					</dateAdjustments>
+					<adjustedDate>2016-10-05</adjustedDate>
+				</paymentDate>
+			</premium>
+			<additionalPayment>
+				<payerPartyReference href="_4013"/>
+				<receiverPartyReference href="UBS-RCSR"/>
+				<paymentAmount>
+					<currency>EUR</currency>
+					<amount>1200</amount>
+				</paymentAmount>
+				<paymentDate>
+					<unadjustedDate>2016-10-01</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>FOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter>EUTA</businessCenter>
+						</businessCenters>
+					</dateAdjustments>
+					<adjustedDate>2016-10-03</adjustedDate>
+				</paymentDate>
+			</additionalPayment>
+		</capFloor>
+	</trade>
+	<party id="_4013">
+		<partyId>BARCLAYS</partyId>
+	</party>
+	<party id="UBS-RCSR">
+		<partyId>BARCLAYS</partyId>
+	</party>
+</dataDocument>

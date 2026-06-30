@@ -1,0 +1,27 @@
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+				xmlns:mx="http://murex.com/xslt/common"
+				xmlns:exsl="http://exslt.org/common" 
+				version="1.0">
+	
+	<xsl:param name="execContext" />
+	<xsl:param name="tradeId" />
+	
+	<!-- ================================================================================================== 
+		 ***************************************     Document root	  	*********************************** 
+		 ================================================================================================== -->
+	<xsl:template match="/">
+		<xsl:variable name="marketPriceType.formulae">
+			<xsl:choose>
+				<xsl:when test="string-length($execContext) &gt; 0">
+					<xsl:value-of select="'mx.interfaces.xml2xml.extract.mappingJava.creditMarketPriceType'" />
+				</xsl:when>
+				<xsl:otherwise> 
+					<xsl:value-of select="'mx.xml2xml.ECN.common.sql.creditMarketPriceType'" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		
+		<xsl:value-of select="mx:execute-formula($marketPriceType.formulae,concat('tradeId:', $tradeId))" />
+	</xsl:template>
+	
+</xsl:stylesheet>

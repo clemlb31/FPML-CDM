@@ -1,0 +1,320 @@
+{
+  "trade" : {
+    "product" : {
+      "taxonomy" : [ {
+        "source" : "ISDA",
+        "productQualifier" : "CreditDefaultSwap_Index"
+      } ],
+      "economicTerms" : {
+        "effectiveDate" : {
+          "adjustableDate" : {
+            "unadjustedDate" : "2006-10-12",
+            "dateAdjustments" : {
+              "businessDayConvention" : "FOLLOWING"
+            },
+            "adjustedDate" : {
+              "value" : "2006-09-20"
+            }
+          }
+        },
+        "terminationDate" : {
+          "adjustableDate" : {
+            "unadjustedDate" : "2018-06-20",
+            "dateAdjustments" : {
+              "businessDayConvention" : "FOLLOWING"
+            },
+            "adjustedDate" : {
+              "value" : "2018-06-20"
+            }
+          }
+        },
+        "dateAdjustments" : {
+          "businessDayConvention" : "FOLLOWING"
+        },
+        "payout" : [ {
+          "CreditDefaultPayout" : {
+            "payerReceiver" : {
+              "payer" : "Party1",
+              "receiver" : "Party2"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-1"
+                }
+              }
+            },
+            "settlementTerms" : {
+              "settlementType" : "Physical",
+              "settlementCurrency" : {
+                "value" : "USD"
+              },
+              "physicalSettlementTerms" : {
+                "physicalSettlementPeriod" : {
+                  "businessDays" : 30
+                },
+                "deliverableObligations" : {
+                  "accruedInterest" : false
+                },
+                "escrow" : true
+              }
+            },
+            "generalTerms" : {
+              "indexReferenceInformation" : {
+                "identifier" : [ {
+                  "identifier" : {
+                    "value" : "2I667DAO2",
+                    "meta" : { }
+                  },
+                  "identifierType" : "Name"
+                } ],
+                "name" : {
+                  "value" : "ITX-EUROPE-5Y-SFBN"
+                },
+                "assetClass" : "Credit"
+              }
+            },
+            "protectionTerms" : [ {
+              "creditEvents" : {
+                "bankruptcy" : true,
+                "failureToPay" : {
+                  "applicable" : true,
+                  "paymentRequirement" : {
+                    "value" : 1000000,
+                    "unit" : {
+                      "currency" : {
+                        "value" : "USD",
+                        "meta" : {
+                          "scheme" : "http://www.fpml.org/ext/iso4217"
+                        }
+                      }
+                    }
+                  }
+                },
+                "restructuring" : {
+                  "applicable" : true,
+                  "restructuringType" : {
+                    "value" : "ModR"
+                  }
+                },
+                "defaultRequirement" : {
+                  "value" : 10000000,
+                  "unit" : {
+                    "currency" : {
+                      "value" : "USD",
+                      "meta" : {
+                        "scheme" : "http://www.fpml.org/ext/iso4217"
+                      }
+                    }
+                  }
+                },
+                "creditEventNotice" : {
+                  "notifyingParty" : [ "Party2", "Party1" ]
+                }
+              },
+              "obligations" : {
+                "category" : "BorrowedMoney"
+              }
+            } ],
+            "transactedPrice" : {
+              "marketFixedRate" : 5.34
+            }
+          }
+        }, {
+          "InterestRatePayout" : {
+            "payerReceiver" : {
+              "payer" : "Party2",
+              "receiver" : "Party1"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-1"
+                }
+              }
+            },
+            "rateSpecification" : {
+              "FixedRateSpecification" : {
+                "rateSchedule" : {
+                  "price" : {
+                    "address" : {
+                      "scope" : "DOCUMENT",
+                      "value" : "price-1"
+                    }
+                  }
+                }
+              }
+            },
+            "calculationPeriodDates" : {
+              "firstPeriodStartDate" : {
+                "adjustableDate" : {
+                  "unadjustedDate" : "2008-09-22"
+                }
+              },
+              "calculationPeriodFrequency" : {
+                "periodMultiplier" : 3,
+                "period" : "M"
+              }
+            },
+            "paymentDates" : {
+              "paymentFrequency" : {
+                "periodMultiplier" : 3,
+                "period" : "M"
+              },
+              "firstPaymentDate" : "2008-12-22"
+            }
+          }
+        } ],
+        "calculationAgent" : {
+          "calculationAgentParty" : "CalculationAgentIndependent"
+        }
+      }
+    },
+    "tradeLot" : [ {
+      "priceQuantity" : [ {
+        "price" : [ {
+          "value" : {
+            "value" : 0.01,
+            "unit" : {
+              "currency" : {
+                "value" : "USD",
+                "meta" : {
+                  "scheme" : "http://www.fpml.org/ext/iso4217"
+                }
+              }
+            },
+            "perUnitOf" : {
+              "currency" : {
+                "value" : "USD",
+                "meta" : {
+                  "scheme" : "http://www.fpml.org/ext/iso4217"
+                }
+              }
+            },
+            "priceType" : "InterestRate"
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "price-1"
+            } ]
+          }
+        } ]
+      }, {
+        "quantity" : [ {
+          "value" : {
+            "value" : 34000000,
+            "unit" : {
+              "currency" : {
+                "value" : "USD",
+                "meta" : {
+                  "scheme" : "http://www.fpml.org/ext/iso4217"
+                }
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-1"
+            } ]
+          }
+        } ]
+      } ]
+    } ],
+    "counterparty" : [ {
+      "role" : "Party1",
+      "partyReference" : {
+        "externalReference" : "BARCLAYS"
+      }
+    }, {
+      "role" : "Party2",
+      "partyReference" : {
+        "externalReference" : "party1"
+      }
+    } ],
+    "ancillaryParty" : [ {
+      "role" : "CalculationAgentIndependent",
+      "partyReference" : [ {
+        "externalReference" : "BARCLAYS"
+      } ]
+    } ],
+    "tradeIdentifier" : [ {
+      "issuerReference" : {
+        "externalReference" : "party1"
+      },
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX1064",
+          "meta" : {
+            "scheme" : "http://www.murex.com/contract-id"
+          }
+        }
+      } ]
+    }, {
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX1064",
+          "meta" : {
+            "scheme" : "http://www.murex.com/contract-id"
+          }
+        }
+      } ]
+    } ],
+    "tradeDate" : {
+      "value" : "2006-10-11"
+    },
+    "party" : [ {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "BARCLAYS"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "BARCLAYS"
+      }
+    }, {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "party1"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "party1"
+      }
+    } ]
+  },
+  "transferHistory" : [ {
+    "transfer" : {
+      "quantity" : {
+        "value" : 320608.06,
+        "unit" : {
+          "currency" : {
+            "value" : "USD",
+            "meta" : {
+              "scheme" : "http://www.fpml.org/ext/iso4217"
+            }
+          }
+        }
+      },
+      "asset" : {
+        "Cash" : {
+          "identifier" : [ {
+            "identifier" : {
+              "value" : "USD"
+            },
+            "identifierType" : "CurrencyCode"
+          } ]
+        }
+      },
+      "settlementDate" : {
+        "unadjustedDate" : "2006-10-16"
+      },
+      "transferExpression" : {
+        "priceTransfer" : "Upfront"
+      }
+    }
+  } ]
+}

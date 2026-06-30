@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataDocument xmlns="http://www.fpml.org/FpML-5/confirmation" fpmlVersion="5-3">
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="MXpress"/>
+				<tradeId tradeIdScheme="http://www.murex.com/contract-id">MX151</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2014-06-02</tradeDate>
+		</tradeHeader>
+		<fra>
+			<buyerPartyReference href="MXpress"/>
+			<sellerPartyReference href="_1010"/>
+			<adjustedEffectiveDate id="fraEffectiveDate">2014-09-04</adjustedEffectiveDate>
+			<adjustedTerminationDate>2015-01-05</adjustedTerminationDate>
+			<paymentDate>
+				<unadjustedDate>2014-09-04</unadjustedDate>
+				<dateAdjustments>
+					<businessDayConvention>MODFOLLOWING</businessDayConvention>
+					<businessCenters>
+						<businessCenter>EUTA</businessCenter>
+					</businessCenters>
+				</dateAdjustments>
+				<adjustedDate>0002-11-30</adjustedDate>
+			</paymentDate>
+			<fixingDateOffset>
+				<periodMultiplier>-2</periodMultiplier>
+				<period>D</period>
+				<dayType>Business</dayType>
+				<businessDayConvention>NONE</businessDayConvention>
+				<businessCenters>
+					<businessCenter>EUTA</businessCenter>
+				</businessCenters>
+				<dateRelativeTo href="fraEffectiveDate"/>
+				<adjustedDate>0002-11-30</adjustedDate>
+			</fixingDateOffset>
+			<dayCountFraction>ACT/360</dayCountFraction>
+			<calculationPeriodNumberOfDays>123</calculationPeriodNumberOfDays>
+			<notional>
+				<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+				<amount>10000.</amount>
+			</notional>
+			<fixedRate>0.00219494</fixedRate>
+			<floatingRateIndex>EUR-EURIBOR-Reuters</floatingRateIndex>
+			<indexTenor>
+				<periodMultiplier>3</periodMultiplier>
+				<period>M</period>
+			</indexTenor>
+			<indexTenor>
+				<periodMultiplier>6</periodMultiplier>
+				<period>M</period>
+			</indexTenor>
+			<fraDiscounting>ISDA</fraDiscounting>
+		</fra>
+	</trade>
+	<party id="_1010">
+		<partyId>party1</partyId>
+	</party>
+	<party id="MXpress">
+		<partyId>BARCLAYS</partyId>
+	</party>
+</dataDocument>

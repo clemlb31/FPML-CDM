@@ -1,0 +1,13 @@
+<Customs>
+	<!-- Ignores all text differences of node "from" -->
+	<Path>/MxML/trades/trade/tradeInputConditions/systemDate/text()</Path>
+	<Path>/MxML/trades/trade/tradeInputConditions/systemDate/text()</Path>
+	<IgnoreReachedLeftovers>
+		<Path>/MxML/trades/trade/tradeInputConditions/systemDate/text()</Path>
+		<Path>/MxML/trades/trade/tradeInputConditions/systemDate/text()</Path>
+	</IgnoreReachedLeftovers>
+	<IgnoreExpectedLeftovers>
+		<Path>/MxML/trades/trade/tradeInputConditions/systemDate/text()</Path>
+		<Path>/MxML/trades/trade/tradeInputConditions/systemDate/text()</Path>
+	</IgnoreExpectedLeftovers>
+</Customs>

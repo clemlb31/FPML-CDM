@@ -1,0 +1,161 @@
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 				
+				xmlns:date="http://exslt.org/dates-and-times" 
+				xmlns:mx="http://murex.com/xslt/common" 
+				xmlns:exslt="http://exslt.org/common" 
+				xmlns:str="http://exslt.org/strings" 
+				xmlns:exsl="http://exslt.org/common" 				
+				exclude-result-prefixes="mx exslt date str" 
+				xmlns="http://www.fpml.org/2007/FpML-4-3" 
+				version="1.0">
+	
+	<!-- ================================================================================================== 
+		 ***********************************	Master Agreement	*************************************** 
+		 ================================================================================================== -->
+	<xsl:variable name="contractualDefinitionsScheme" select="'http://www.fpml.org/coding-scheme/contractual-definitions-3-1'" />
+
+	<xsl:variable name="masterAgreement">
+		<xsl:variable name="masterAgreementLabel">
+			<xsl:call-template name="extract-legalMasterAgreement" />
+		</xsl:variable>
+		
+		<xsl:choose>
+			<xsl:when test="string-length($masterAgreementLabel) &gt; 0">
+				<xsl:call-template name="extract-masterAgreementDefinition">
+					<xsl:with-param name="label" select="$masterAgreementLabel" />
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="''" />
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="documentationType">
+		<xsl:choose>
+			<xsl:when test="$MAmethod = 'MA/MCA'">
+				<xsl:variable name="mxMasterAgreementType">
+					<xsl:choose>
+						<xsl:when test="string-length($masterAgreement) &gt; 0">
+							<xsl:value-of select="exslt:node-set($masterAgreement)/MxML/legalMasterAgreements/legalMasterAgreement/legalMasterAgreementType/businessObjectId/displayLabel" />
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:value-of select="''" />
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:variable>
+				
+				<xsl:choose>
+					<xsl:when test="(string-length($mapMasterAgreement) &gt; 0) and (string-length($mxMasterAgreementType) &gt; 0)">
+						<xsl:copy-of select="mx:execute-formula($mapMasterAgreement, concat('mxMasterAgreementType:', $mxMasterAgreementType))" />
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="''" />
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:when test="$MAmethod = 'CI'">
+				<xsl:variable name="mxMasterAgreementType">
+					<xsl:call-template name="extract-CI-masterAgreementLabel">
+						<xsl:with-param name="legNb" select="'1'" />
+					</xsl:call-template>
+				</xsl:variable>
+				
+				<xsl:copy-of select="mx:execute-formula($mapMasterAgreement, concat('mxMasterAgreementType:', $mxMasterAgreementType))" />
+			</xsl:when>
+			<xsl:when test="$MAmethod = 'UDF'">
+				<xsl:value-of select="''" />
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="''" />
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="masterAgreementType">
+		<xsl:choose>
+			<xsl:when test="$MAmethod = 'MA/MCA' or $MAmethod = 'CI'">
+				<xsl:choose>
+					<xsl:when test="string-length($documentationType) &gt; 0">
+						<xsl:value-of select="exslt:node-set($documentationType)/table/row[1]" />
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="''" />
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:when test="$MAmethod = 'UDF'">
+				<xsl:call-template name="extract-udf-trade">
+					<xsl:with-param name="legNb" select="1" />
+					<xsl:with-param name="labelName" select="'masterAgreementType'" />
+					<xsl:with-param name="mapUdfLabel" select="$mapUdfLabel" />
+					<xsl:with-param name="udfPostProcessingFormula" select="$udfPostProcessingFormula" />
+				</xsl:call-template>
+			</xsl:when>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="masterAgreementDate">
+		<xsl:choose>
+			<xsl:when test="$MAmethod = 'MA/MCA'">
+				<xsl:variable name="signatureDate" select="exslt:node-set($masterAgreement)/MxML/legalMasterAgreements/legalMasterAgreement/signatureDate" />
+				<xsl:variable name="lastAmendmentDate" select="exslt:node-set($masterAgreement)/MxML/legalMasterAgreements/legalMasterAgreement/lastAmendmentDate" />
+				
+				<xsl:choose>
+					<xsl:when test="$lastAmendmentDate != '00000000'">
+						<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.utils.adaptDate', concat('date:', $lastAmendmentDate, ',format:yyyymmdd,outputFormat:yyyy-mm-dd'))" />
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.utils.adaptDate', concat('date:', $signatureDate, ',format:yyyymmdd,outputFormat:yyyy-mm-dd'))" />
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:when test="$MAmethod = 'CI'">
+				<xsl:variable name="mxMasterAgreementDate">
+					<xsl:call-template name="extract-CI-externalSignatureDate">
+						<xsl:with-param name="legNb" select="'1'" />
+					</xsl:call-template>
+				</xsl:variable>
+				
+				<xsl:if test="string-length($mxMasterAgreementDate) &gt; 0">
+					<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.utils.adaptDate', concat('date:', $mxMasterAgreementDate, ',format:yyyymmdd,outputFormat:yyyy-mm-dd'))" />
+				</xsl:if>
+			</xsl:when>
+			<xsl:when test="$MAmethod = 'UDF'">
+				<xsl:call-template name="extract-udf-trade">
+					<xsl:with-param name="legNb" select="1" />
+					<xsl:with-param name="labelName" select="'masterAgreementDate'" />
+					<xsl:with-param name="mapUdfLabel" select="$mapUdfLabel" />
+					<xsl:with-param name="udfPostProcessingFormula" select="$udfPostProcessingFormula" />
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="''" />
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="calculationAgentParty" select="'AsSpecifiedInMasterAgreement'" />
+
+	<!-- contractualDefinitions.nodes -->
+	<xsl:variable name="contractualDefinitions">
+		<xsl:choose>
+			<xsl:when test="string-length( $contractualDefinitions.overriding) &gt; 0 ">
+				<xsl:value-of select="$contractualDefinitions.overriding"></xsl:value-of>   
+			</xsl:when>
+			<xsl:when test="string-length($documentationType) &gt; 0">
+				<xsl:value-of select="exslt:node-set($documentationType)/table/row[2]" />
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="''" />
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="contractualDefinitionsInflation">
+		<xsl:choose>
+			<xsl:when test="string-length($documentationType) &gt; 0">
+				<xsl:value-of select="exslt:node-set($documentationType)/table/row[5]" />
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="''" />
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+</xsl:stylesheet>

@@ -10,3 +10,14 @@ __pycache__/
 target/
 venv/
 data/test/
+
+# Scratch / build work area (offline javac builds, classpath, generated output)
+tmp/
+data/outputs/
+generated-fpml/
+
+# IDE
+.classpath
+.project
+.settings/
+.vscode/

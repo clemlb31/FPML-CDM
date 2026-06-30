@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FpML xmlns="http://www.fpml.org/2010/FpML-4-9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:fpml="http://www.fpml.org/2010/FpML-4-9" xsi:schemaLocation="http://www.fpml.org/2010/FpML-4-9                               ../fpml-main-4-9.xsd                               http://www.w3.org/2000/09/xmldsig#                               ../xmldsig-core-schema.xsd" xsi:type="RequestTradeConfirmation" version="4-9">
+	<header>
+		<messageId messageIdScheme="http://www.murex.com/message-id">MX194</messageId>
+		<sentBy>DTCC000003A7</sentBy>
+		<sendTo>party2</sendTo>
+		<creationTimestamp>2012-11-27T13:54:11.000+01:00</creationTimestamp>
+	</header>
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="DTCC000003A7"/>
+				<tradeId tradeIdScheme="http://www.murex.com/contract-id">MX194</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2002-12-02</tradeDate>
+		</tradeHeader>
+		<creditDefaultSwap>
+			<generalTerms>
+				<effectiveDate>
+					<unadjustedDate>2002-10-15</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>FOLLOWING</businessDayConvention>
+					</dateAdjustments>
+				</effectiveDate>
+				<scheduledTerminationDate>
+					<adjustableDate>
+						<unadjustedDate>2008-01-15</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>FOLLOWING</businessDayConvention>
+						</dateAdjustments>
+					</adjustableDate>
+				</scheduledTerminationDate>
+				<sellerPartyReference href="DTCC000003A7"/>
+				<buyerPartyReference href="party2"/>
+				<referenceInformation>
+					<referenceEntity>
+						<entityName entityNameScheme="http://www.fpml.org/spec/2003/entity-name-RED-1-0">MUREX_BELLINI_CORP</entityName>
+						<entityId entityIdScheme="http://www.fpml.org/spec/2003/entity-id-RED-1-0">FG3991</entityId>
+					</referenceEntity>
+					<referenceObligation>
+						<bond>
+							<instrumentId instrumentIdScheme="http://www.fpml.org/spec/2002/instrument-id-ISIN">XSNOREFOBL00</instrumentId>
+						</bond>
+					</referenceObligation>
+				</referenceInformation>
+			</generalTerms>
+			<feeLeg>
+				<periodicPayment>
+					<paymentFrequency>
+						<periodMultiplier>3</periodMultiplier>
+						<period>M</period>
+					</paymentFrequency>
+					<firstPaymentDate>2003-01-15</firstPaymentDate>
+					<fixedAmountCalculation>
+						<fixedRate>0.00009</fixedRate>
+					</fixedAmountCalculation>
+				</periodicPayment>
+				<marketFixedRate>0.0295269992</marketFixedRate>
+				<quotationStyle>TradedSpread</quotationStyle>
+			</feeLeg>
+			<protectionTerms>
+				<calculationAmount>
+					<currency>EUR</currency>
+					<amount>5000000</amount>
+				</calculationAmount>
+			</protectionTerms>
+		</creditDefaultSwap>
+		<calculationAgent>
+			<calculationAgentPartyReference href="DTCC000003A7"/>
+		</calculationAgent>
+	</trade>
+	<party id="party2">
+		<partyId>party2</partyId>
+	</party>
+	<party id="DTCC000003A7">
+		<partyId>DTCC000003A7</partyId>
+	</party>
+</FpML>

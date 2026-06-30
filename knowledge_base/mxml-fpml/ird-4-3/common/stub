@@ -1,0 +1,863 @@
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:date="http://exslt.org/dates-and-times" xmlns:mx="http://murex.com/xslt/common" xmlns:exslt="http://exslt.org/common" xmlns:str="http://exslt.org/strings" xmlns:exsl="http://exslt.org/common" xmlns:math="http://exslt.org/math" exclude-result-prefixes="mx exslt math date str" xmlns="http://www.fpml.org/2007/FpML-4-3" version="1.0">
+	<xsl:import href="mx.xml2xml.transform.mxml2fpml.4-3.products.ird.common.index"/>
+	<xsl:import href="mx.xml2xml.transform.any2fpml.4-3.products.common.floatingRate"/>
+	<xsl:import href="mx.generic.exslt.math.abs"/>
+	<!--Param User Defined Field Label For Internal Counterparty-->
+	<xsl:param name="internalUdfLabel" select="''"/>
+	<!-- ================================================================================================== 
+		 **********************************    stub periods management 	  ********************************* 
+		 ================================================================================================== -->
+	<xsl:variable name="swapStream1.initialStubCharacteristics.periodIndex">
+		<xsl:call-template name="extract-initialStubCharacteristics-periodIndex">
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.initialStubCharacteristics.periodIndex">
+		<xsl:call-template name="extract-initialStubCharacteristics-periodIndex">
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.finalStubCharacteristics.periodIndex">
+		<xsl:call-template name="extract-finalStubCharacteristics-periodIndex">
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.finalStubCharacteristics.periodIndex">
+		<xsl:call-template name="extract-finalStubCharacteristics-periodIndex">
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<!-- Flows -->
+	<xsl:variable name="swapStream1.firstPeriod.startDate">
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[1]/unadjustedStartDate">
+				<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[1]/unadjustedStartDate"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[1]/calculationStartDate"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.firstPeriod.endDate">
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[1]/unadjustedEndDate">
+				<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[1]/unadjustedEndDate"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[1]/calculationEndDate"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.lastPeriod.startDate">
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[last()]/calculationPeriod[1]/unadjustedStartDate">
+				<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[last()]/calculationPeriod[1]/unadjustedStartDate"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[last()]/calculationPeriod[1]/calculationStartDate"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.lastPeriod.endDate">
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[last()]/calculationPeriod[1]/unadjustedEndDate">
+				<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[last()]/calculationPeriod[1]/unadjustedEndDate"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[last()]/calculationPeriod[1]/calculationEndDate"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.firstPeriod.startDate">
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[1]/unadjustedStartDate">
+				<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[1]/unadjustedStartDate"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[1]/calculationStartDate"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.firstPeriod.endDate">
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[1]/unadjustedEndDate">
+				<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[1]/unadjustedEndDate"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[1]/calculationEndDate"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.lastPeriod.startDate">
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[last()]/calculationPeriod[1]/unadjustedStartDate">
+				<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[last()]/calculationPeriod[1]/unadjustedStartDate"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[last()]/calculationPeriod[1]/calculationStartDate"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.lastPeriod.endDate">
+		<xsl:choose>
+			<xsl:when test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[last()]/calculationPeriod[1]/unadjustedEndDate">
+				<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[last()]/calculationPeriod[1]/unadjustedEndDate"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[last()]/calculationPeriod[1]/calculationEndDate"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.firstPeriod.startDateShifted">
+		<xsl:call-template name="date:add">
+			<xsl:with-param name="date-time" select="$swapStream1.firstPeriod.startDate"/>
+			<xsl:with-param name="duration" select="concat('P', $swapStream1.calculationPeriodFrequency.periodMultiplier, $swapStream1.calculationPeriodFrequency.period)"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.lastPeriod.startDateShifted">
+		<xsl:call-template name="date:add">
+			<xsl:with-param name="date-time" select="$swapStream1.lastPeriod.startDate"/>
+			<xsl:with-param name="duration" select="concat('P', $swapStream1.calculationPeriodFrequency.periodMultiplier, $swapStream1.calculationPeriodFrequency.period)"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.firstPeriod.startDateShifted">
+		<xsl:call-template name="date:add">
+			<xsl:with-param name="date-time" select="$swapStream2.firstPeriod.startDate"/>
+			<xsl:with-param name="duration" select="concat('P', $swapStream2.calculationPeriodFrequency.periodMultiplier, $swapStream2.calculationPeriodFrequency.period)"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.lastPeriod.startDateShifted">
+		<xsl:call-template name="date:add">
+			<xsl:with-param name="date-time" select="$swapStream2.lastPeriod.startDate"/>
+			<xsl:with-param name="duration" select="concat('P', $swapStream2.calculationPeriodFrequency.periodMultiplier, $swapStream2.calculationPeriodFrequency.period)"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.paymentSchedule.zeroCouponMode">
+		<xsl:call-template name="extract-paymentSchedule-zeroCouponMode">
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.paymentSchedule.zeroCouponMode">
+		<xsl:call-template name="extract-paymentSchedule-zeroCouponMode">
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<!-- number of InterestPaymentPeriod nodes-->
+	<xsl:variable name="nbInterestPaymentPeriod1" select="count(/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot; or tradeImpacts/tradeImpact/@mefClass = &quot;mxContractEventRatesIIMPACT_TERMINATION&quot; ) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod)"/>  
+
+	<xsl:variable name="swapStream1.firstPeriod.stub">
+		<xsl:variable name="potentialStubNumberOfDaysTmp">
+			<xsl:call-template name="date:difference">
+				<xsl:with-param name="start" select="translate($swapStream1.firstPeriod.startDateShifted, '-', '')"/>
+				<xsl:with-param name="end" select="$swapStream1.firstPeriod.endDate"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:variable name="potentialStubNumberOfDays" select="substring-before(substring-after($potentialStubNumberOfDaysTmp, 'P'), 'D')"/>
+		<xsl:variable name="startDateDayName">
+			<xsl:call-template name="date:day-name">
+				<xsl:with-param name="date-time" select="$swapStream1.firstPeriod.startDate"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:variable name="endDateDayName">
+			<xsl:call-template name="date:day-name">
+				<xsl:with-param name="date-time" select="$swapStream1.lastPeriod.endDate"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:choose>
+			<xsl:when test="$nbInterestPaymentPeriod1 = 1">false</xsl:when>
+			<xsl:when test="starts-with($swapStream1.calculationPeriodFrequency.rollConvention,'IMM') and math:abs($potentialStubNumberOfDays) &lt; 7 and $startDateDayName = $endDateDayName ">false</xsl:when>
+			<xsl:when test="math:abs($potentialStubNumberOfDays) &gt; 0 and $swapStream1.calculationPeriodFrequency.rollConvention != 'EOM' and
+			not($swapStream1.calculationPeriodFrequency.rollConvention &gt; 28 and (substring($swapStream1.firstPeriod.startDate,5,4) = '0228' or substring($swapStream1.firstPeriod.startDate,5,4) = '0229'))">true</xsl:when>
+			<xsl:otherwise>false</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.lastPeriod.stub">
+		<xsl:variable name="potentialStubNumberOfDaysTmp">
+			<xsl:call-template name="date:difference">
+				<xsl:with-param name="start" select="translate($swapStream1.lastPeriod.startDateShifted,'-','')"/>
+				<xsl:with-param name="end" select="$swapStream1.lastPeriod.endDate"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:variable name="potentialStubNumberOfDays" select="substring-before(substring-after($potentialStubNumberOfDaysTmp, 'P'), 'D')"/>
+		<xsl:variable name="startDateDayName">
+			<xsl:call-template name="date:day-name">
+				<xsl:with-param name="date-time" select="$swapStream1.firstPeriod.startDate"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:variable name="endDateDayName">
+			<xsl:call-template name="date:day-name">
+				<xsl:with-param name="date-time" select="$swapStream1.lastPeriod.endDate"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:choose>
+			<xsl:when test="$nbInterestPaymentPeriod1 = 1">false</xsl:when>
+			<xsl:when test="starts-with($swapStream1.calculationPeriodFrequency.rollConvention, 'IMM') and math:abs($potentialStubNumberOfDays) &lt; 7 and $startDateDayName = $endDateDayName ">false</xsl:when>
+			<xsl:when test="math:abs($potentialStubNumberOfDays) &gt; 0 and $swapStream1.calculationPeriodFrequency.rollConvention != 'EOM' and
+			not($swapStream1.calculationPeriodFrequency.rollConvention &gt; 28 and (substring($swapStream1.lastPeriod.startDate,5,4) = '0228' or substring($swapStream1.lastPeriod.startDate,5,4) = '0229'))">true</xsl:when>
+			<xsl:otherwise>false</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<!-- number of InterestPaymentPeriod nodes-->
+	<xsl:variable name="nbInterestPaymentPeriod2" select="count(/MxML/trades/trade[1]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod)"/>
+	<xsl:variable name="swapStream2.firstPeriod.stub">
+		<xsl:variable name="potentialStubNumberOfDaysTmp">
+			<xsl:call-template name="date:difference">
+				<xsl:with-param name="start" select="translate($swapStream2.firstPeriod.startDateShifted, '-', '')"/>
+				<xsl:with-param name="end" select="$swapStream2.firstPeriod.endDate"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:variable name="potentialStubNumberOfDays" select="substring-before(substring-after($potentialStubNumberOfDaysTmp, 'P'), 'D')"/>
+		<xsl:variable name="startDateDayName">
+			<xsl:call-template name="date:day-name">
+				<xsl:with-param name="date-time" select="$swapStream2.firstPeriod.startDate"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:variable name="endDateDayName">
+			<xsl:call-template name="date:day-name">
+				<xsl:with-param name="date-time" select="$swapStream2.lastPeriod.endDate"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:choose>
+			<xsl:when test="$nbInterestPaymentPeriod2 = 1">false</xsl:when>
+			<xsl:when test="starts-with($swapStream2.calculationPeriodFrequency.rollConvention,'IMM') and math:abs($potentialStubNumberOfDays) &lt; 7 and $startDateDayName = $endDateDayName">false</xsl:when>
+			<xsl:when test="math:abs($potentialStubNumberOfDays) &gt; 0 and $swapStream2.calculationPeriodFrequency.rollConvention != 'EOM' and
+			not($swapStream2.calculationPeriodFrequency.rollConvention &gt; 28 and (substring($swapStream2.firstPeriod.startDate, 5, 4) = '0228' or substring($swapStream2.firstPeriod.startDate,5,4) = '0229'))">true</xsl:when>
+			<xsl:otherwise>false</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.lastPeriod.stub">
+		<xsl:variable name="potentialStubNumberOfDaysTmp">
+			<xsl:call-template name="date:difference">
+				<xsl:with-param name="start" select="translate($swapStream2.lastPeriod.startDateShifted, '-', '')"/>
+				<xsl:with-param name="end" select="$swapStream2.lastPeriod.endDate"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:variable name="potentialStubNumberOfDays" select="substring-before(substring-after($potentialStubNumberOfDaysTmp, 'P'), 'D')"/>
+		<xsl:variable name="startDateDayName">
+			<xsl:call-template name="date:day-name">
+				<xsl:with-param name="date-time" select="$swapStream2.firstPeriod.startDate"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:variable name="endDateDayName">
+			<xsl:call-template name="date:day-name">
+				<xsl:with-param name="date-time" select="$swapStream2.lastPeriod.endDate"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:choose>
+			<xsl:when test="$nbInterestPaymentPeriod2 = 1">false</xsl:when>
+			<xsl:when test="starts-with($swapStream2.calculationPeriodFrequency.rollConvention,'IMM') and math:abs($potentialStubNumberOfDays) &lt; 7 and $startDateDayName = $endDateDayName ">false</xsl:when>
+			<xsl:when test="math:abs($potentialStubNumberOfDays) &gt; 0 and $swapStream2.calculationPeriodFrequency.rollConvention != 'EOM' and
+			not($swapStream2.calculationPeriodFrequency.rollConvention &gt; 28 and (substring($swapStream2.lastPeriod.startDate,5,4) = '0228' or substring($swapStream2.lastPeriod.startDate,5,4) = '0229'))">true</xsl:when>
+			<xsl:otherwise>false</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.initialStubCharacteristics.couponLength" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/streamTemplate/potentialStubs/*/couponLength"/>
+	<!-- swapStream1.firstRegularPeriodStartDate -->
+	<xsl:variable name="swapStream1.firstRegularPeriodStartDate">
+		<xsl:if test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/stubPeriods/initialStub and $nbInterestPaymentPeriod1 &gt; 1 and $swapStream1.initialStubCharacteristics.couponLength != 'fullCoupon'">
+			<xsl:variable name="swapStream1.firstRegularPeriodStartDateTmp">
+				<xsl:choose>
+					<xsl:when test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[2]/contributionFlows/contributionFlow/calculationPeriod/calculationStartDate">
+						<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[2]/contributionFlows/contributionFlow/calculationPeriod/calculationStartDate"/>
+					</xsl:when>
+					<xsl:when test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[2]/calculationPeriod[1]/unadjustedStartDate">
+						<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[2]/calculationPeriod[1]/unadjustedStartDate"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[2]/calculationPeriod[1]/calculationStartDate"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+			<xsl:value-of select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $swapStream1.firstRegularPeriodStartDateTmp))"/>
+		</xsl:if>
+	</xsl:variable>
+	<!-- swapStream1.lastRegularPeriodEndDate -->
+	<xsl:variable name="swapStream1.lastRegularPeriodEndDate">
+		<xsl:if test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/stubPeriods/finalStub and $nbInterestPaymentPeriod1 &gt; 1">
+			<xsl:variable name="swapStream1.lastRegularPeriodEndDateTmp">
+				<xsl:choose>
+					<xsl:when test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod1) - 1]/calculationPeriod/unadjustedEndDate">
+						<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod1) - 1]/calculationPeriod/unadjustedEndDate"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod1) - 1]/calculationPeriod/calculationEndDate"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+			<xsl:value-of select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $swapStream1.lastRegularPeriodEndDateTmp))"/>
+		</xsl:if>
+	</xsl:variable>
+	<!-- swapStream1.stubPeriodType -->
+	<xsl:variable name="swapStream1.stubPeriodType">
+		<xsl:variable name="couponLength" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/streamTemplate/potentialStubs/*/couponLength"/>
+		<xsl:choose>
+			<xsl:when test="$nbInterestPaymentPeriod1 = 1 and not($swapStream1.paymentSchedule.zeroCouponMode='true')">
+				<xsl:choose>
+					<xsl:when test="$couponLength = 'longCoupon'">
+						<xsl:value-of select="'LongInitial'"/>
+					</xsl:when>
+					<xsl:when test="$couponLength = 'shortCoupon'">
+						<xsl:value-of select="''"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="''"/>
+					</xsl:otherwise>					
+				</xsl:choose>      
+			</xsl:when>
+			<xsl:when test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/stubPeriods/initialStub and $nbInterestPaymentPeriod1 &gt; 1">
+				<xsl:choose>
+					<xsl:when test="string-length($swapStream1.firstRegularPeriodStartDate) &gt; 0 and string-length($swapStream1.lastRegularPeriodEndDate) &gt; 0">
+						<xsl:value-of select="''"/>
+					</xsl:when>
+					<xsl:when test="$couponLength = 'shortCoupon' and $swapStream1.firstPeriod.stub ='true'">
+						<xsl:value-of select="'ShortInitial'"/>
+					</xsl:when>
+					<xsl:when test="$couponLength = 'shortCoupon' and (substring($leg1.maturityDate, 5, 4) = '0131' or substring($leg1.maturityDate, 5, 4) = '0228' or substring($leg1.maturityDate, 5, 4) = '0229' or substring($leg1.maturityDate, 5, 4) = '0331' or substring($leg1.maturityDate, 5, 4) = '0430' or substring($leg1.maturityDate, 5, 4) = '0531' or substring($leg1.maturityDate, 5, 4) = '0630' or substring($leg1.maturityDate, 5, 4) = '3101' or substring($leg1.maturityDate, 5, 4) = '0731' or substring($leg1.maturityDate, 5, 4) = '0831' or substring($leg1.maturityDate, 5, 4) = '0930' or substring($leg1.maturityDate, 5, 4) = '1031' or substring($leg1.maturityDate, 5, 4) = '1130' or substring($leg1.maturityDate, 5, 4) = '1231')">
+						<xsl:value-of select="'ShortInitial' "/>
+					</xsl:when>
+					<xsl:when test="$couponLength = 'longCoupon' and $swapStream1.firstPeriod.stub ='true'">
+						<xsl:value-of select="'LongInitial'"/>
+					</xsl:when>
+					<xsl:when test="$couponLength = 'longCoupon' and (substring($leg1.maturityDate, 5, 4) = '0131' or substring($leg1.maturityDate, 5, 4) = '0228' or substring($leg1.maturityDate, 5, 4) = '0229' or substring($leg1.maturityDate, 5, 4) = '0331' or substring($leg1.maturityDate, 5, 4) = '0430' or substring($leg1.maturityDate, 5, 4) = '0531' or substring($leg1.maturityDate, 5, 4) = '0630' or substring($leg1.maturityDate, 5, 4) = '3101' or substring($leg1.maturityDate, 5, 4) = '0731' or substring($leg1.maturityDate, 5, 4) = '0831' or substring($leg1.maturityDate, 5, 4) = '0930' or substring($leg1.maturityDate, 5, 4) = '1031' or substring($leg1.maturityDate, 5, 4) = '1130' or substring($leg1.maturityDate, 5, 4) = '1231')">
+						<xsl:value-of select="'LongInitial'"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="''"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:if test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/stubPeriods/finalStub and $nbInterestPaymentPeriod1 &gt; 1">
+					<xsl:variable name="leg1.startDate" select="MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod/calculationPeriod[1]/calculationStartDate"/>
+					<xsl:choose>
+						<xsl:when test="string-length($swapStream1.firstRegularPeriodStartDate) &gt; 0 and string-length($swapStream1.lastRegularPeriodEndDate) &gt; 0">
+							<xsl:value-of select="''"/>
+						</xsl:when>
+						<xsl:when test="$couponLength = 'shortCoupon' and $swapStream1.lastPeriod.stub ='true'">
+							<xsl:value-of select="'ShortFinal'"/>
+						</xsl:when>
+						<xsl:when test="$couponLength = 'shortCoupon' and (substring($leg1.startDate, 5, 4) = '0131' or substring($leg1.startDate, 5, 4) = '0228' or substring($leg1.startDate, 5, 4) = '0229' or substring($leg1.startDate, 5, 4) = '0331' or substring($leg1.startDate, 5, 4) = '0430' or substring($leg1.startDate, 5, 4) = '0531' or substring($leg1.startDate, 5, 4) = '0630' or substring($leg1.startDate, 5, 4) = '3101' or substring($leg1.startDate, 5, 4) = '0731' or substring($leg1.startDate, 5, 4) = '0831' or substring($leg1.startDate, 5, 4) = '0930' or substring($leg1.startDate, 5, 4) = '1031' or substring($leg1.startDate, 5, 4) = '1130' or substring($leg1.startDate, 5, 4) = '1231')">
+							<xsl:value-of select="'ShortFinal'"/>
+						</xsl:when>
+						<xsl:when test="$couponLength = 'longCoupon' and $swapStream1.lastPeriod.stub ='true'">
+							<xsl:value-of select="'LongFinal'"/>
+						</xsl:when>
+						<xsl:when test="$couponLength = 'longCoupon' and (substring($leg1.startDate, 5, 4) = '0131' or substring($leg1.startDate, 5, 4) = '0228' or substring($leg1.startDate, 5, 4) = '0229' or substring($leg1.startDate, 5, 4) = '0331' or substring($leg1.startDate, 5, 4) = '0430' or substring($leg1.startDate, 5, 4) = '0531' or substring($leg1.startDate, 5, 4) = '0630' or substring($leg1.startDate, 5, 4) = '3101' or substring($leg1.startDate, 5, 4) = '0731' or substring($leg1.startDate, 5, 4) = '0831' or substring($leg1.startDate, 5, 4) = '0930' or substring($leg1.startDate, 5, 4) = '1031' or substring($leg1.startDate, 5, 4) = '1130' or substring($leg1.startDate, 5, 4) = '1231')">
+							<xsl:value-of select="'LongFinal'"/>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:value-of select="''"/>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:if>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<!-- number of InterestPaymentPeriod nodes-->
+	<xsl:variable name="nbInterestPaymentPeriod2" select="count(/MxML/trades/trade[1]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod)"/>
+	<xsl:variable name="swapStream2.initialStubCharacteristics.couponLength" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/streamTemplate/potentialStubs/*/couponLength"/>
+	<!-- swapStream2.firstRegularPeriodStartDate -->
+	<xsl:variable name="swapStream2.firstRegularPeriodStartDate">
+		<xsl:if test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/stubPeriods/initialStub and $nbInterestPaymentPeriod2 &gt; 1 and $swapStream2.initialStubCharacteristics.couponLength != 'fullCoupon'">
+			<xsl:variable name="swapStream2.firstRegularPeriodStartDateTmp">
+				<xsl:choose>
+					<xsl:when test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[2]/contributionFlows/contributionFlow/calculationPeriod/calculationStartDate">
+						<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[2]/contributionFlows/contributionFlow/calculationPeriod/calculationStartDate"/>
+					</xsl:when>
+					<xsl:when test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[2]/calculationPeriod[1]/unadjustedStartDate">
+						<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[2]/calculationPeriod[1]/unadjustedStartDate"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[2]/calculationPeriod[1]/calculationStartDate"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+			<xsl:value-of select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $swapStream2.firstRegularPeriodStartDateTmp))"/>
+		</xsl:if>
+	</xsl:variable>
+	<!-- swapStream2.lastRegularPeriodEndDate -->
+	<xsl:variable name="swapStream2.lastRegularPeriodEndDate">
+		<xsl:if test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/stubPeriods/finalStub and $nbInterestPaymentPeriod2 &gt; 1">
+			<xsl:variable name="swapStream2.lastRegularPeriodEndDateTmp">
+				<xsl:choose>
+					<xsl:when test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod2)-1]/calculationPeriod/unadjustedEndDate">
+						<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod2)-1]/calculationPeriod/unadjustedEndDate"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod2)-1]/calculationPeriod/calculationEndDate"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+			<xsl:value-of select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $swapStream2.lastRegularPeriodEndDateTmp))"/>
+		</xsl:if>
+	</xsl:variable>
+	<!-- swapStream2.stubPeriodType -->
+	<xsl:variable name="swapStream2.stubPeriodType">
+		<xsl:variable name="couponLength" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/streamTemplate/potentialStubs/*/couponLength"/>
+		<xsl:choose>
+			<xsl:when test="$nbInterestPaymentPeriod2 = 1 and not($swapStream2.paymentSchedule.zeroCouponMode='true')">
+				<xsl:choose>
+					<xsl:when test="$couponLength = 'longCoupon'">
+						<xsl:value-of select="'LongInitial'"/>
+					</xsl:when>
+					<xsl:when test="$couponLength = 'shortCoupon'">
+						<xsl:value-of select="''"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="''"/>
+					</xsl:otherwise>					
+				</xsl:choose>      
+			</xsl:when>
+			<xsl:when test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/stubPeriods/initialStub and $nbInterestPaymentPeriod2 &gt; 1 ">
+				<xsl:choose>
+					<xsl:when test="string-length($swapStream2.firstRegularPeriodStartDate) &gt; 0 and string-length($swapStream2.lastRegularPeriodEndDate) &gt; 0">
+						<xsl:value-of select="''"/>
+					</xsl:when>
+					<xsl:when test="$couponLength = 'shortCoupon' and $swapStream2.firstPeriod.stub ='true'">
+						<xsl:value-of select="'ShortInitial'"/>
+					</xsl:when>
+					<xsl:when test="$couponLength = 'shortCoupon' and (substring($leg2.maturityDate, 5, 4) = '0131' or substring($leg2.maturityDate, 5, 4) = '0228' or substring($leg2.maturityDate, 5, 4) = '0229' or substring($leg2.maturityDate, 5, 4) = '0331' or substring($leg2.maturityDate, 5, 4) = '0430' or substring($leg2.maturityDate, 5, 4) = '0531' or substring($leg2.maturityDate, 5, 4) = '0630' or substring($leg2.maturityDate, 5, 4) = '3101' or substring($leg2.maturityDate, 5, 4) = '0731' or substring($leg2.maturityDate, 5, 4) = '0831' or substring($leg2.maturityDate, 5, 4) = '0930' or substring($leg2.maturityDate, 5, 4) = '1031' or substring($leg2.maturityDate, 5, 4) = '1130' or substring($leg2.maturityDate, 5, 4) = '1231')">
+						<xsl:value-of select="'ShortInitial'"/>
+					</xsl:when>
+					<xsl:when test="$couponLength = 'longCoupon' and $swapStream2.firstPeriod.stub ='true'">
+						<xsl:value-of select="'LongInitial'"/>
+					</xsl:when>
+					<xsl:when test="$couponLength = 'longCoupon' and (substring($leg2.maturityDate, 5, 4) = '0131' or substring($leg2.maturityDate, 5, 4) = '0228' or substring($leg2.maturityDate, 5, 4) = '0229' or substring($leg2.maturityDate, 5, 4) = '0331' or substring($leg2.maturityDate, 5, 4) = '0430' or substring($leg2.maturityDate, 5, 4) = '0531' or substring($leg2.maturityDate, 5, 4) = '0630' or substring($leg2.maturityDate, 5, 4) = '3101' or substring($leg2.maturityDate, 5, 4) = '0731' or substring($leg2.maturityDate, 5, 4) = '0831' or substring($leg2.maturityDate, 5, 4) = '0930' or substring($leg2.maturityDate, 5, 4) = '1031' or substring($leg2.maturityDate, 5, 4) = '1130' or substring($leg2.maturityDate, 5, 4) = '1231')">
+						<xsl:value-of select="'LongInitial'"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="''"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:if test="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/stubPeriods/finalStub and $nbInterestPaymentPeriod2 &gt; 1">
+					<xsl:variable name="leg2.startDate" select="MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod/calculationPeriod[1]/calculationStartDate"/>
+					<xsl:choose>
+						<xsl:when test="string-length($swapStream2.firstRegularPeriodStartDate) &gt; 0 and string-length($swapStream2.lastRegularPeriodEndDate) &gt; 0">
+							<xsl:value-of select="''"/>
+						</xsl:when>
+						<xsl:when test="$couponLength = 'shortCoupon' and $swapStream2.lastPeriod.stub ='true'">
+							<xsl:value-of select="'ShortFinal'"/>
+						</xsl:when>
+						<xsl:when test="$couponLength = 'shortCoupon' and (substring($leg2.startDate, 5, 4) = '0131' or substring($leg2.startDate, 5, 4) = '0228' or substring($leg2.startDate, 5, 4) = '0229' or substring($leg2.startDate, 5, 4) = '0331' or substring($leg2.startDate, 5, 4) = '0430' or substring($leg2.startDate, 5, 4) = '0531' or substring($leg2.startDate, 5, 4) = '0630' or substring($leg2.startDate, 5, 4) = '3101' or substring($leg2.startDate, 5, 4) = '0731' or substring($leg2.startDate, 5, 4) = '0831' or substring($leg2.startDate, 5, 4) = '0930' or substring($leg2.startDate, 5, 4) = '1031' or substring($leg2.startDate, 5, 4) = '1130' or substring($leg2.startDate, 5, 4) = '1231')">
+							<xsl:value-of select="'ShortFinal'"/>
+						</xsl:when>
+						<xsl:when test="$couponLength = 'longCoupon' and $swapStream2.lastPeriod.stub ='true'">
+							<xsl:value-of select="'LongFinal'"/>
+						</xsl:when>
+						<xsl:when test="$couponLength = 'longCoupon' and (substring($leg2.startDate, 5, 4) = '0131' or substring($leg2.startDate, 5, 4) = '0228' or substring($leg2.startDate, 5, 4) = '0229' or substring($leg2.startDate, 5, 4) = '0331' or substring($leg2.startDate, 5, 4) = '0430' or substring($leg2.startDate, 5, 4) = '0531' or substring($leg2.startDate, 5, 4) = '0630' or substring($leg2.startDate, 5, 4) = '3101' or substring($leg2.startDate, 5, 4) = '0731' or substring($leg2.startDate, 5, 4) = '0831' or substring($leg2.startDate, 5, 4) = '0930' or substring($leg2.startDate, 5, 4) = '1031' or substring($leg2.startDate, 5, 4) = '1130' or substring($leg2.startDate, 5, 4) = '1231')">
+							<xsl:value-of select="'LongFinal'"/>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:value-of select="''"/>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:if>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="stubPositionFlag">
+		<!-- Extraction of the stub position -->
+		<xsl:variable name="stubPosition">
+			<xsl:call-template name="extract-stubPosition"/>
+		</xsl:variable>
+		<!-- Check of the presense of the node stubPeriods on the first leg (it is present even if empty if a stub period is presnt) -->
+		<xsl:variable name="stubPeriodsPresence">
+			<xsl:call-template name="extract-stubPeriodsPresence"/>
+		</xsl:variable>
+		<!-- Test is done on the presense of the stub period and thetype -->
+		<xsl:choose>
+			<xsl:when test="($stubPeriodsPresence = 'true') and ($stubPosition = 'upFront' or $stubPosition = 'inArrears' or $stubPosition = 'bothSidesBwd' or $stubPosition = 'bothSidesFwd')">
+				<xsl:value-of select="'true'"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="'false'"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<!-- swapStream1.initialStub -->
+	<xsl:variable name="swapStream1.initialStub.floatingRate.params">
+		<xsl:call-template name="extract-initialStub-indexLabel">
+			<xsl:with-param name="legNb" select="1"/>
+			<xsl:with-param name="stream" select="1"/>
+			<xsl:with-param name="index" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<!-- if interpolated, extract second index -->
+	<xsl:variable name="swapStream1.initialStub.floatingRate2.params">
+		<xsl:call-template name="extract-initialStub-indexLabel">
+			<xsl:with-param name="legNb" select="1"/>
+			<xsl:with-param name="stream" select="1"/>
+			<xsl:with-param name="index" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<!-- swapStream1.finalStub -->
+	<xsl:variable name="swapStream1.finalStub.floatingRate.params">
+		<xsl:call-template name="extract-finalStub-indexLabel">
+			<xsl:with-param name="legNb" select="1"/>
+			<xsl:with-param name="stream" select="1"/>
+			<xsl:with-param name="index" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<!-- if interpolated -->
+	<xsl:variable name="swapStream1.finalStub.floatingRate2.params">
+		<xsl:call-template name="extract-finalStub-indexLabel">
+			<xsl:with-param name="legNb" select="1"/>
+			<xsl:with-param name="stream" select="1"/>
+			<xsl:with-param name="index" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<!-- swapStream2.initialStub -->
+	<xsl:variable name="swapStream2.initialStub.floatingRate.params">
+		<xsl:call-template name="extract-initialStub-indexLabel">
+			<xsl:with-param name="legNb" select="1"/>
+			<xsl:with-param name="stream" select="2"/>
+			<xsl:with-param name="index" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<!-- if interpolated -->
+	<xsl:variable name="swapStream2.initialStub.floatingRate2.params">
+		<xsl:call-template name="extract-initialStub-indexLabel">
+			<xsl:with-param name="legNb" select="1"/>
+			<xsl:with-param name="stream" select="2"/>
+			<xsl:with-param name="index" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<!-- swapStream2.finalStub -->
+	<xsl:variable name="swapStream2.finalStub.floatingRate.params">
+		<xsl:call-template name="extract-finalStub-indexLabel">
+			<xsl:with-param name="legNb" select="1"/>
+			<xsl:with-param name="stream" select="2"/>
+			<xsl:with-param name="index" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<!-- if interpolated -->
+	<xsl:variable name="swapStream2.finalStub.floatingRate2.params">
+		<xsl:call-template name="extract-finalStub-indexLabel">
+			<xsl:with-param name="legNb" select="1"/>
+			<xsl:with-param name="stream" select="2"/>
+			<xsl:with-param name="index" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<!-- stub management: stubCalculationPeriodAmount node -->
+	<xsl:variable name="swapStream1.initialStub.floatingRate.params.details">
+		<xsl:if test="string-length($swapStream1.initialStub.floatingRate.params) &gt; 0">
+			<xsl:copy-of select="mx:execute-formula($mapIndex, concat('index:', $swapStream1.initialStub.floatingRate.params, ',contractualDefinitions:', $contractualDefinitions,',customizedRFR:',$leg1.customizedRFR))"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.initialStub.floatingRate.floatingRateIndex">
+		<xsl:if test="string-length($swapStream1.initialStub.floatingRate.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream1.initialStub.floatingRate.params.details)/table/row[1]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.initialStub.floatingRate.periodMultiplier">
+		<xsl:if test="string-length($swapStream1.initialStub.floatingRate.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream1.initialStub.floatingRate.params.details)/table/row[3]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.initialStub.floatingRate.period">
+		<xsl:if test="string-length($swapStream1.initialStub.floatingRate.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream1.initialStub.floatingRate.params.details)/table/row[2]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.initialStub.floatingRate.params.details">
+		<xsl:if test="string-length($swapStream2.initialStub.floatingRate.params) &gt; 0">
+			<xsl:copy-of select="mx:execute-formula($mapIndex, concat('index:', $swapStream2.initialStub.floatingRate.params, ',contractualDefinitions:', $contractualDefinitions,',customizedRFR:',$leg2.customizedRFR))"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.initialStub.floatingRate.floatingRateIndex">
+		<xsl:if test="string-length($swapStream2.initialStub.floatingRate.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream2.initialStub.floatingRate.params.details)/table/row[1]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.initialStub.floatingRate.periodMultiplier">
+		<xsl:if test="string-length($swapStream2.initialStub.floatingRate.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream2.initialStub.floatingRate.params.details)/table/row[3]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.initialStub.floatingRate.period">
+		<xsl:if test="string-length($swapStream2.initialStub.floatingRate.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream2.initialStub.floatingRate.params.details)/table/row[2]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.finalStub.floatingRate.params.details">
+		<xsl:if test="string-length($swapStream1.finalStub.floatingRate.params) &gt; 0">
+			<xsl:copy-of select="mx:execute-formula($mapIndex, concat('index:', $swapStream1.finalStub.floatingRate.params, ',contractualDefinitions:', $contractualDefinitions,',customizedRFR:',$leg1.customizedRFR))"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.finalStub.floatingRate.floatingRateIndex">
+		<xsl:if test="string-length($swapStream1.finalStub.floatingRate.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream1.finalStub.floatingRate.params.details)/table/row[1]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.finalStub.floatingRate.periodMultiplier">
+		<xsl:if test="string-length($swapStream1.finalStub.floatingRate.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream1.finalStub.floatingRate.params.details)/table/row[3]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.finalStub.floatingRate.period">
+		<xsl:if test="string-length($swapStream1.finalStub.floatingRate.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream1.finalStub.floatingRate.params.details)/table/row[2]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.finalStub.floatingRate.params.details">
+		<xsl:if test="string-length($swapStream2.finalStub.floatingRate.params) &gt; 0">
+			<xsl:copy-of select="mx:execute-formula($mapIndex, concat('index:', $swapStream2.finalStub.floatingRate.params, ',contractualDefinitions:', $contractualDefinitions,',customizedRFR:',$leg2.customizedRFR))"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.finalStub.floatingRate.floatingRateIndex">
+		<xsl:if test="string-length($swapStream2.finalStub.floatingRate.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream2.finalStub.floatingRate.params.details)/table/row[1]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.finalStub.floatingRate.periodMultiplier">
+		<xsl:if test="string-length($swapStream2.finalStub.floatingRate.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream2.finalStub.floatingRate.params.details)/table/row[3]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.finalStub.floatingRate.period">
+		<xsl:if test="string-length($swapStream2.finalStub.floatingRate.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream2.finalStub.floatingRate.params.details)/table/row[2]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.initialStub.floatingRate2.params.details">
+		<xsl:if test="string-length($swapStream1.initialStub.floatingRate2.params) &gt; 0">
+			<xsl:copy-of select="mx:execute-formula($mapIndex, concat('index:', $swapStream1.initialStub.floatingRate2.params, ',contractualDefinitions:', $contractualDefinitions,',customizedRFR:',$leg1.customizedRFR))"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.initialStub.floatingRate2.floatingRateIndex">
+		<xsl:if test="string-length($swapStream1.initialStub.floatingRate2.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream1.initialStub.floatingRate2.params.details)/table/row[1]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.initialStub.floatingRate2.periodMultiplier">
+		<xsl:if test="string-length($swapStream1.initialStub.floatingRate2.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream1.initialStub.floatingRate2.params.details)/table/row[3]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.initialStub.floatingRate2.period">
+		<xsl:if test="string-length($swapStream1.initialStub.floatingRate2.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream1.initialStub.floatingRate2.params.details)/table/row[2]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.finalStub.floatingRate2.params.details">
+		<xsl:if test="string-length($swapStream1.finalStub.floatingRate2.params) &gt; 0">
+			<xsl:copy-of select="mx:execute-formula($mapIndex, concat('index:', $swapStream1.finalStub.floatingRate2.params, ',contractualDefinitions:', $contractualDefinitions,',customizedRFR:',$leg1.customizedRFR))"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.finalStub.floatingRate2.floatingRateIndex">
+		<xsl:if test="string-length($swapStream1.finalStub.floatingRate2.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream1.finalStub.floatingRate2.params.details)/table/row[1]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.finalStub.floatingRate2.periodMultiplier">
+		<xsl:if test="string-length($swapStream1.finalStub.floatingRate2.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream1.finalStub.floatingRate2.params.details)/table/row[3]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.finalStub.floatingRate2.period">
+		<xsl:if test="string-length($swapStream1.finalStub.floatingRate2.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream1.finalStub.floatingRate2.params.details)/table/row[2]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.initialStub.floatingRate2.params.details">
+		<xsl:if test="string-length($swapStream2.initialStub.floatingRate2.params) &gt; 0">
+			<xsl:copy-of select="mx:execute-formula($mapIndex, concat('index:', $swapStream2.initialStub.floatingRate2.params, ',contractualDefinitions:', $contractualDefinitions,',customizedRFR:',$leg2.customizedRFR))"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.initialStub.floatingRate2.floatingRateIndex">
+		<xsl:if test="string-length($swapStream2.initialStub.floatingRate2.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream2.initialStub.floatingRate2.params.details)/table/row[1]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.initialStub.floatingRate2.periodMultiplier">
+		<xsl:if test="string-length($swapStream2.initialStub.floatingRate2.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream2.initialStub.floatingRate2.params.details)/table/row[3]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.initialStub.floatingRate2.period">
+		<xsl:if test="string-length($swapStream2.initialStub.floatingRate2.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream2.initialStub.floatingRate2.params.details)/table/row[2]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.finalStub.floatingRate2.params.details">
+		<xsl:if test="string-length($swapStream2.finalStub.floatingRate2.params) &gt; 0">
+			<xsl:copy-of select="mx:execute-formula($mapIndex, concat('index:', $swapStream2.finalStub.floatingRate2.params, ',contractualDefinitions:', $contractualDefinitions,',customizedRFR:',$leg2.customizedRFR))"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.finalStub.floatingRate2.floatingRateIndex">
+		<xsl:if test="string-length($swapStream2.finalStub.floatingRate2.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream2.finalStub.floatingRate2.params.details)/table/row[1]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.finalStub.floatingRate2.periodMultiplier">
+		<xsl:if test="string-length($swapStream2.finalStub.floatingRate2.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream2.finalStub.floatingRate2.params.details)/table/row[3]"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.finalStub.floatingRate2.period">
+		<xsl:if test="string-length($swapStream2.finalStub.floatingRate2.params.details) &gt; 0">
+			<xsl:value-of select="exslt:node-set($swapStream2.finalStub.floatingRate2.params.details)/table/row[2]"/>
+		</xsl:if>
+	</xsl:variable>
+	<!-- swapStream1.initialStub.nodes -->
+	<xsl:variable name="swapStream1.initialStub.nodes">
+		<xsl:variable name="firstFixingCustomized" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[streamTemplate/leg=1]/floatingRateStream/firstFixingCustomized"/>
+		<xsl:variable name="firstFixing" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[streamTemplate/leg=1]/floatingRateStream/firstFixing"/>
+		<xsl:variable name="initialStub" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[streamTemplate/leg=1]/stubPeriods/initialStub"/>
+		<xsl:variable name="potentialStubs" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[streamTemplate/leg=1]/streamTemplate/potentialStubs"/>
+		<xsl:choose>
+			<!--MX generates misleading  <stubPeriods><initialStub/></stubPeriods> elements for OIS with maturity<12M-->
+			<xsl:when test="contains($typology , 'OIS') and $tradeLengthLowerThan1Y"/>
+			<!-- For customized first fixing, no indices are needed for stub -->
+			<xsl:when test="($firstFixingCustomized = 'true') and (string-length($firstFixing)&gt;0) and $initialStub and (string-length($potentialStubs)&gt;0)">
+				<stubRate>
+					<xsl:value-of select="format-number($firstFixing div 100, '##.##########')"/>
+				</stubRate>
+			</xsl:when>
+			<xsl:when test="string-length($swapStream1.initialStub.floatingRate.params) &gt; 0 ">
+				<xsl:call-template name="create-floatingRate-floatingRate">
+					<xsl:with-param name="floatingRateIndex" select="$swapStream1.initialStub.floatingRate.floatingRateIndex"/>
+					<xsl:with-param name="period" select="$swapStream1.initialStub.floatingRate.period"/>
+					<xsl:with-param name="periodMultiplier" select="$swapStream1.initialStub.floatingRate.periodMultiplier"/>
+				</xsl:call-template>
+				<xsl:if test="string-length($swapStream1.initialStub.floatingRate2.floatingRateIndex) &gt; 0">
+					<xsl:call-template name="create-floatingRate-floatingRate">
+						<xsl:with-param name="floatingRateIndex" select="$swapStream1.initialStub.floatingRate2.floatingRateIndex"/>
+						<xsl:with-param name="period" select="$swapStream1.initialStub.floatingRate2.period"/>
+						<xsl:with-param name="periodMultiplier" select="$swapStream1.initialStub.floatingRate2.periodMultiplier"/>
+					</xsl:call-template>
+				</xsl:if>
+			</xsl:when>
+		</xsl:choose>
+	</xsl:variable>
+	<!-- swapStream1.finalStub.nodes -->
+	<xsl:variable name="swapStream1.finalStub.nodes">
+		<xsl:choose>
+			<!--MX generates misleading  <stubPeriods><initialStub/></stubPeriods> elements for OIS with maturity<12M-->
+			<xsl:when test="contains($typology , 'OIS') and $tradeLengthLowerThan1Y"/>
+			<xsl:when test="string-length($swapStream1.finalStub.floatingRate.params) &gt; 0 ">
+				<xsl:call-template name="create-floatingRate-floatingRate">
+					<xsl:with-param name="floatingRateIndex" select="$swapStream1.finalStub.floatingRate.floatingRateIndex"/>
+					<xsl:with-param name="period" select="$swapStream1.finalStub.floatingRate.period"/>
+					<xsl:with-param name="periodMultiplier" select="$swapStream1.finalStub.floatingRate.periodMultiplier"/>
+				</xsl:call-template>
+				<xsl:if test="string-length($swapStream1.finalStub.floatingRate2.floatingRateIndex) &gt; 0">
+					<xsl:call-template name="create-floatingRate-floatingRate">
+						<xsl:with-param name="floatingRateIndex" select="$swapStream1.finalStub.floatingRate2.floatingRateIndex"/>
+						<xsl:with-param name="period" select="$swapStream1.finalStub.floatingRate2.period"/>
+						<xsl:with-param name="periodMultiplier" select="$swapStream1.finalStub.floatingRate2.periodMultiplier"/>
+					</xsl:call-template>
+				</xsl:if>
+			</xsl:when>
+		</xsl:choose>
+	</xsl:variable>
+	<!-- swapStream2.initialStub.nodes -->
+	<xsl:variable name="swapStream2.initialStub.nodes">
+		<xsl:variable name="firstFixingCustomized" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[streamTemplate/leg=2]/floatingRateStream/firstFixingCustomized"/>
+		<xsl:variable name="firstFixing" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[streamTemplate/leg=2]/floatingRateStream/firstFixing"/>
+		<xsl:variable name="initialStub" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[streamTemplate/leg=2]/stubPeriods/initialStub"/>
+		<xsl:variable name="potentialStubs" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[streamTemplate/leg=2]/streamTemplate/potentialStubs"/>
+		<xsl:choose>
+			<!--MX generates misleading  
+				<stubPeriods>
+					<initialStub/>
+				</stubPeriods> 
+				elements for OIS with maturity<12M-->
+			<xsl:when test="contains($typology , 'OIS') and $tradeLengthLowerThan1Y"/>
+			<!-- For customized first fixing, no indices are needed for stub -->
+			<xsl:when test="($firstFixingCustomized = 'true') and (string-length($firstFixing) &gt; 0) and $initialStub and (string-length($potentialStubs) &gt; 0)">
+				<stubRate>
+					<xsl:value-of select="format-number($firstFixing div 100, '##.##########')"/>
+				</stubRate>
+			</xsl:when>
+			<xsl:when test="string-length($swapStream2.initialStub.floatingRate.params) &gt; 0 ">
+				<xsl:call-template name="create-floatingRate-floatingRate">
+					<xsl:with-param name="floatingRateIndex" select="$swapStream2.initialStub.floatingRate.floatingRateIndex"/>
+					<xsl:with-param name="period" select="$swapStream2.initialStub.floatingRate.period"/>
+					<xsl:with-param name="periodMultiplier" select="$swapStream2.initialStub.floatingRate.periodMultiplier"/>
+				</xsl:call-template>
+				<xsl:if test="string-length($swapStream2.initialStub.floatingRate2.floatingRateIndex) &gt; 0">
+					<xsl:variable name="period">
+						<xsl:choose>
+							<xsl:when test="$swapStream2.initialStub.floatingRate2.period = 'Y' and $swapStream2.initialStub.floatingRate2.periodMultiplier = '1'">
+								<xsl:value-of select="'M'"/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of select="$swapStream2.initialStub.floatingRate2.period"/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:variable>
+					<xsl:variable name="periodMultiplier">
+						<xsl:choose>
+							<xsl:when test="$swapStream2.initialStub.floatingRate2.period = 'Y' and $swapStream2.initialStub.floatingRate2.periodMultiplier = '1'">
+								<xsl:value-of select="'12'"/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of select="$swapStream2.initialStub.floatingRate2.periodMultiplier"/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:variable>
+					<xsl:call-template name="create-floatingRate-floatingRate">
+						<xsl:with-param name="floatingRateIndex" select="$swapStream2.initialStub.floatingRate2.floatingRateIndex"/>
+						<xsl:with-param name="period" select="$period"/>
+						<xsl:with-param name="periodMultiplier" select="$periodMultiplier"/>
+					</xsl:call-template>
+				</xsl:if>
+			</xsl:when>
+		</xsl:choose>
+	</xsl:variable>
+	<!-- swapStream2.finalStub.nodes -->
+	<xsl:variable name="swapStream2.finalStub.nodes">
+		<xsl:choose>
+			<!--MX generates misleading  <stubPeriods><initialStub/></stubPeriods> elements for OIS with maturity<12M-->
+			<xsl:when test="contains($typology , 'OIS') and $tradeLengthLowerThan1Y"/>
+			<xsl:when test="string-length($swapStream2.finalStub.floatingRate.params) &gt; 0 ">
+				<xsl:call-template name="create-floatingRate-floatingRate">
+					<xsl:with-param name="floatingRateIndex" select="$swapStream2.finalStub.floatingRate.floatingRateIndex"/>
+					<xsl:with-param name="period" select="$swapStream2.finalStub.floatingRate.period"/>
+					<xsl:with-param name="periodMultiplier" select="$swapStream2.finalStub.floatingRate.periodMultiplier"/>
+				</xsl:call-template>
+				<xsl:if test="string-length($swapStream2.finalStub.floatingRate2.floatingRateIndex) &gt; 0">
+					<xsl:variable name="period">
+						<xsl:choose>
+							<xsl:when test="$swapStream2.finalStub.floatingRate2.period = 'Y' and $swapStream2.finalStub.floatingRate2.periodMultiplier = '1'">
+								<xsl:value-of select="'M'"/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of select="$swapStream2.finalStub.floatingRate2.period"/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:variable>
+					<xsl:variable name="periodMultiplier">
+						<xsl:choose>
+							<xsl:when test="$swapStream2.finalStub.floatingRate2.period = 'Y' and $swapStream2.finalStub.floatingRate2.periodMultiplier = '1'">
+								<xsl:value-of select="'12'"/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of select="$swapStream2.finalStub.floatingRate2.periodMultiplier"/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:variable>
+					<xsl:call-template name="create-floatingRate-floatingRate">
+						<xsl:with-param name="floatingRateIndex" select="$swapStream2.finalStub.floatingRate2.floatingRateIndex"/>
+						<xsl:with-param name="period" select="$period"/>
+						<xsl:with-param name="periodMultiplier" select="$periodMultiplier"/>
+					</xsl:call-template>
+				</xsl:if>
+			</xsl:when>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.stubCalculationPeriodAmount.calculationPeriodDatesReference.href">
+		<xsl:if test="($leg1.payoutType = 'floatingRate') and (string-length($swapStream1.initialStub.nodes) &gt; 0 or string-length($swapStream1.finalStub.nodes) &gt; 0)">
+			<xsl:value-of select="$swapStream1.paymentDates.calculationPeriodDatesReference.href"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.stubCalculationPeriodAmount.calculationPeriodDatesReference.href">
+		<xsl:if test="($leg2.payoutType = 'floatingRate') and ( string-length($swapStream2.initialStub.nodes) &gt; 0 or string-length($swapStream2.finalStub.nodes) &gt; 0)">
+			<xsl:value-of select="$swapStream2.paymentDates.calculationPeriodDatesReference.href"/>
+		</xsl:if>
+	</xsl:variable>
+</xsl:stylesheet>

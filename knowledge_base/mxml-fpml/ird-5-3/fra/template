@@ -1,0 +1,86 @@
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:exsl="http://exslt.org/common" xmlns:mx="http://murex.com/xslt/common" version="1.0" exclude-result-prefixes="mx">
+	<xsl:import href="mx.xml2xml.transform.mxml2fpml.5-3.products.ird.fra.transform" />
+	<!-- fpmlNode type -->
+	<xsl:param name="fpmlType" />
+	<!-- Header -->
+	<xsl:param name="tradeId2" />
+	<xsl:param name="tradeId2.scheme" />
+	<!-- optional parameters -->
+	<xsl:param name="messageId" />
+	<xsl:param name="messageIdScheme" />
+	<xsl:param name="sendBy.partyIdScheme" />
+	<xsl:param name="sendTo.partyIdScheme" />
+	<xsl:param name="tradeId1" />
+	<xsl:param name="tradeId1.scheme" />
+
+	<!-- parties -->
+	<xsl:param name="party.partyId1" />
+	<xsl:param name="party.partyId2" />
+	<xsl:param name="party.partyIdScheme1" />
+	<xsl:param name="party.partyIdScheme2" />
+	<!-- specific for novations events -->	
+	<xsl:param name="party.partyId3" />
+	<xsl:param name="party.partyIdScheme3" />
+
+
+
+	<!-- Mapping parameters -->
+	<xsl:param name="adjustableDate.dateAdjustments.businessDayConvention.defaultValue" />
+	<xsl:param name="fraFloatingIndex" />
+	<xsl:param name="fraDiscounting" />
+	<xsl:param name="fraResetDatesPeriodUnit" />
+	<xsl:param name="fraIndexPeriodUnit" />
+	<xsl:param name="fraDayCountFraction" />
+	<xsl:param name="fra.payment.businessDayConvention" />
+	<xsl:param name="fra.fixingDates.businessDayConvention" />
+	<xsl:param name="fraResetDatesDayType" />
+	<xsl:param name="dayCountFractionScheme" />
+	<xsl:param name="floatingRateIndexScheme" />
+
+	<!-- schemes -->
+	<xsl:param name="adjustableDate.dateAdjustments.businessCenter.businessCenterScheme" />
+	<xsl:param name="relativeDateOffSet.businessCenter.businessCenterScheme" />
+
+	<!-- specific amendment -->
+	<xsl:param name="isCorrection" />
+	<xsl:param name="sequenceNumber" />
+	<xsl:param name="correlationId" />
+	<xsl:param name="correlationIdScheme" />
+
+	<xsl:param name="productId.nodes"/>									
+	<xsl:template match="/">
+		<xsl:call-template name="create-fpml-node-ird-fra">
+			<xsl:with-param name="fpmlType" select="$fpmlType" />
+			<!-- mandatory parameters (refers to our tradeId) -->
+			<xsl:with-param name="tradeId2" select="$tradeId2" />
+			<xsl:with-param name="tradeId2.scheme" select="$tradeId2.scheme" />
+			<xsl:with-param name="messageId" select="$messageId" />
+			<xsl:with-param name="messageIdScheme" select="$messageIdScheme" />
+			<xsl:with-param name="party.partyId1" select="$party.partyId1" />
+			<xsl:with-param name="party.partyId2" select="$party.partyId2" />
+			<xsl:with-param name="party.partyId3" select="$party.partyId3" />
+
+			<!-- Mapping parameters -->
+			<xsl:with-param name="fraFloatingIndex" select="$fraFloatingIndex" />
+			<xsl:with-param name="fraIndexPeriodUnit" select="$fraIndexPeriodUnit" />
+			<xsl:with-param name="fraDiscounting" select="$fraDiscounting" />
+			<xsl:with-param name="adjustableDate.dateAdjustments.businessDayConvention.defaultValue" select="$adjustableDate.dateAdjustments.businessDayConvention.defaultValue" />
+			<xsl:with-param name="fraResetDatesPeriodUnit" select="$fraResetDatesPeriodUnit" />
+			<xsl:with-param name="fraDayCountFraction" select="$fraDayCountFraction" />
+			<xsl:with-param name="dayCountFractionScheme" select="$dayCountFractionScheme" />
+			<xsl:with-param name="fra.payment.businessDayConvention" select="$fra.payment.businessDayConvention" />
+			<xsl:with-param name="fra.fixingDates.businessDayConvention" select="$fra.fixingDates.businessDayConvention" />
+			<xsl:with-param name="fraResetDatesDayType" select="$fraResetDatesDayType" />
+			<xsl:with-param name="adjustableDate.dateAdjustments.businessCenter.businessCenterScheme" select="$adjustableDate.dateAdjustments.businessCenter.businessCenterScheme" />
+			<xsl:with-param name="relativeDateOffSet.businessCenter.businessCenterScheme" select="$relativeDateOffSet.businessCenter.businessCenterScheme" />
+			<xsl:with-param name="floatingRateIndexScheme" select="$floatingRateIndexScheme" />
+			<xsl:with-param name="productId.nodes" select="$productId.nodes"/>				 
+
+			<!-- Specific amendement -->
+			<xsl:with-param name="isCorrection" select="$isCorrection" />
+			<xsl:with-param name="sequenceNumber" select="$sequenceNumber" />
+			<xsl:with-param name="correlationId" select="$correlationId" />
+			<xsl:with-param name="correlationIdScheme" select="$correlationIdScheme" />
+		</xsl:call-template>
+	</xsl:template>
+</xsl:stylesheet>

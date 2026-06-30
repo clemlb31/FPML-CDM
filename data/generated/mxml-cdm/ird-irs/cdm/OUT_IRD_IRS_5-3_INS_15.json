@@ -1,0 +1,836 @@
+{
+  "trade" : {
+    "product" : {
+      "taxonomy" : [ {
+        "source" : "ISDA",
+        "productQualifier" : "InterestRate_IRSwap_FixedFloat"
+      } ],
+      "economicTerms" : {
+        "payout" : [ {
+          "InterestRatePayout" : {
+            "payerReceiver" : {
+              "payer" : "Party1",
+              "receiver" : "Party2"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-1"
+                }
+              }
+            },
+            "rateSpecification" : {
+              "FixedRateSpecification" : {
+                "rateSchedule" : {
+                  "price" : {
+                    "address" : {
+                      "scope" : "DOCUMENT",
+                      "value" : "price-1"
+                    }
+                  }
+                }
+              }
+            },
+            "dayCountFraction" : {
+              "value" : "30/360"
+            },
+            "calculationPeriodDates" : {
+              "effectiveDate" : {
+                "adjustableDate" : {
+                  "unadjustedDate" : "2014-08-28",
+                  "dateAdjustments" : {
+                    "businessDayConvention" : "MODFOLLOWING",
+                    "businessCenters" : {
+                      "businessCenter" : [ {
+                        "value" : "EUTA"
+                      } ]
+                    }
+                  },
+                  "adjustedDate" : {
+                    "value" : "2013-09-08"
+                  }
+                }
+              },
+              "terminationDate" : {
+                "adjustableDate" : {
+                  "unadjustedDate" : "2019-09-08",
+                  "dateAdjustments" : {
+                    "businessDayConvention" : "MODFOLLOWING",
+                    "businessCenters" : {
+                      "businessCenter" : [ {
+                        "value" : "EUTA"
+                      } ]
+                    }
+                  },
+                  "adjustedDate" : {
+                    "value" : "2019-09-09"
+                  }
+                }
+              },
+              "calculationPeriodDatesAdjustments" : {
+                "businessDayConvention" : "MODFOLLOWING",
+                "businessCenters" : {
+                  "businessCenter" : [ {
+                    "value" : "EUTA"
+                  } ]
+                }
+              },
+              "firstRegularPeriodStartDate" : "2014-09-08",
+              "calculationPeriodFrequency" : {
+                "periodMultiplier" : 1,
+                "period" : "Y",
+                "rollConvention" : "8"
+              },
+              "meta" : {
+                "externalKey" : "leg_1_calculationPeriodDates"
+              }
+            },
+            "paymentDates" : {
+              "paymentFrequency" : {
+                "periodMultiplier" : 1,
+                "period" : "Y"
+              },
+              "firstPaymentDate" : "2014-09-08",
+              "payRelativeTo" : "CalculationPeriodEndDate",
+              "paymentDaysOffset" : {
+                "periodMultiplier" : 0,
+                "period" : "D"
+              },
+              "paymentDatesAdjustments" : {
+                "businessDayConvention" : "MODFOLLOWING",
+                "businessCenters" : {
+                  "businessCenter" : [ {
+                    "value" : "EUTA"
+                  } ]
+                }
+              },
+              "meta" : {
+                "externalKey" : "leg_1_paymentDates"
+              }
+            },
+            "cashflowRepresentation" : {
+              "cashflowsMatchParameters" : true,
+              "paymentCalculationPeriod" : [ {
+                "adjustedPaymentDate" : "2014-09-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2013-09-08",
+                  "adjustedEndDate" : "2014-09-08",
+                  "unadjustedStartDate" : "2013-09-08",
+                  "unadjustedEndDate" : "2014-09-08",
+                  "notionalAmount" : 15123643,
+                  "fixedRate" : 0.0049056579,
+                  "dayCountYearFraction" : 1
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2015-09-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2014-09-08",
+                  "adjustedEndDate" : "2015-09-08",
+                  "unadjustedStartDate" : "2014-09-08",
+                  "unadjustedEndDate" : "2015-09-08",
+                  "notionalAmount" : 15123643,
+                  "fixedRate" : 0.0049056579,
+                  "dayCountYearFraction" : 1
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2016-09-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2015-09-08",
+                  "adjustedEndDate" : "2016-09-08",
+                  "unadjustedStartDate" : "2015-09-08",
+                  "unadjustedEndDate" : "2016-09-08",
+                  "notionalAmount" : 15123643,
+                  "fixedRate" : 0.0049056579,
+                  "dayCountYearFraction" : 1
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2017-09-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2016-09-08",
+                  "adjustedEndDate" : "2017-09-08",
+                  "unadjustedStartDate" : "2016-09-08",
+                  "unadjustedEndDate" : "2017-09-08",
+                  "notionalAmount" : 15123643,
+                  "fixedRate" : 0.0049056579,
+                  "dayCountYearFraction" : 1
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2018-09-10",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2017-09-08",
+                  "adjustedEndDate" : "2018-09-10",
+                  "unadjustedStartDate" : "2017-09-08",
+                  "unadjustedEndDate" : "2018-09-08",
+                  "notionalAmount" : 15123643,
+                  "fixedRate" : 0.0049056579,
+                  "dayCountYearFraction" : 1.00555555555556
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2019-09-09",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2018-09-10",
+                  "adjustedEndDate" : "2019-09-09",
+                  "unadjustedStartDate" : "2018-09-08",
+                  "unadjustedEndDate" : "2019-09-08",
+                  "notionalAmount" : 15123643,
+                  "fixedRate" : 0.0049056579,
+                  "dayCountYearFraction" : 0.997222222222222
+                } ]
+              } ]
+            }
+          }
+        }, {
+          "InterestRatePayout" : {
+            "payerReceiver" : {
+              "payer" : "Party2",
+              "receiver" : "Party1"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-2"
+                }
+              }
+            },
+            "rateSpecification" : {
+              "FloatingRateSpecification" : {
+                "rateOption" : {
+                  "address" : {
+                    "scope" : "DOCUMENT",
+                    "value" : "InterestRateIndex-1"
+                  }
+                }
+              }
+            },
+            "dayCountFraction" : {
+              "value" : "ACT/360"
+            },
+            "calculationPeriodDates" : {
+              "effectiveDate" : {
+                "adjustableDate" : {
+                  "unadjustedDate" : "2014-08-28",
+                  "dateAdjustments" : {
+                    "businessDayConvention" : "MODFOLLOWING",
+                    "businessCenters" : {
+                      "businessCenter" : [ {
+                        "value" : "EUTA"
+                      } ]
+                    }
+                  },
+                  "adjustedDate" : {
+                    "value" : "2014-06-08"
+                  }
+                }
+              },
+              "terminationDate" : {
+                "adjustableDate" : {
+                  "unadjustedDate" : "2019-09-08",
+                  "dateAdjustments" : {
+                    "businessDayConvention" : "MODFOLLOWING",
+                    "businessCenters" : {
+                      "businessCenter" : [ {
+                        "value" : "EUTA"
+                      } ]
+                    }
+                  },
+                  "adjustedDate" : {
+                    "value" : "2019-09-09"
+                  }
+                }
+              },
+              "calculationPeriodDatesAdjustments" : {
+                "businessDayConvention" : "MODFOLLOWING",
+                "businessCenters" : {
+                  "businessCenter" : [ {
+                    "value" : "EUTA"
+                  } ]
+                }
+              },
+              "firstRegularPeriodStartDate" : "2014-09-08",
+              "calculationPeriodFrequency" : {
+                "periodMultiplier" : 3,
+                "period" : "M",
+                "rollConvention" : "8"
+              },
+              "meta" : {
+                "externalKey" : "leg_2_calculationPeriodDates"
+              }
+            },
+            "paymentDates" : {
+              "paymentFrequency" : {
+                "periodMultiplier" : 3,
+                "period" : "M"
+              },
+              "firstPaymentDate" : "2014-09-08",
+              "payRelativeTo" : "CalculationPeriodEndDate",
+              "paymentDaysOffset" : {
+                "periodMultiplier" : 0,
+                "period" : "D"
+              },
+              "paymentDatesAdjustments" : {
+                "businessDayConvention" : "MODFOLLOWING",
+                "businessCenters" : {
+                  "businessCenter" : [ {
+                    "value" : "EUTA"
+                  } ]
+                }
+              },
+              "meta" : {
+                "externalKey" : "leg_2_paymentDates"
+              }
+            },
+            "resetDates" : {
+              "calculationPeriodDatesReference" : {
+                "externalReference" : "leg_2_calculationPeriodDates"
+              },
+              "resetRelativeTo" : "CalculationPeriodStartDate",
+              "fixingDates" : {
+                "periodMultiplier" : -2,
+                "period" : "D",
+                "dayType" : "Business",
+                "businessDayConvention" : "NONE",
+                "businessCenters" : {
+                  "businessCenter" : [ {
+                    "value" : "EUTA"
+                  } ]
+                },
+                "dateRelativeTo" : {
+                  "externalReference" : "leg_2_calculationPeriodDates"
+                }
+              },
+              "resetFrequency" : {
+                "periodMultiplier" : 3,
+                "period" : "M"
+              },
+              "resetDatesAdjustments" : {
+                "businessDayConvention" : "MODFOLLOWING",
+                "businessCenters" : {
+                  "businessCenter" : [ {
+                    "value" : "EUTA"
+                  } ]
+                }
+              },
+              "meta" : {
+                "externalKey" : "leg_2_resetDates"
+              }
+            },
+            "cashflowRepresentation" : {
+              "cashflowsMatchParameters" : true,
+              "paymentCalculationPeriod" : [ {
+                "adjustedPaymentDate" : "2014-09-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2014-06-08",
+                  "adjustedEndDate" : "2014-09-08",
+                  "unadjustedStartDate" : "2014-06-08",
+                  "unadjustedEndDate" : "2014-09-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2014-06-05",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.255555555555556
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2014-12-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2014-09-08",
+                  "adjustedEndDate" : "2014-12-08",
+                  "unadjustedStartDate" : "2014-09-08",
+                  "unadjustedEndDate" : "2014-12-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2014-09-04",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.252777777777778
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2015-03-09",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2014-12-08",
+                  "adjustedEndDate" : "2015-03-09",
+                  "unadjustedStartDate" : "2014-12-08",
+                  "unadjustedEndDate" : "2015-03-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2014-12-04",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.252777777777778
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2015-06-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2015-03-09",
+                  "adjustedEndDate" : "2015-06-08",
+                  "unadjustedStartDate" : "2015-03-08",
+                  "unadjustedEndDate" : "2015-06-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2015-03-05",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.252777777777778
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2015-09-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2015-06-08",
+                  "adjustedEndDate" : "2015-09-08",
+                  "unadjustedStartDate" : "2015-06-08",
+                  "unadjustedEndDate" : "2015-09-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2015-06-04",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.255555555555556
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2015-12-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2015-09-08",
+                  "adjustedEndDate" : "2015-12-08",
+                  "unadjustedStartDate" : "2015-09-08",
+                  "unadjustedEndDate" : "2015-12-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2015-09-04",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.252777777777778
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2016-03-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2015-12-08",
+                  "adjustedEndDate" : "2016-03-08",
+                  "unadjustedStartDate" : "2015-12-08",
+                  "unadjustedEndDate" : "2016-03-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2015-12-04",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.252777777777778
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2016-06-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2016-03-08",
+                  "adjustedEndDate" : "2016-06-08",
+                  "unadjustedStartDate" : "2016-03-08",
+                  "unadjustedEndDate" : "2016-06-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2016-03-04",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.255555555555556
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2016-09-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2016-06-08",
+                  "adjustedEndDate" : "2016-09-08",
+                  "unadjustedStartDate" : "2016-06-08",
+                  "unadjustedEndDate" : "2016-09-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2016-06-06",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.255555555555556
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2016-12-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2016-09-08",
+                  "adjustedEndDate" : "2016-12-08",
+                  "unadjustedStartDate" : "2016-09-08",
+                  "unadjustedEndDate" : "2016-12-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2016-09-06",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.252777777777778
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2017-03-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2016-12-08",
+                  "adjustedEndDate" : "2017-03-08",
+                  "unadjustedStartDate" : "2016-12-08",
+                  "unadjustedEndDate" : "2017-03-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2016-12-06",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.25
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2017-06-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2017-03-08",
+                  "adjustedEndDate" : "2017-06-08",
+                  "unadjustedStartDate" : "2017-03-08",
+                  "unadjustedEndDate" : "2017-06-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2017-03-06",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.255555555555556
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2017-09-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2017-06-08",
+                  "adjustedEndDate" : "2017-09-08",
+                  "unadjustedStartDate" : "2017-06-08",
+                  "unadjustedEndDate" : "2017-09-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2017-06-06",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.255555555555556
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2017-12-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2017-09-08",
+                  "adjustedEndDate" : "2017-12-08",
+                  "unadjustedStartDate" : "2017-09-08",
+                  "unadjustedEndDate" : "2017-12-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2017-09-06",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.252777777777778
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2018-03-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2017-12-08",
+                  "adjustedEndDate" : "2018-03-08",
+                  "unadjustedStartDate" : "2017-12-08",
+                  "unadjustedEndDate" : "2018-03-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2017-12-06",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.25
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2018-06-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2018-03-08",
+                  "adjustedEndDate" : "2018-06-08",
+                  "unadjustedStartDate" : "2018-03-08",
+                  "unadjustedEndDate" : "2018-06-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2018-03-06",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.255555555555556
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2018-09-10",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2018-06-08",
+                  "adjustedEndDate" : "2018-09-10",
+                  "unadjustedStartDate" : "2018-06-08",
+                  "unadjustedEndDate" : "2018-09-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2018-06-06",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.261111111111111
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2018-12-10",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2018-09-10",
+                  "adjustedEndDate" : "2018-12-10",
+                  "unadjustedStartDate" : "2018-09-08",
+                  "unadjustedEndDate" : "2018-12-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2018-09-06",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.252777777777778
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2019-03-08",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2018-12-10",
+                  "adjustedEndDate" : "2019-03-08",
+                  "unadjustedStartDate" : "2018-12-08",
+                  "unadjustedEndDate" : "2019-03-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2018-12-06",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.244444444444444
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2019-06-10",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2019-03-08",
+                  "adjustedEndDate" : "2019-06-10",
+                  "unadjustedStartDate" : "2019-03-08",
+                  "unadjustedEndDate" : "2019-06-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2019-03-06",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.261111111111111
+                } ]
+              }, {
+                "adjustedPaymentDate" : "2019-09-09",
+                "calculationPeriod" : [ {
+                  "adjustedStartDate" : "2019-06-10",
+                  "adjustedEndDate" : "2019-09-09",
+                  "unadjustedStartDate" : "2019-06-08",
+                  "unadjustedEndDate" : "2019-09-08",
+                  "notionalAmount" : 15123643,
+                  "floatingRateDefinition" : {
+                    "rateObservation" : [ {
+                      "adjustedFixingDate" : "2019-06-06",
+                      "observationWeight" : 1
+                    } ]
+                  },
+                  "dayCountYearFraction" : 0.252777777777778
+                } ]
+              } ]
+            },
+            "stubPeriod" : {
+              "calculationPeriodDatesReference" : {
+                "externalReference" : "leg_2_calculationPeriodDates"
+              },
+              "initialStub" : {
+                "floatingRate" : [ {
+                  "floatingRateIndex" : "EUR-EURIBOR-Reuters",
+                  "indexTenor" : {
+                    "periodMultiplier" : 3,
+                    "period" : "M"
+                  }
+                }, {
+                  "floatingRateIndex" : "EUR-EURIBOR-Reuters",
+                  "indexTenor" : {
+                    "periodMultiplier" : 4,
+                    "period" : "M"
+                  }
+                } ]
+              }
+            }
+          }
+        } ]
+      }
+    },
+    "tradeLot" : [ {
+      "priceQuantity" : [ {
+        "price" : [ {
+          "value" : {
+            "value" : 0.0049056579,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            },
+            "perUnitOf" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            },
+            "priceType" : "InterestRate"
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "price-1"
+            } ]
+          }
+        } ],
+        "quantity" : [ {
+          "value" : {
+            "value" : 15123643,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-1"
+            } ]
+          }
+        } ]
+      }, {
+        "quantity" : [ {
+          "value" : {
+            "value" : 15123643,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-2"
+            } ]
+          }
+        } ],
+        "observable" : {
+          "value" : {
+            "Index" : {
+              "InterestRateIndex" : {
+                "value" : {
+                  "FloatingRateIndex" : {
+                    "identifier" : [ {
+                      "identifier" : {
+                        "value" : "EUR-EURIBOR-Reuters"
+                      },
+                      "identifierType" : "Other"
+                    } ],
+                    "assetClass" : "InterestRate",
+                    "floatingRateIndex" : {
+                      "value" : "EUR-EURIBOR-Reuters"
+                    },
+                    "indexTenor" : {
+                      "periodMultiplier" : 3,
+                      "period" : "M"
+                    }
+                  }
+                },
+                "meta" : {
+                  "location" : [ {
+                    "scope" : "DOCUMENT",
+                    "value" : "InterestRateIndex-1"
+                  } ]
+                }
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "observable-1"
+            } ]
+          }
+        }
+      } ]
+    } ],
+    "counterparty" : [ {
+      "role" : "Party1",
+      "partyReference" : {
+        "externalReference" : "UBS-RCSR"
+      }
+    }, {
+      "role" : "Party2",
+      "partyReference" : {
+        "externalReference" : "_1780"
+      }
+    } ],
+    "tradeIdentifier" : [ {
+      "issuerReference" : {
+        "externalReference" : "UBS-RCSR"
+      },
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX182",
+          "meta" : {
+            "scheme" : "http://www.murex.com/contract-id"
+          }
+        }
+      } ]
+    }, {
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX182",
+          "meta" : {
+            "scheme" : "http://www.murex.com/contract-id"
+          }
+        }
+      } ]
+    } ],
+    "tradeDate" : {
+      "value" : "2014-08-26"
+    },
+    "party" : [ {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "BARCLAYS"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "_1780"
+      }
+    }, {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "BARCLAYS"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "UBS-RCSR"
+      }
+    } ]
+  }
+}

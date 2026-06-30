@@ -1,0 +1,374 @@
+{
+  "trade" : {
+    "product" : {
+      "taxonomy" : [ {
+        "source" : "ISDA",
+        "productQualifier" : "CreditDefaultSwaption"
+      } ],
+      "economicTerms" : {
+        "payout" : [ {
+          "OptionPayout" : {
+            "payerReceiver" : {
+              "payer" : "Party2",
+              "receiver" : "Party1"
+            },
+            "settlementTerms" : {
+              "settlementType" : "Physical"
+            },
+            "buyerSeller" : {
+              "buyer" : "Party1",
+              "seller" : "Party2"
+            },
+            "underlier" : {
+              "Product" : {
+                "NonTransferableProduct" : {
+                  "taxonomy" : [ {
+                    "source" : "ISDA",
+                    "productQualifier" : "CreditDefaultSwap_Index"
+                  } ],
+                  "economicTerms" : {
+                    "effectiveDate" : {
+                      "adjustableDate" : {
+                        "unadjustedDate" : "2007-12-18",
+                        "dateAdjustments" : {
+                          "businessDayConvention" : "FOLLOWING"
+                        },
+                        "adjustedDate" : {
+                          "value" : "2007-09-20"
+                        }
+                      }
+                    },
+                    "terminationDate" : {
+                      "adjustableDate" : {
+                        "unadjustedDate" : "2018-06-20",
+                        "dateAdjustments" : {
+                          "businessDayConvention" : "FOLLOWING"
+                        },
+                        "adjustedDate" : {
+                          "value" : "2018-06-20"
+                        }
+                      }
+                    },
+                    "dateAdjustments" : {
+                      "businessDayConvention" : "FOLLOWING"
+                    },
+                    "payout" : [ {
+                      "CreditDefaultPayout" : {
+                        "payerReceiver" : {
+                          "payer" : "Party2",
+                          "receiver" : "Party1"
+                        },
+                        "priceQuantity" : {
+                          "quantitySchedule" : {
+                            "address" : {
+                              "scope" : "DOCUMENT",
+                              "value" : "quantity-1"
+                            }
+                          }
+                        },
+                        "settlementTerms" : {
+                          "settlementType" : "Physical",
+                          "settlementCurrency" : {
+                            "value" : "USD"
+                          },
+                          "physicalSettlementTerms" : {
+                            "physicalSettlementPeriod" : {
+                              "businessDays" : 30
+                            },
+                            "deliverableObligations" : {
+                              "accruedInterest" : false
+                            },
+                            "escrow" : true
+                          }
+                        },
+                        "generalTerms" : {
+                          "indexReferenceInformation" : {
+                            "identifier" : [ {
+                              "identifier" : {
+                                "value" : "2I667DAO2",
+                                "meta" : {
+                                  "scheme" : "http://www.fpml.org/spec/2003/instrument-id-RED-pair"
+                                }
+                              },
+                              "identifierType" : "Name"
+                            } ],
+                            "name" : {
+                              "value" : "ITX-EUROPE-5Y-SFBN"
+                            },
+                            "assetClass" : "Credit"
+                          }
+                        },
+                        "protectionTerms" : [ {
+                          "creditEvents" : {
+                            "bankruptcy" : true,
+                            "failureToPay" : {
+                              "applicable" : true,
+                              "paymentRequirement" : {
+                                "value" : 1000000,
+                                "unit" : {
+                                  "currency" : {
+                                    "value" : "USD",
+                                    "meta" : {
+                                      "scheme" : "http://www.fpml.org/ext/iso4217"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "restructuring" : {
+                              "applicable" : true,
+                              "restructuringType" : {
+                                "value" : "ModR"
+                              }
+                            },
+                            "defaultRequirement" : {
+                              "value" : 10000000,
+                              "unit" : {
+                                "currency" : {
+                                  "value" : "USD",
+                                  "meta" : {
+                                    "scheme" : "http://www.fpml.org/ext/iso4217"
+                                  }
+                                }
+                              }
+                            },
+                            "creditEventNotice" : {
+                              "notifyingParty" : [ "Party1", "Party2" ]
+                            }
+                          },
+                          "obligations" : {
+                            "category" : "BorrowedMoney"
+                          }
+                        } ],
+                        "transactedPrice" : {
+                          "marketFixedRate" : 0.0295269992
+                        }
+                      }
+                    }, {
+                      "InterestRatePayout" : {
+                        "payerReceiver" : {
+                          "payer" : "Party1",
+                          "receiver" : "Party2"
+                        },
+                        "priceQuantity" : {
+                          "quantitySchedule" : {
+                            "address" : {
+                              "scope" : "DOCUMENT",
+                              "value" : "quantity-1"
+                            }
+                          }
+                        },
+                        "rateSpecification" : {
+                          "FixedRateSpecification" : {
+                            "rateSchedule" : {
+                              "price" : {
+                                "address" : {
+                                  "scope" : "DOCUMENT",
+                                  "value" : "price-1"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "calculationPeriodDates" : {
+                          "firstPeriodStartDate" : {
+                            "adjustableDate" : {
+                              "unadjustedDate" : "2007-09-20"
+                            }
+                          },
+                          "calculationPeriodFrequency" : {
+                            "periodMultiplier" : 3,
+                            "period" : "M"
+                          }
+                        },
+                        "paymentDates" : {
+                          "paymentFrequency" : {
+                            "periodMultiplier" : 3,
+                            "period" : "M"
+                          },
+                          "firstPaymentDate" : "2007-12-20"
+                        }
+                      }
+                    } ]
+                  }
+                }
+              }
+            },
+            "optionType" : "Call",
+            "exerciseTerms" : {
+              "style" : "European",
+              "expirationDate" : [ {
+                "adjustableDate" : {
+                  "unadjustedDate" : "2007-12-17",
+                  "dateAdjustments" : {
+                    "businessDayConvention" : "FOLLOWING"
+                  }
+                }
+              } ],
+              "earliestExerciseTime" : {
+                "hourMinuteTime" : "14:00:00"
+              },
+              "expirationTime" : {
+                "hourMinuteTime" : "14:00:00"
+              },
+              "expirationTimeType" : "SpecificTime",
+              "exerciseProcedure" : {
+                "followUpConfirmation" : false
+              }
+            }
+          }
+        } ],
+        "calculationAgent" : {
+          "calculationAgentParty" : "CalculationAgentIndependent"
+        }
+      }
+    },
+    "tradeLot" : [ {
+      "priceQuantity" : [ {
+        "price" : [ {
+          "value" : {
+            "value" : 0.0125,
+            "unit" : {
+              "currency" : {
+                "value" : "USD",
+                "meta" : {
+                  "scheme" : "http://www.fpml.org/ext/iso4217"
+                }
+              }
+            },
+            "perUnitOf" : {
+              "currency" : {
+                "value" : "USD",
+                "meta" : {
+                  "scheme" : "http://www.fpml.org/ext/iso4217"
+                }
+              }
+            },
+            "priceType" : "InterestRate"
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "price-1"
+            } ]
+          }
+        } ]
+      }, {
+        "quantity" : [ {
+          "value" : {
+            "value" : 100000000,
+            "unit" : {
+              "currency" : {
+                "value" : "USD",
+                "meta" : {
+                  "scheme" : "http://www.fpml.org/ext/iso4217"
+                }
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-1"
+            } ]
+          }
+        } ]
+      } ]
+    } ],
+    "counterparty" : [ {
+      "role" : "Party1",
+      "partyReference" : {
+        "externalReference" : "party1"
+      }
+    }, {
+      "role" : "Party2",
+      "partyReference" : {
+        "externalReference" : "BARCLAYS"
+      }
+    } ],
+    "ancillaryParty" : [ {
+      "role" : "CalculationAgentIndependent",
+      "partyReference" : [ {
+        "externalReference" : "BARCLAYS"
+      } ]
+    } ],
+    "tradeIdentifier" : [ {
+      "issuerReference" : {
+        "externalReference" : "party1"
+      },
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX1071",
+          "meta" : {
+            "scheme" : "http://www.murex.com/contract-id"
+          }
+        }
+      } ]
+    }, {
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX1071",
+          "meta" : {
+            "scheme" : "http://www.murex.com/contract-id"
+          }
+        }
+      } ]
+    } ],
+    "tradeDate" : {
+      "value" : "2006-12-15"
+    },
+    "party" : [ {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "BARCLAYS"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "BARCLAYS"
+      }
+    }, {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "party1"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "party1"
+      }
+    } ]
+  },
+  "transferHistory" : [ {
+    "transfer" : {
+      "quantity" : {
+        "value" : 1040000,
+        "unit" : {
+          "currency" : {
+            "value" : "USD"
+          }
+        }
+      },
+      "asset" : {
+        "Cash" : {
+          "identifier" : [ {
+            "identifier" : {
+              "value" : "USD"
+            },
+            "identifierType" : "CurrencyCode"
+          } ]
+        }
+      },
+      "settlementDate" : { },
+      "payerReceiver" : {
+        "payerPartyReference" : {
+          "externalReference" : "party1"
+        },
+        "receiverPartyReference" : {
+          "externalReference" : "BARCLAYS"
+        }
+      },
+      "transferExpression" : {
+        "priceTransfer" : "Premium"
+      }
+    }
+  } ]
+}

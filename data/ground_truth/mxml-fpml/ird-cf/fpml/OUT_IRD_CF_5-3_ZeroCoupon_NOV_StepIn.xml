@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<requestConfirmation xmlns="http://www.fpml.org/FpML-5/confirmation" fpmlVersion="5-3">
+	<header>
+		<messageId messageIdScheme="http://www.murex.com/message-id">MX41000747</messageId>
+		<sentBy>BARCLAYS</sentBy>
+		<sendTo>BARCLAYS</sendTo>
+		<creationTimestamp>2012-11-27T13:54:11.000+01:00</creationTimestamp>
+	</header>
+	<isCorrection>false</isCorrection>
+	<correlationId correlationIdScheme="http://www.murex.com/correlation-id">1234</correlationId>
+	<sequenceNumber>1</sequenceNumber>
+	<onBehalfOf>
+		<partyReference href="UBS-RCSR"/>
+	</onBehalfOf>
+	<novation>
+		<eventIdentifier>
+			<partyReference href="UBS-RCSR"/>
+			<eventId>386265</eventId>
+		</eventIdentifier>
+		<newTrade>
+			<tradeHeader>
+				<partyTradeIdentifier>
+					<partyReference href="UBS-RCSR"/>
+					<tradeId tradeIdScheme="http://www.fpml.org/coding-scheme/external/unique-transaction-identifier">MX41000747</tradeId>
+				</partyTradeIdentifier>
+				<tradeDate>2016-12-20</tradeDate>
+			</tradeHeader>
+			<capFloor>
+				<capFloorStream>
+					<payerPartyReference href="_1637"/>
+					<receiverPartyReference href="UBS-RCSR"/>
+					<calculationPeriodDates id="floatingRateCalculationPeriodDates1">
+						<effectiveDate>
+							<unadjustedDate>2016-12-22</unadjustedDate>
+							<dateAdjustments>
+								<businessDayConvention>FOLLOWING</businessDayConvention>
+								<businessCenters>
+									<businessCenter>GBLO</businessCenter>
+								</businessCenters>
+							</dateAdjustments>
+							<adjustedDate>2016-12-22</adjustedDate>
+						</effectiveDate>
+						<terminationDate>
+							<unadjustedDate>2021-12-22</unadjustedDate>
+							<dateAdjustments>
+								<businessDayConvention>NONE</businessDayConvention>
+							</dateAdjustments>
+							<adjustedDate>2021-12-22</adjustedDate>
+						</terminationDate>
+						<calculationPeriodDatesAdjustments>
+							<businessDayConvention>NONE</businessDayConvention>
+						</calculationPeriodDatesAdjustments>
+						<calculationPeriodFrequency>
+							<periodMultiplier>1</periodMultiplier>
+							<period>T</period>
+							<rollConvention>NONE</rollConvention>
+						</calculationPeriodFrequency>
+					</calculationPeriodDates>
+					<paymentDates>
+						<calculationPeriodDatesReference href="floatingRateCalculationPeriodDates1"/>
+						<paymentFrequency>
+							<periodMultiplier>1</periodMultiplier>
+							<period>T</period>
+						</paymentFrequency>
+						<payRelativeTo>CalculationPeriodEndDate</payRelativeTo>
+						<paymentDatesAdjustments>
+							<businessDayConvention>FOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>GBLO</businessCenter>
+							</businessCenters>
+						</paymentDatesAdjustments>
+					</paymentDates>
+					<resetDates id="resetDates">
+						<calculationPeriodDatesReference href="floatingRateCalculationPeriodDates1"/>
+						<resetRelativeTo>CalculationPeriodEndDate</resetRelativeTo>
+						<fixingDates>
+							<periodMultiplier>0</periodMultiplier>
+							<period>D</period>
+							<businessDayConvention>FOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>GBLO</businessCenter>
+							</businessCenters>
+							<dateRelativeTo href="floatingRateCalculationPeriodDates1"/>
+						</fixingDates>
+						<resetFrequency>
+							<periodMultiplier>1</periodMultiplier>
+							<period>T</period>
+						</resetFrequency>
+						<resetDatesAdjustments>
+							<businessDayConvention>NONE</businessDayConvention>
+						</resetDatesAdjustments>
+					</resetDates>
+					<calculationPeriodAmount>
+						<calculation>
+							<notionalSchedule>
+								<notionalStepSchedule>
+									<initialValue>1000000</initialValue>
+									<currency>GBP</currency>
+								</notionalStepSchedule>
+							</notionalSchedule>
+							<inflationRateCalculation>
+								<floatingRateIndex floatingRateIndexScheme="http://www.fpml.org/coding-scheme/inflation-index-description">UK-RPI</floatingRateIndex>
+								<capRateSchedule>
+									<initialValue>1.02</initialValue>
+									<buyer>Receiver</buyer>
+									<seller>Payer</seller>
+								</capRateSchedule>
+								<inflationLag>
+									<periodMultiplier>2</periodMultiplier>
+									<period>M</period>
+								</inflationLag>
+								<indexSource rateSourcePageScheme="http://www.fpml.org/coding-scheme/inflation-index-source">UKRPI</indexSource>
+								<interpolationMethod>None</interpolationMethod>
+								<initialIndexLevel>0</initialIndexLevel>
+								<fallbackBondApplicable>true</fallbackBondApplicable>
+							</inflationRateCalculation>
+							<dayCountFraction>1/1</dayCountFraction>
+						</calculation>
+					</calculationPeriodAmount>
+					<cashflows>
+						<cashflowsMatchParameters>true</cashflowsMatchParameters>
+						<paymentCalculationPeriod>
+							<adjustedPaymentDate>2021-12-22</adjustedPaymentDate>
+							<calculationPeriod>
+								<unadjustedStartDate>2016-12-22</unadjustedStartDate>
+								<unadjustedEndDate>2021-12-22</unadjustedEndDate>
+								<adjustedStartDate>2016-12-22</adjustedStartDate>
+								<adjustedEndDate>2021-12-22</adjustedEndDate>
+								<notionalAmount>1000000</notionalAmount>
+								<floatingRateDefinition>
+									<rateObservation>
+										<adjustedFixingDate>2016-10-01</adjustedFixingDate>
+										<observationWeight>1</observationWeight>
+									</rateObservation>
+									<rateObservation>
+										<adjustedFixingDate>2021-10-01</adjustedFixingDate>
+										<observationWeight>1</observationWeight>
+									</rateObservation>
+									<spread>0</spread>
+									<capRate>
+										<strikeRate>1.02</strikeRate>
+									</capRate>
+								</floatingRateDefinition>
+								<dayCountYearFraction>1</dayCountYearFraction>
+							</calculationPeriod>
+						</paymentCalculationPeriod>
+					</cashflows>
+				</capFloorStream>
+				<premium>
+					<payerPartyReference href="UBS-RCSR"/>
+					<receiverPartyReference href="_1637"/>
+					<paymentAmount>
+						<currency>GBP</currency>
+						<amount>11000</amount>
+					</paymentAmount>
+					<paymentDate>
+						<unadjustedDate>2016-12-20</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>FOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>GBLO</businessCenter>
+							</businessCenters>
+						</dateAdjustments>
+						<adjustedDate>2016-12-20</adjustedDate>
+					</paymentDate>
+				</premium>
+			</capFloor>
+		</newTrade>
+		<transferor href="_6439"/>
+		<transferee href="UBS-RCSR"/>
+		<remainingParty href="_1637"/>
+		<novationDate>2016-12-20</novationDate>
+		<executionDateTime>2016-12-20T17:45:26Z</executionDateTime>
+		<novationTradeDate>2016-12-20</novationTradeDate>
+		<novatedAmount>
+			<currency>GBP</currency>
+			<amount>1000000</amount>
+		</novatedAmount>
+		<remainingAmount>
+			<currency>GBP</currency>
+			<amount>0</amount>
+		</remainingAmount>
+		<payment>
+			<payerPartyReference href="UBS-RCSR"/>
+			<receiverPartyReference href="_6439"/>
+			<paymentAmount>
+				<currency>GBP</currency>
+				<amount>0.00884377</amount>
+			</paymentAmount>
+			<paymentDate>
+				<adjustedDate>2016-12-20</adjustedDate>
+			</paymentDate>
+			<paymentType>CAPITAL</paymentType>
+		</payment>
+	</novation>
+	<party id="_1637">
+		<partyId>BARCLAYS</partyId>
+	</party>
+	<party id="UBS-RCSR">
+		<partyId>BARCLAYS</partyId>
+	</party>
+	<party id="_6439">
+		<partyId>BARCLAYS</partyId>
+	</party>
+</requestConfirmation>

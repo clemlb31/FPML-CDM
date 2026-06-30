@@ -1,0 +1,22 @@
+<!--Creates an xsd:dateTime given a date and time (HH:MM:SS) -->
+<Operator Code="Plus">
+  <Operator Code="DateToStr">
+    <Operand Code="ScalarDate">MxCTX#date#Mx</Operand>
+    <Operand Code="ScalarString">yyyy-MM-dd</Operand>
+  </Operator>
+  <Operand Code="ScalarString">T</Operator>
+  <Operand Code="ScalarString">MxCTX#time#Mx</Operand>
+  <Operator Code="Plus">
+    <Operator Code="Substr">
+      <Operand Code="ScalarString">Mx#mx.xml2xml.transform.mxml2fpml.utils.getTimeZone{Context.date}#Mx</Operand> 
+      <Operand Code="ScalarDouble">0</Operand>
+      <Operand Code="ScalarDouble">3</Operand>
+    </Operator>
+    <Operand Code="ScalarString">:</Operand> 
+    <Operator Code="Substr">
+      <Operand Code="ScalarString">Mx#mx.xml2xml.transform.mxml2fpml.utils.getTimeZone{Context.date}#Mx</Operand> 
+      <Operand Code="ScalarDouble">3</Operand>
+      <Operand Code="ScalarDouble">2</Operand>
+    </Operator>
+  </Operator>
+</Operator>

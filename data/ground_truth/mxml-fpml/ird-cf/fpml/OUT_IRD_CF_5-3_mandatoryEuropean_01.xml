@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataDocument xmlns="http://www.fpml.org/FpML-5/confirmation" fpmlVersion="5-3">
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="MUREX-DEMO"/>
+				<tradeId tradeIdScheme="http://www.fpml.org/coding-scheme/external/unique-transaction-identifier">MX539929</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2017-01-31</tradeDate>
+		</tradeHeader>
+		<capFloor>
+			<capFloorStream>
+				<payerPartyReference href="_1637"/>
+				<receiverPartyReference href="MUREX-DEMO"/>
+				<calculationPeriodDates id="floatingRateCalculationPeriodDates1">
+					<effectiveDate>
+						<unadjustedDate>2017-02-02</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>FOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+						</dateAdjustments>
+						<adjustedDate>2017-02-02</adjustedDate>
+					</effectiveDate>
+					<terminationDate>
+						<unadjustedDate>2020-02-02</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>NONE</businessDayConvention>
+						</dateAdjustments>
+						<adjustedDate>2020-02-02</adjustedDate>
+					</terminationDate>
+					<calculationPeriodDatesAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</calculationPeriodDatesAdjustments>
+					<calculationPeriodFrequency>
+						<periodMultiplier>1</periodMultiplier>
+						<period>T</period>
+						<rollConvention>NONE</rollConvention>
+					</calculationPeriodFrequency>
+				</calculationPeriodDates>
+				<paymentDates>
+					<calculationPeriodDatesReference href="floatingRateCalculationPeriodDates1"/>
+					<paymentFrequency>
+						<periodMultiplier>1</periodMultiplier>
+						<period>T</period>
+					</paymentFrequency>
+					<payRelativeTo>CalculationPeriodEndDate</payRelativeTo>
+					<paymentDatesAdjustments>
+						<businessDayConvention>FOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter>EUTA</businessCenter>
+						</businessCenters>
+					</paymentDatesAdjustments>
+				</paymentDates>
+				<resetDates id="resetDates">
+					<calculationPeriodDatesReference href="floatingRateCalculationPeriodDates1"/>
+					<resetRelativeTo>CalculationPeriodEndDate</resetRelativeTo>
+					<fixingDates>
+						<periodMultiplier>0</periodMultiplier>
+						<period>D</period>
+						<businessDayConvention>FOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter>EUTA</businessCenter>
+						</businessCenters>
+						<dateRelativeTo href="floatingRateCalculationPeriodDates1"/>
+					</fixingDates>
+					<resetFrequency>
+						<periodMultiplier>1</periodMultiplier>
+						<period>T</period>
+					</resetFrequency>
+					<resetDatesAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</resetDatesAdjustments>
+				</resetDates>
+				<calculationPeriodAmount>
+					<calculation>
+						<notionalSchedule>
+							<notionalStepSchedule>
+								<initialValue>1000000</initialValue>
+								<currency>EUR</currency>
+							</notionalStepSchedule>
+						</notionalSchedule>
+						<inflationRateCalculation>
+							<floatingRateIndex floatingRateIndexScheme="http://www.fpml.org/coding-scheme/inflation-index-description">EUR-EXT-CPI</floatingRateIndex>
+							<capRateSchedule>
+								<initialValue>0.0011</initialValue>
+								<buyer>Receiver</buyer>
+								<seller>Payer</seller>
+							</capRateSchedule>
+							<inflationLag>
+								<periodMultiplier>3</periodMultiplier>
+								<period>M</period>
+							</inflationLag>
+							<indexSource rateSourcePageScheme="http://www.fpml.org/coding-scheme/inflation-index-source">CPTFEMU</indexSource>
+							<interpolationMethod>None</interpolationMethod>
+							<initialIndexLevel>0</initialIndexLevel>
+							<fallbackBondApplicable>true</fallbackBondApplicable>
+						</inflationRateCalculation>
+						<dayCountFraction>1/1</dayCountFraction>
+					</calculation>
+				</calculationPeriodAmount>
+				<cashflows>
+					<cashflowsMatchParameters>true</cashflowsMatchParameters>
+					<paymentCalculationPeriod>
+						<adjustedPaymentDate>2020-02-03</adjustedPaymentDate>
+						<calculationPeriod>
+							<unadjustedStartDate>2017-02-02</unadjustedStartDate>
+							<unadjustedEndDate>2020-02-02</unadjustedEndDate>
+							<adjustedStartDate>2017-02-02</adjustedStartDate>
+							<adjustedEndDate>2020-02-02</adjustedEndDate>
+							<notionalAmount>1000000</notionalAmount>
+							<floatingRateDefinition>
+								<rateObservation>
+									<adjustedFixingDate>2016-11-01</adjustedFixingDate>
+									<observationWeight>1</observationWeight>
+								</rateObservation>
+								<rateObservation>
+									<adjustedFixingDate>2019-11-01</adjustedFixingDate>
+									<observationWeight>1</observationWeight>
+								</rateObservation>
+								<spread>0</spread>
+								<capRate>
+									<strikeRate>0.0011</strikeRate>
+								</capRate>
+							</floatingRateDefinition>
+							<dayCountYearFraction>1</dayCountYearFraction>
+						</calculationPeriod>
+					</paymentCalculationPeriod>
+				</cashflows>
+			</capFloorStream>
+			<earlyTerminationProvision>
+				<mandatoryEarlyTermination>
+					<mandatoryEarlyTerminationDate id="mandatoryEarlyTerminationDate">
+						<unadjustedDate>2017-02-28</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>FOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+						</dateAdjustments>
+						<adjustedDate>2017-02-28</adjustedDate>
+					</mandatoryEarlyTerminationDate>
+					<calculationAgent>
+						<calculationAgentParty>AsSpecifiedInMasterAgreement</calculationAgentParty>
+					</calculationAgent>
+					<cashSettlement>
+						<cashSettlementValuationTime>
+							<hourMinuteTime>14:00:00</hourMinuteTime>
+							<businessCenter>businessCenter</businessCenter>
+						</cashSettlementValuationTime>
+					</cashSettlement>
+				</mandatoryEarlyTermination>
+			</earlyTerminationProvision>
+		</capFloor>
+	</trade>
+	<party id="_1637">
+		<partyId>BARCLAYS</partyId>
+	</party>
+	<party id="MUREX-DEMO">
+		<partyId>party1</partyId>
+	</party>
+</dataDocument>

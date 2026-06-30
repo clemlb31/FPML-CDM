@@ -1,0 +1,21 @@
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+				version="1.0">
+	
+	<!-- ================================================================================================== 
+		 ***********************************	Identity template 	 ************************************** 
+		 ================================================================================================== -->
+	<xsl:template match="/ | node() | @*">
+		<xsl:copy>
+			<xsl:apply-templates select="node() | @*" />
+		</xsl:copy>
+	</xsl:template>
+	
+	<!-- ================================================================================================== 
+		 ************************************* 	   Deleted nodes 	 ************************************** 
+		 ================================================================================================== -->
+	<xsl:template match="/MxML/packages" />
+	<xsl:template match="/MxML/dealings" />
+	<xsl:template match="/MxML/contracts/contract[contractId/internalId!=/MxML/contractEvents/contractEvent/contractEventTargetReferences/contractEventTargetReference/contractReference/contractId/internalId]" />
+	<xsl:template match="/MxML/trades/trade[tradeHeader/contractReference/contractId/internalId != /MxML/contractEvents/contractEvent/contractEventTargetReferences/contractEventTargetReference/contractReference/contractId/internalId]" />
+	
+</xsl:stylesheet>

@@ -1,0 +1,4 @@
+<Operator Code="DateToStr">
+  <Operator Code="CurrentDate"/>
+  <Operand Code="ScalarString">yyyy-MM-dd'T'HH:mm:ss</Operand>
+</Operator>

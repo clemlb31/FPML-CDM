@@ -1,0 +1,141 @@
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:mx="http://murex.com/xslt/common"
+                xmlns:exslt="http://exslt.org/common"
+                version="1.0">
+
+	<xsl:import href="mx.xml2xml.transform.mxml2fpml.utils.extract.stubs.dates" />
+
+    <!-- ================================================================================================== 
+		 *********************************	   getUpfrontStubEndDate 	*********************************** 
+		 ================================================================================================== -->
+	<xsl:template name="getUpfrontStubEndDate">
+		<xsl:param name="legNumber" />
+		<xsl:param name="dapUser" />
+		<xsl:param name="dapPassword" />
+		<xsl:param name="dapGroup" />
+		<xsl:param name="dapFormula" />
+
+		<xsl:variable name="stubDates">
+			<xsl:call-template name="extractStubDates">
+				<xsl:with-param name="user" select="$dapUser" />
+				<xsl:with-param name="password" select="$dapPassword" />
+				<xsl:with-param name="group" select="$dapGroup" />
+				<xsl:with-param name="dapFormula" select="$dapFormula" />
+			</xsl:call-template>
+		</xsl:variable>
+
+		<xsl:variable name="requiredDatePredicate" select="concat('LEG', $legNumber, '_FRONT_STUB_ENDDATE')" />
+
+		<xsl:call-template name="getStubDate">
+			<xsl:with-param name="requiredDatePredicate" select="$requiredDatePredicate" />
+			<xsl:with-param name="stubDates" select="$stubDates" />
+		</xsl:call-template>
+
+	</xsl:template>
+    
+    <!-- ================================================================================================== 
+		 *********************************	 getInArrearsStubStartDate 	 ********************************** 
+		 ================================================================================================== -->
+	<xsl:template name="getInArrearsStubStartDate">
+		<xsl:param name="legNumber" />
+		<xsl:param name="dapUser" />
+		<xsl:param name="dapPassword" />
+		<xsl:param name="dapGroup" />
+		<xsl:param name="dapFormula" />
+
+		<xsl:variable name="stubDates">
+			<xsl:call-template name="extractStubDates">
+				<xsl:with-param name="user" select="$dapUser" />
+				<xsl:with-param name="password" select="$dapPassword" />
+				<xsl:with-param name="group" select="$dapGroup" />
+				<xsl:with-param name="dapFormula" select="$dapFormula" />
+			</xsl:call-template>
+		</xsl:variable>
+
+		<xsl:variable name="requiredDatePredicate" select="concat('LEG', $legNumber, '_BACK_STUB_STARTDATE')" />
+
+		<xsl:call-template name="getStubDate">
+			<xsl:with-param name="requiredDatePredicate" select="$requiredDatePredicate" />
+			<xsl:with-param name="stubDates" select="$stubDates" />
+		</xsl:call-template>
+	</xsl:template>
+
+    <!-- ================================================================================================== 
+		 ***************************************	getStubDate    **************************************** 
+		 ================================================================================================== -->
+	<xsl:template name="getStubDate">
+		<xsl:param name="requiredDatePredicate" />
+		<xsl:param name="stubDates" />
+	    
+		<xsl:variable name="stubDate" select="exslt:node-set($stubDates)/Line/*[@Alias = $requiredDatePredicate]" />
+		
+	    <xsl:if test="$stubDate != '00000000' and $stubDate != '' ">
+			<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.utils.adaptDate', concat('date:', $stubDate, ',format:yyyymmdd,outputFormat:yyyy-mm-dd'))" />
+		</xsl:if>
+	</xsl:template>
+
+	<!--Get the FpML stub period type as per StubPeriodTypeEnum if there is a stub-->
+    <!-- ================================================================================================== 
+		 *************************************	 getStubPeriodType 	 ************************************** 
+		 ================================================================================================== -->
+	<xsl:template name="getStubPeriodType">
+		<xsl:param name="legNumber" />
+		<xsl:param name="dapUser" />
+		<xsl:param name="dapPassword" />
+		<xsl:param name="dapGroup" />
+		<xsl:param name="dapFormula" />
+
+		<xsl:variable name="stubCouponLength" select="mx:execute-formula(concat('mx.xml2xml.transform.mxml2fpml.utils.extract.stubs.stubCouponLength%mx.path.trade.treeDefault%{legNumber:',$legNumber,'}'))" />
+		<xsl:variable name="upFrontStub">
+			<xsl:call-template name="getUpfrontStubEndDate">
+				<xsl:with-param name="legNumber" select="$legNumber" />
+				<xsl:with-param name="dapUser" select="$dapUser" />
+				<xsl:with-param name="dapPassword" select="$dapPassword" />
+				<xsl:with-param name="dapGroup" select="$dapGroup" />
+				<xsl:with-param name="dapFormula" select="$dapFormula" />
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:variable name="inArrearsStub">
+			<xsl:call-template name="getInArrearsStubStartDate">
+				<xsl:with-param name="legNumber" select="$legNumber" />
+				<xsl:with-param name="dapUser" select="$dapUser" />
+				<xsl:with-param name="dapPassword" select="$dapPassword" />
+				<xsl:with-param name="dapGroup" select="$dapGroup" />
+				<xsl:with-param name="dapFormula" select="$dapFormula" />
+			</xsl:call-template>
+		</xsl:variable>
+	    
+		<xsl:choose>
+			<xsl:when test="string-length($upFrontStub) &gt; 0 and string-length($inArrearsStub) &gt; 0">
+				<xsl:value-of select="''" />
+			</xsl:when>
+			<xsl:when test="string-length($upFrontStub) &gt; 0">
+				<xsl:choose>
+					<xsl:when test="$stubCouponLength = 'shortCoupon'">
+						<xsl:value-of select="'ShortInitial'" />
+					</xsl:when>
+					<xsl:when test="$stubCouponLength = 'longCoupon'">
+						<xsl:value-of select="'LongInitial'" />
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="'UNMAPPED'" />
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:when test="string-length($inArrearsStub) &gt; 0">
+				<xsl:choose>
+					<xsl:when test="$stubCouponLength = 'shortCoupon'">
+						<xsl:value-of select="'ShortFinal'" />
+					</xsl:when>
+					<xsl:when test="$stubCouponLength = 'longCoupon'">
+						<xsl:value-of select="'LongFinal'" />
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="'UNMAPPED'" />
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+		</xsl:choose>
+	</xsl:template>
+    
+</xsl:stylesheet>

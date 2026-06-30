@@ -1,0 +1,16 @@
+<Customs>
+	<!-- Ignores all text differences of node "from" -->
+	<Path>/*[local-name()='Envelope']/*[local-name()='Header']/*[local-name()='OTC_RM']/*[local-name()='Delivery']/*[local-name()='RouteHist']/*[local-name()='Route']/*[local-name()='ReceiveTime']/text() </Path>
+	<Path>/*[local-name()='Envelope']/*[local-name()='Header']/*[local-name()='OTC_RM']/*[local-name()='Delivery']/*[local-name()='RouteHist']/*[local-name()='Route']/*[local-name()='ReleaseTime']/text() </Path>
+	<Path>/*[local-name()='Envelope']/*[local-name()='Body']/*[local-name()='OTC_Matching']/*[local-name()='Trade']/*[local-name()='FpML']/*[local-name()='header']/*[local-name()='creationTimestamp']/text()</Path>
+	<IgnoreReachedLeftovers>
+		<Path>/*[local-name()='Envelope']/*[local-name()='Header']/*[local-name()='OTC_RM']/*[local-name()='Delivery']/*[local-name()='RouteHist']/*[local-name()='Route']/*[local-name()='ReceiveTime']/text() </Path>
+		<Path>/*[local-name()='Envelope']/*[local-name()='Header']/*[local-name()='OTC_RM']/*[local-name()='Delivery']/*[local-name()='RouteHist']/*[local-name()='Route']/*[local-name()='ReleaseTime']/text() </Path>
+		<Path>/*[local-name()='Envelope']/*[local-name()='Body']/*[local-name()='OTC_Matching']/*[local-name()='Trade']/*[local-name()='FpML']/*[local-name()='header']/*[local-name()='creationTimestamp']/text()</Path>
+	</IgnoreReachedLeftovers>
+	<IgnoreExpectedLeftovers>
+		<Path>/*[local-name()='Envelope']/*[local-name()='Header']/*[local-name()='OTC_RM']/*[local-name()='Delivery']/*[local-name()='RouteHist']/*[local-name()='Route']/*[local-name()='ReceiveTime']/text() </Path>
+		<Path>/*[local-name()='Envelope']/*[local-name()='Header']/*[local-name()='OTC_RM']/*[local-name()='Delivery']/*[local-name()='RouteHist']/*[local-name()='Route']/*[local-name()='ReleaseTime']/text() </Path>
+		<Path>/*[local-name()='Envelope']/*[local-name()='Body']/*[local-name()='OTC_Matching']/*[local-name()='Trade']/*[local-name()='FpML']/*[local-name()='header']/*[local-name()='creationTimestamp']/text()</Path>
+	</IgnoreExpectedLeftovers>
+</Customs>

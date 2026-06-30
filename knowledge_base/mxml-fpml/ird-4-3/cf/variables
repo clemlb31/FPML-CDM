@@ -1,0 +1,254 @@
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns="http://www.fpml.org/2007/FpML-4-3" xmlns:mx="http://murex.com/xslt/common" version="1.0" exclude-result-prefixes="mx">
+
+	<xsl:import href="mx.xml2xml.extract.mxml.products.ird.templates" />
+	<xsl:import href="mx.xml2xml.transform.any2fpml.4-3.products.common.strikeSchedule" />
+	<xsl:param name="extended.numeric.format"/> 											 
+
+	<xsl:variable name="numeric.format" select="'##.########'"/>
+	<xsl:variable name="numeric.format.10dp" select="'##.##########'"/>
+
+	<!--Param User Defined Field Label For Internal Counterparty-->
+	<xsl:param name="internalUdfLabel" select="''"/>
+	<xsl:variable name="contractualDefinitions.overriding"/>
+	
+	<xsl:variable name="mapDayCountBasis"  select="'public.xml2xml.mapping.mxml2fpml.common.dayCountBasis'"/>
+
+	<xsl:variable name="cf-local.numeric.format">
+		<xsl:choose>
+			<xsl:when test="$extended.numeric.format='true'">
+				<xsl:value-of select="$numeric.format.10dp"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$numeric.format"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<!--stream payout-->
+	<xsl:variable name="cf-stream-payOut">
+		<xsl:call-template name="extract-floatingRateStreamPayout">
+			<xsl:with-param name="legNb" select="1" />
+		</xsl:call-template>
+	</xsl:variable>
+
+	<!--stream strikes-->
+	<xsl:variable name="cf-stream-strike">
+		<xsl:call-template name="extract-floatingRateStreamStrikes">          
+			<xsl:with-param name="legNb" select="1" />
+		</xsl:call-template>
+	</xsl:variable>
+	
+	<xsl:variable name="swapStream1.mainOriginalStrikeCustomized">
+		<xsl:choose>
+			<xsl:when test="MxML/trades/trade[(not(tradeStatus/physicalStatus = 'dead') and count(../trade) &gt; 1) or (count(../trade) = 1)]/tradeBody/*/customizations/*[leg = '1']/customizedObject = 'mainOriginalStrike'">true</xsl:when>
+			<xsl:when test="MxML/trades/trade[(not(tradeStatus/physicalStatus = 'dead') and count(../trade) &gt; 1) or (count(../trade) = 1)]/tradeBody/*/customizations/*[leg = '1']/customizedObject = 'mainStrike'">true</xsl:when>
+			<xsl:otherwise>false</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	
+	<!--capRate schedule-->
+	<xsl:variable name="stream.capFloorRateSchedule.steps">
+		<xsl:if test="$swapStream1.capitalPaymentFlowCustomized = 'true' or $swapStream1.mainOriginalStrikeCustomized = 'true'">
+			<xsl:variable name="event" select="name(/MxML/contractEvents/contractEvent/contractEventBody/*)"/>
+			<xsl:variable name="eventImpactDate" select="/MxML/contractEvents/contractEvent/contractEventImpacts/contractEventImpact/contractEventImpactHeader/contractEventImpactDate"/>
+			<xsl:variable name="swapStream1.rawAdjustedEffectiveDate">
+				<xsl:call-template name="extract-adjustedEffectiveDate">
+					<xsl:with-param name="stream" select="1"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:for-each select="/MxML/trades/trade[(not(tradeStatus/physicalStatus = 'dead') and count(../trade) &gt; 1) or (count(../trade) = 1)]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod">
+				<xsl:if test="string-length($eventImpactDate) = 0 or ($eventImpactDate &gt; calculationPeriod[1]/calculationEndDate) or (calculationPeriod[1]/contributionFlows/contributionFlow[1]/calculationPeriod/notionalAmount &gt; 0)">
+					<xsl:variable name="ippPos" select="position()"/>
+					<xsl:for-each select="calculationPeriod"> 
+						<xsl:variable name="cpPos" select="position()"/>
+						<xsl:for-each select="floatingRatePeriod/strikes/strike">
+							<xsl:variable name="pos" select="position()"/>
+							<xsl:variable name="tmpPos">
+								<xsl:choose>
+									<xsl:when test="$pos = 1">
+										<xsl:choose>
+											<xsl:when test="$cpPos = 1">
+												<xsl:variable name="tmpCpPos">
+													<xsl:value-of select="count(/MxML/trades/trade[(not(tradeStatus/physicalStatus = 'dead') and count(../trade) &gt; 1) or (count(../trade) = 1)]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[$ippPos - 1]/calculationPeriod)"/>
+												</xsl:variable>
+												<xsl:value-of select="count(/MxML/trades/trade[(not(tradeStatus/physicalStatus = 'dead') and count(../trade) &gt; 1) or (count(../trade) = 1)]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[$ippPos - 1]/calculationPeriod[$tmpCpPos]/floatingRatePeriod/strikes/strike)"/>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:value-of select="count(/MxML/trades/trade[(not(tradeStatus/physicalStatus = 'dead') and count(../trade) &gt; 1) or (count(../trade) = 1)]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[$ippPos]/calculationPeriod[$cpPos - 1]/floatingRatePeriod/strikes/strike)"/>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="$pos - 1"/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:variable>
+							<xsl:variable name="tmpCpPos">
+								<xsl:choose>
+									<xsl:when test="$pos = 1">
+										<xsl:choose>
+											<xsl:when test="$cpPos = 1">
+												<xsl:value-of select="count(/MxML/trades/trade[(not(tradeStatus/physicalStatus = 'dead') and count(../trade) &gt; 1) or (count(../trade) = 1)]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[$ippPos - 1]/calculationPeriod)"/>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:value-of select="$cpPos - 1"/>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="$cpPos"/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:variable>
+							<xsl:variable name="tmpIppPos">
+								<xsl:choose>
+									<xsl:when test="$pos = 1">
+										<xsl:choose>
+											<xsl:when test="$cpPos = 1">
+												<xsl:value-of select="$ippPos - 1"/>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:value-of select="$ippPos"/>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="$ippPos"/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:variable>
+							<xsl:variable name="previousStrike">
+								<xsl:choose>
+									<xsl:when test="($pos = 1) and ($cpPos = 1) and ($ippPos = 1)">
+										<xsl:value-of select="format-number($cf-stream-strike div 100, '##.########')"/>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="format-number(/MxML/trades/trade[(not(tradeStatus/physicalStatus = 'dead') and count(../trade) &gt; 1) or (count(../trade) = 1)]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[position() = $tmpIppPos]/calculationPeriod[position() = $tmpCpPos]/floatingRatePeriod/strikes/strike[position() = $tmpPos] div 100, '##.########')"/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:variable>
+							<xsl:variable name="thisPeriodStrike" select="format-number(. div 100, '##.########')"/>
+							<xsl:element name="step">
+								<xsl:choose>
+									<xsl:when test="string-length(../../../unadjustedStartDate) &gt; 0 and (../../../calculationStartDate &lt; ../../../unadjustedStartDate ) and (../../../calculationStartDate = $swapStream1.rawAdjustedEffectiveDate)  ">
+										<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.utils.adaptDate', concat('date:', calculationStartDate, ',format:yyyymmdd,outputFormat:yyyy-mm-dd'))"/>
+									</xsl:when>
+									<xsl:when test="string-length(../../../unadjustedStartDate) &gt; 0">
+										<xsl:element name="stepDate">
+											<xsl:value-of select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', ../../../unadjustedStartDate))"/>
+										</xsl:element>
+									</xsl:when>
+									<xsl:when test="string-length(../../../calculationStartDate) &gt; 0">
+										<xsl:element name="stepDate">
+											<xsl:value-of select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', ../../../calculationStartDate))"/>
+										</xsl:element>
+									</xsl:when>
+								</xsl:choose>
+								<xsl:element name="stepValue">
+									<xsl:value-of select="$thisPeriodStrike"/>
+								</xsl:element>
+							</xsl:element>
+						</xsl:for-each>
+					</xsl:for-each>
+				</xsl:if>
+			</xsl:for-each>
+		</xsl:if>
+	</xsl:variable>
+	
+	<!--capRate schedule-->
+	<xsl:variable name="cf-capRateSchedule.values">
+		<xsl:if test="$cf-stream-payOut = 'cap' or $cf-stream-payOut = 'straddle' "> 
+			<xsl:call-template name="create-strikeSchedule-capRateSchedule">
+				<xsl:with-param name="initialValue" select="format-number($cf-stream-strike div 100, $cf-local.numeric.format)" />
+				<xsl:with-param name="buyer" select="'Receiver'"/>
+				<xsl:with-param name="seller" select="'Payer'"/>
+				<xsl:with-param name="step.nodes" select="$stream.capFloorRateSchedule.steps"/>
+				<xsl:with-param name="local.numeric.format" select="$cf-local.numeric.format"/>
+			</xsl:call-template>
+		</xsl:if>
+	</xsl:variable>
+
+	<!--floor schedule-->
+	<xsl:variable name="cf-floorRateSchedule.values">
+		<xsl:if test="$cf-stream-payOut = 'floor' or $cf-stream-payOut = 'straddle' "> 
+			<xsl:call-template name="create-strikeSchedule-floorRateSchedule">
+				<xsl:with-param name="initialValue" select="format-number($cf-stream-strike div 100, $cf-local.numeric.format )" />
+				<xsl:with-param name="buyer" select="'Receiver'"/>
+				<xsl:with-param name="seller" select="'Payer'"/>
+				<xsl:with-param name="step.nodes" select="$stream.capFloorRateSchedule.steps"/>
+				<xsl:with-param name="local.numeric.format" select="$cf-local.numeric.format"/>
+			</xsl:call-template>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable name="dayCountFraction">
+		<xsl:variable name="dayCountFraction.tmp">
+			<xsl:value-of select="mx:execute-formula($mapDayCountBasis, $swapStream1.paramDayCountFraction)" />
+		</xsl:variable>
+		<xsl:call-template name="AssertNotMapped">
+			<xsl:with-param name="value" select="$dayCountFraction.tmp" />
+			<xsl:with-param name="message" select="concat('dayCountFraction ', $swapStream1.paramDayCountFraction,' not mapped')" />
+			<xsl:with-param name="formula" select="$mapDayCountBasis" />
+		</xsl:call-template>
+		<xsl:value-of select="$dayCountFraction.tmp" />
+	</xsl:variable>
+
+
+	<xsl:variable name="terminationDate.dateAdjustments.businessDayConvention" select="mx:execute-formula($mapBusinessDayConv, $swapStream1.paramMaturityBusinessDayConvention)" />
+	<!--	<xsl:call-template name="AssertNotMapped">
+			<xsl:with-param name="value" select="$terminationDate.dateAdjustments.businessDayConvention" />
+			<xsl:with-param name="message" select="concat('terminationDate.dateAdjustments.businessDayConvention ', $swapStream1.paramMaturityBusinessDayConvention,' not mapped')" />
+			<xsl:with-param name="formula" select="$mapBusinessDayConv" />
+		</xsl:call-template>-->
+	<xsl:variable name="calculationPeriodFrequency.period" select="mx:execute-formula($mapPeriodUnit, $swapStream1.paramCalculationPeriodUnit)//row[1]" />
+	<!--	<xsl:call-template name="AssertNotMapped">
+			<xsl:with-param name="value" select="$calculationPeriodFrequency.period" />
+			<xsl:with-param name="message" select="concat('calculationPeriodFrequency.period ', $swapStream1.paramCalculationPeriodUnit,' not mapped')" />
+			<xsl:with-param name="formula" select="$mapPeriodUnit" />
+		</xsl:call-template>-->
+	<xsl:variable name="frequency.period" select="mx:execute-formula($mapPeriodUnit, $swapStream1.paramFrequencyPeriodUnit)//row[1]" />
+	<!--	<xsl:call-template name="AssertNotMapped">
+			<xsl:with-param name="value" select="$frequency.period" />
+			<xsl:with-param name="message" select="concat('frequency.period ', $swapStream1.paramFrequencyPeriodUnit,' not mapped')" />
+			<xsl:with-param name="formula" select="$mapPeriodUnit" />
+		</xsl:call-template>-->
+	<xsl:variable name="businessDayConvention" select="mx:execute-formula($mapBusinessDayConv, $swapStream1.paramBusinessDayConvention)" />
+	<!--	<xsl:call-template name="AssertNotMapped">
+			<xsl:with-param name="value" select="$businessDayConvention" />
+			<xsl:with-param name="message" select="concat('businessDayConvention ', $swapStream1.paramBusinessDayConvention,' not mapped')" />
+			<xsl:with-param name="formula" select="$mapBusinessDayConv" />
+		</xsl:call-template>-->
+	<xsl:variable name="fixingDates.period" select="mx:execute-formula($mapPeriodUnit, $swapStream1.paramFixingPeriodUnit)//row[1]" />
+	<!--	<xsl:call-template name="AssertNotMapped">
+			<xsl:with-param name="value" select="$fixingDates.period" />
+			<xsl:with-param name="message" select="concat('fixingDates.period ', $swapStream1.paramFixingPeriodUnit,' not mapped')" />
+			<xsl:with-param name="formula" select="$mapPeriodUnit" />
+		</xsl:call-template>-->
+	<xsl:variable name="fixingDates.dayType" select="mx:execute-formula($mapPeriodUnit, $swapStream1.paramFixingPeriodUnit)//row[2]" />
+	<!--	<xsl:call-template name="AssertNotMapped">
+			<xsl:with-param name="value" select="$fixingDates.dayType" />
+			<xsl:with-param name="message" select="concat('fixingDates.dayType ', $swapStream1.paramFixingPeriodUnit,' not mapped')" />
+			<xsl:with-param name="formula" select="$mapPeriodUnit" />
+		</xsl:call-template>-->
+	<xsl:variable name="resetFrequency.period" select="mx:execute-formula($mapPeriodUnit, $swapStream1.paramResetFrequencyPeriodUnit)//row[1]" />
+	<!--	<xsl:call-template name="AssertNotMapped">
+			<xsl:with-param name="value" select="$resetFrequency.period" />
+			<xsl:with-param name="message" select="concat('resetFrequency.period ', $swapStream1.paramResetFrequencyPeriodUnit,' not mapped')" />
+			<xsl:with-param name="formula" select="$mapPeriodUnit" />
+		</xsl:call-template>-->
+		
+		<xsl:variable name="mxmlTmpPeriod">
+			<xsl:value-of select="/MxML/trades/trade[(not(tradeStatus/physicalStatus = 'dead') and count(../trade) &gt; 1) or (count(../trade) = 1)]/tradeBody/*/stream[1]/streamTemplate/streamSchedules/paymentSchedule/shifter/shift/periodUnit"></xsl:value-of>   
+		</xsl:variable>
+		<xsl:variable name="paymentDaysOffset.period">
+			<xsl:value-of select="mx:execute-formula($mapPeriodUnit, concat('periodUnit:',$mxmlTmpPeriod) )//row[1]"></xsl:value-of>
+		</xsl:variable>
+		<xsl:variable name="paymentDaysOffset.dayType">
+			<xsl:value-of select="mx:execute-formula($mapPeriodUnit, concat('periodUnit:',$mxmlTmpPeriod) )//row[2]"></xsl:value-of>
+		</xsl:variable>
+		<xsl:variable name="paymentDaysOffset.periodMultiplier">
+			<xsl:value-of select="/MxML/trades/trade[(not(tradeStatus/physicalStatus = 'dead') and count(../trade) &gt; 1) or (count(../trade) = 1)]/tradeBody/*/stream[1]/streamTemplate/streamSchedules/paymentSchedule/shifter/shift/periodMultiplier"></xsl:value-of>
+		</xsl:variable>
+
+
+</xsl:stylesheet>

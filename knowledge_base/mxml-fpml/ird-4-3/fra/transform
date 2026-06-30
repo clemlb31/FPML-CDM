@@ -1,0 +1,939 @@
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns="http://www.fpml.org/2007/FpML-4-3" xmlns:mx="http://murex.com/xslt/common" xmlns:exslt="http://exslt.org/common" version="1.0" exclude-result-prefixes="mx exslt">
+	<xsl:import href="mx.xml2xml.transform.any2fpml.4-3.products.common.notificationMessageHeader" />
+	<xsl:import href="mx.xml2xml.transform.any2fpml.4-3.products.ird.fra.tradeNode" />
+	<xsl:import href="mx.xml2xml.transform.any2fpml.4-3.products.common.party" />
+	<xsl:import href="mx.xml2xml.transform.any2fpml.4-3.products.common.tradeHeader" />
+	<xsl:import href="mx.generic.exslt.date.difference" />
+	<xsl:include href="mx.xml2xml.transform.mxml2fpml.4-3.products.ird.variables" />
+	<xsl:include href="mx.xml2xml.transform.mxml2fpml.4-3.products.ird.fra.variables" />
+
+	<!--Param User Defined Field Label For Internal Counterparty-->
+	<xsl:param name="internalUdfLabel" select="''"/>
+
+	<!-- ================================================= -->
+	<!-- This template will generate a FpML message v 4.3  -->
+	<!-- of an IRD FRA                                     -->
+	<!-- ================================================= -->
+	<xsl:template name="generate-fpml-ird-fra">
+		<xsl:param name="mapCounterparty" />
+		<xsl:param name="mapTradeId" />
+		<xsl:param name="mapOurPartyLabel" />
+		<xsl:param name="messageIdScheme" />
+		<xsl:param name="mapBusinessCenter" />
+
+		<!-- Optional parameter -->
+		<xsl:param name="tradeId" />
+		<xsl:param name="tradeId.scheme" />
+		<xsl:param name="tradeIdSupplement" />
+		<xsl:param name="tradeIdSupplement.tradeIdScheme" />
+		<xsl:param name="messageId" />
+		<xsl:param name="messageIdScheme" />
+		<xsl:param name="sentBy" />
+		<xsl:param name="sentBy.partyIdScheme" />
+		<xsl:param name="sendTo" />
+		<xsl:param name="sendTo.partyIdScheme" />
+		<xsl:param name="copyTo" />
+		<xsl:param name="copyTo.partyIdScheme" />
+		<xsl:param name="creationTimestamp" />
+		<xsl:param name="expiryTimestamp" />
+		<xsl:param name="party1.id" />
+		<xsl:param name="party2.id" />
+		<xsl:param name="party.partyId2Scheme" />
+		<xsl:param name="allocationParties" />
+		<xsl:param name="partyAlternateSystem" />
+		<xsl:param name="fraDiscounting" select="$fraDiscounting" />
+
+		<!--fpml message type-->
+		<xsl:param name="fpmlType" select="'DataDocument'" />
+
+		<!--fpml message type-->
+		<xsl:param name="tradeId1" />
+		<xsl:param name="tradeIdScheme1" />
+		<xsl:param name="additionalParties.nodes"/>
+		<xsl:param name="additionalPayment.nodes" />
+		<!-- mandatory parameters (refers to our tradeId) -->
+		<xsl:param name="tradeId2" />
+		<xsl:param name="tradeId2.scheme" />
+		<xsl:param name="party.partyIdScheme1" />
+		<xsl:param name="party.partyIdScheme2" />
+		<xsl:param name="party.partyId1Scheme" />
+		<xsl:param name="party.partyId2Scheme" />
+
+		<!-- Overriding values -->
+		<xsl:param name="creationTimestamp.overriding" />
+		<xsl:param name="adjustableDate.dateAdjustments.businessDayConvention.overriding"/>
+		<xsl:param name="adjustableDate.dateAdjustments.businessDayConvention.defaultValue" />
+		<xsl:param name="relativeDateOffSet.dateRelativeTo" select="'fraEffectiveDate'" />
+		<xsl:param name="relativeDateOffSet.dateRelativeTo.href" select="'fraEffectiveDate'" />
+		<xsl:param name="relativeDateOffSet.businessCenter.nodes" select="$fra.resetDatesAdjustments.businessCenter.nodes" />
+
+		<xsl:param name="masterAgreementType.defaultValue" />
+		<xsl:param name="party1.id" />
+		<xsl:param name="party2.id" />
+		<xsl:param name="side1" />
+		<xsl:param name="side2" />
+		<xsl:param name="ourPartyIdOverwrite" select="$party2.id" />
+		<xsl:param name="counterpartyIdOverwrite"  select="$party1.id" />
+
+		<!-- Parameter used to change the direction of the deal -->
+		<xsl:param name="reversePayReceive"/>
+
+
+		<!-- ============================== -->
+		<!-- earlyTerminationProvision node -->
+		<!-- ============================== -->
+		<xsl:param name="earliestExerciseTime.hourMinuteTime" />  
+		<xsl:param name="earliestExerciseTime.businessCenter.name" />
+
+		<xsl:param name="latestExerciseTime.hourMinuteTime" />
+		<xsl:param name="latestExerciseTime.businessCenter.name" />
+
+		<xsl:param name="expirationTime.hourMinuteTime" /> 
+		<xsl:param name="expirationTime.businessCenter.name" />      
+
+		<xsl:param name="earlyTerminationProvision.calculationAgentParty" />
+		<xsl:param name="earlyTerminationProvision.calculationAgentParty.nodes" />
+
+		<xsl:param name="earlyTerminationProvision.hourMinuteTime" />
+		<xsl:param name="earlyTerminationProvision.businessCenter.name" /> 
+
+
+		<xsl:param name="earlyTerminationProvision.cashSettlementValuationDate.businessCenter.businessCenterScheme" />
+
+		<xsl:param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSource"/>
+		<xsl:param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSourcePage"/>
+		<xsl:param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.quotationRateType"/>
+		<xsl:param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.referenceBank.node"/>
+
+		<xsl:param name="earlyTerminationProvision.cashPriceMethod.currency"/>
+		<xsl:param name="earlyTerminationProvision.cashPriceMethod.quotationRateType"/>
+		<xsl:param name="earlyTerminationProvision.cashPriceMethod.referenceBank.node"/>
+
+		<xsl:param name="earlyTerminationProvision.cashPriceAlternateMethod.currency"/>
+		<xsl:param name="earlyTerminationProvision.cashPriceAlternateMethod.quotationRateType"/>
+		<xsl:param name="earlyTerminationProvision.cashPriceAlternateMethod.referenceBank.node"/>
+		<!-- ============================== -->
+		<xsl:param name="collateral.nodes" />
+		<xsl:param name="contractualDefinitions.nodes" />
+
+		<xsl:variable name="partyTradeIdentifier.tradeId1" select="mx:execute-formula($mapTradeId, concat('contractId:', $contractID))" />
+
+		<!--partyTradeIdentifier.nodes-->
+		<xsl:variable name="party.id2">
+			<xsl:choose>
+				<xsl:when test="string-length($party2.id) &gt; 0">
+					<xsl:value-of select="$party2.id" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:if test="string-length($mapOurPartyLabel) &gt; 0">
+						<xsl:value-of select="mx:execute-formula($mapOurPartyLabel)" />
+					</xsl:if>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+
+		<xsl:variable name="creationTimestamp">
+			<xsl:choose>
+				<xsl:when test="string-length($creationTimestamp.overriding)&gt;0" />
+				<xsl:otherwise>
+					<xsl:value-of select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.4-3.products.common.time.releaseTime')" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+
+		<!-- counterpartId -->
+		<xsl:variable name="counterpartId">
+			<xsl:choose>
+				<xsl:when test="string-length($counterpartyIdOverwrite) &gt; 0">
+					<xsl:value-of select="$counterpartyIdOverwrite" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:variable name="counterpartIdPre">
+						<xsl:value-of select="mx:execute-formula($mapCounterparty, concat('partyLabel:', $partyName))" />
+					</xsl:variable>
+					<xsl:choose>
+						<xsl:when test="$counterpartIdPre = 'UNMAPPED' ">
+							<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.errorHandling.throwException', concat('errorMessage: Unmapped party -',$counterpartIdPre))" />
+						</xsl:when>
+						<xsl:when test="string-length($counterpartIdPre) = 0">
+							<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.errorHandling.throwException', concat('errorMessage: Unmapped party -',$counterpartIdPre))" />
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:value-of select="$counterpartIdPre" />
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+
+		<!-- originatorId -->
+		<xsl:variable name="originatorId">
+			<xsl:choose>
+				<xsl:when test="string-length($ourPartyIdOverwrite) &gt; 0">
+					<xsl:value-of select="$ourPartyIdOverwrite" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:variable name="originatorIdPre">
+
+						<xsl:variable name="entity" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeHeader/tradeViews/tradeView/entity" />
+						<xsl:variable name="legalEntity" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeHeader/tradeViews/tradeView/legalEntity" />
+						<xsl:value-of select="mx:execute-formula($mapCounterparty, concat('partyLabel:', $ourName, ',entity:', $entity, ',legalEntity:', $legalEntity))" />
+					</xsl:variable>
+					<xsl:choose>
+						<xsl:when test="$originatorIdPre = 'UNMAPPED' ">
+							<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.errorHandling.throwException', concat('errorMessage: Unmapped party -',$originatorIdPre))" />
+						</xsl:when>
+						<xsl:when test="string-length($originatorIdPre) = 0">
+							<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.errorHandling.throwException', concat('errorMessage: Unmapped party -',$originatorIdPre))" />
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:value-of select="$originatorIdPre" />
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="partyTradeIdentifier.nodes">
+			<xsl:call-template name="create-partyTradeIdentifier-partyTradeIdentifier">
+				<xsl:with-param name="partyReference.href" select="$party.id2" />
+				<xsl:with-param name="tradeId" select="$tradeId" />
+				<xsl:with-param name="tradeId.tradeIdScheme" select="$tradeId.scheme" />
+				<xsl:with-param name="tradeIdSupplement" select="$tradeIdSupplement" />
+				<xsl:with-param name="tradeIdSupplement.tradeIdScheme" select="$tradeIdSupplement.tradeIdScheme" />
+			</xsl:call-template>
+		</xsl:variable>
+		<FpML xmlns:fpml="http://www.fpml.org/2007/FpML-4-3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="4-3" xsi:schemaLocation="http://www.fpml.org/2007/FpML-4-3 ../fpml-main-4-3.xsd http://www.w3.org/2000/09/xmldsig# ../xmldsig-core-schema.xsd" xsi:type="{$fpmlType}">
+
+			<xsl:variable name="entity" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeHeader/tradeViews/tradeView/entity" />
+			<xsl:variable name="legalEntity" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeHeader/tradeViews/tradeView/legalEntity" />
+			<xsl:variable name="paramCtpLabel" select="concat('partyLabel:', $ctpName)" />
+			<xsl:variable name="paramOurLabel" select="concat('partyLabel:', $ourName,',userName:',$ourUserName, ',entity:', $entity, ',legalEntity:', $legalEntity)" />
+
+			<!-- Create the Message header tag -->
+			<xsl:if test="string-length($messageId)&gt;0 or string-length($messageIdScheme)&gt;0">
+				<xsl:call-template name="create-notificationMessageHeader">
+					<xsl:with-param name="messageId" select="$messageId" />
+					<xsl:with-param name="messageIdScheme" select="$messageIdScheme" />
+					<xsl:with-param name="sentBy" select="$originatorId" />
+					<xsl:with-param name="sentBy.partyIdScheme" select="$sentBy.partyIdScheme" />
+					<xsl:with-param name="sendTo" select="$counterpartId" />
+					<xsl:with-param name="sendTo.partyIdScheme" select="$sendTo.partyIdScheme" />
+					<xsl:with-param name="copyTo" select="$copyTo" />
+					<xsl:with-param name="copyTo.partyIdScheme" select="$copyTo.partyIdScheme" />
+					<xsl:with-param name="creationTimestamp" select="$creationTimestamp" />
+					<xsl:with-param name="expiryTimestamp" select="$expiryTimestamp" />
+				</xsl:call-template>
+			</xsl:if>
+
+			<!-- counterparty identifier-->
+			<!-- counterpartId -->
+			<xsl:variable name="party.partyId1">
+				<xsl:variable name="ctpAltIdFromDisplayLabel">
+					<xsl:if test="string-length($partyAlternateSystem)&gt;0">
+						<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.sql.ctpAltIdFromDisplayLabel',concat('displayLabel:',$ctpName,',altSys:',$partyAlternateSystem))" />
+					</xsl:if>
+				</xsl:variable>
+				<xsl:choose>
+					<xsl:when test="string-length($ctpAltIdFromDisplayLabel)&gt;0">
+						<xsl:value-of select="$ctpAltIdFromDisplayLabel" />
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="mx:execute-formula($mapCounterparty, $paramCtpLabel)" />
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+			<xsl:call-template name="AssertNotMapped">
+				<xsl:with-param name="value" select="$party.partyId1" />
+				<xsl:with-param name="message" select="concat('Party ', $ctpName,' not mapped')" />
+				<xsl:with-param name="formula" select="$mapCounterparty" />
+			</xsl:call-template>
+			<xsl:variable name="party.partyName1" select="$party.partyId1" />
+			<xsl:variable name="party.id1">
+				<xsl:choose>
+					<xsl:when test="string-length($party1.id) &gt; 0">
+						<xsl:value-of select="$party1.id" />
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="$party.partyId1" />
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+
+			<!-- our party identifier-->
+			<!-- originatorId -->
+			<xsl:variable name="party.partyId2">
+				<xsl:variable name="ctpAltIdFromDisplayLabel">
+					<xsl:if test="string-length($partyAlternateSystem)&gt;0">
+						<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.sql.ctpAltIdFromDisplayLabel',concat('displayLabel:',$ctpName,',altSys:',$partyAlternateSystem))" />
+					</xsl:if>
+				</xsl:variable>
+				<xsl:choose>
+					<xsl:when test="string-length($ctpAltIdFromDisplayLabel)&gt;0">
+						<xsl:value-of select="$ctpAltIdFromDisplayLabel" />
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="mx:execute-formula($mapCounterparty, $paramOurLabel)" />
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+			<xsl:call-template name="AssertNotMapped">
+				<xsl:with-param name="value" select="$party.partyId2" />
+				<xsl:with-param name="message" select="concat('Party ', $ourName,' not mapped')" />
+				<xsl:with-param name="formula" select="$mapCounterparty" />
+			</xsl:call-template>
+			<xsl:variable name="party.partyName2" select="$party.partyId2" />
+			<xsl:variable name="party.id2">
+				<xsl:choose>
+					<xsl:when test="string-length($party2.id) &gt; 0">
+						<xsl:value-of select="$party2.id" />
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="$party.partyId2" />
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+
+			<!-- ========================== -->
+			<!-- deduced variables STREAM 1 -->
+			<!-- ========================== -->
+			<!-- buyerPartyReference.href -->
+			<xsl:variable name="buyerPartyReference.href">
+				<xsl:choose>
+					<xsl:when test="string-length($side1) &gt;0 and string-length($side2) &gt;0">
+						<xsl:choose>
+							<xsl:when test="$leg1.pay.or.receive='pay'">
+								<xsl:choose>
+									<xsl:when test="$reversePayReceive = 'true'">
+										<!-- our party -->
+										<xsl:value-of select="$side1" />
+									</xsl:when>    
+									<xsl:otherwise>
+										<!-- ctp -->
+										<xsl:value-of select="$side2" />
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:choose>
+									<xsl:when test="$reversePayReceive = 'true'">
+										<!-- ctp -->
+										<xsl:value-of select="$side2" />
+									</xsl:when>
+									<xsl:otherwise>
+										<!-- our party -->
+										<xsl:value-of select="$side1" />
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:choose>
+							<xsl:when test="$leg1.pay.or.receive='pay'">
+								<xsl:choose>
+									<xsl:when test="$reversePayReceive = 'true'">
+										<!-- ctp -->
+										<xsl:value-of select="$counterpartId" />
+									</xsl:when>
+									<xsl:otherwise>
+										<!-- our party -->
+										<xsl:value-of select="$originatorId" />
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:choose>
+									<xsl:when test="$reversePayReceive = 'true'">
+										<!-- our party -->
+										<xsl:value-of select="$originatorId" />
+									</xsl:when>
+									<xsl:otherwise>
+										<!-- ctp -->
+										<xsl:value-of select="$counterpartId" />
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+
+			<!-- sellerPartyReference.href -->
+			<xsl:variable name="sellerPartyReference.href">
+				<xsl:choose>
+					<xsl:when test="string-length($side1) &gt;0 and string-length($side2) &gt;0">
+						<xsl:choose>
+							<xsl:when test="$leg1.pay.or.receive='pay'">
+								<xsl:choose>
+									<xsl:when test="$reversePayReceive = 'true'">
+										<!-- ctp -->
+										<xsl:value-of select="$side2" />
+									</xsl:when>
+									<xsl:otherwise>
+										<!-- our party -->
+										<xsl:value-of select="$side1" />
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:choose>
+									<xsl:when test="$reversePayReceive = 'true'">
+										<!-- our party -->
+										<xsl:value-of select="$side1" />
+									</xsl:when>
+									<xsl:otherwise>
+										<!-- ctp -->
+										<xsl:value-of select="$side2" />
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:choose>
+							<xsl:when test="$leg1.pay.or.receive='pay'">
+								<xsl:choose>
+									<xsl:when test="$reversePayReceive = 'true'">
+										<!-- our party -->
+										<xsl:value-of select="$originatorId" />
+									</xsl:when>
+									<xsl:otherwise>
+										<!-- ctp -->
+										<xsl:value-of select="$counterpartId" />
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:choose>
+									<xsl:when test="$reversePayReceive = 'true'">
+										<!-- ctp -->
+										<xsl:value-of select="$counterpartId" />
+									</xsl:when>
+									<xsl:otherwise>
+										<!-- our party -->
+										<xsl:value-of select="$originatorId" />
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+
+			<xsl:variable name="bermudaExerciseDates.businessCenter.nodes">
+				<!-- list of business center to be generated. -->
+				<!-- getBusinessCenterFromNotificationEffectiveCalendar is generating a single business center. Some enhancements on MxML are expected to add businessCenterItem(s) for notificationEffectiveCalendar -->
+				<xsl:if test="$isMandatoryEarlyTermination = 'false' ">
+					<xsl:call-template name="extract-notificationEffectiveCalendarBusinessCenterNodes">
+						<xsl:with-param name="mapBusinessCenter" select="$mapBusinessCenter" />
+					</xsl:call-template>
+				</xsl:if>
+			</xsl:variable> 
+
+			<!-- ================================================================== -->
+
+			<xsl:call-template name="generate-fpml-ird-fra-trade">
+				<xsl:with-param name="party1.id" select="$party.id1"/>
+				<xsl:with-param name="party2.id" select="$party.id2"/>
+
+				<!-- ===================== -->
+				<!--Trade header           -->
+				<!-- ===================== -->
+				<xsl:with-param name="partyTradeIdentifier.nodes" select="$partyTradeIdentifier.nodes" />
+				<xsl:with-param name="mapCounterparty" select="$mapCounterparty" />
+				<xsl:with-param name="mapOurPartyLabel" select="$mapOurPartyLabel" />
+				<xsl:with-param name="mapTradeId" select="$mapTradeId" />
+				<xsl:with-param name="partyAlternateSystem" select="$partyAlternateSystem" />
+
+				<!-- mandatory  parameters (refers to our tradeId) -->
+				<xsl:with-param name="dayCountFractionScheme" select="$dayCountFractionScheme" />
+				<xsl:with-param name="floatingRateIndexScheme" select="$floatingRateIndexScheme" />
+				<xsl:with-param name="tradeId2" select="$tradeId2" />
+				<xsl:with-param name="tradeId2.scheme" select="$tradeId2.scheme" />
+				<!--buyerPartyReference-->
+				<xsl:with-param name="buyerPartyReference" select="$buyerPartyReference.href" />
+				<!--sellerPartyReference-->
+				<xsl:with-param name="sellerPartyReference" select="$sellerPartyReference.href" />
+				<xsl:with-param name="fraDiscounting" select="$fraDiscounting" />
+				<xsl:with-param name="relativeDateOffSet.businessCenter.nodes" select="$relativeDateOffSet.businessCenter.nodes" />
+				<xsl:with-param name="relativeDateOffSet.dateRelativeTo" select="$relativeDateOffSet.dateRelativeTo" />
+				<xsl:with-param name="relativeDateOffSet.dateRelativeTo.href" select="$relativeDateOffSet.dateRelativeTo.href" />
+				<!-- Overriding values -->
+				<xsl:with-param name="adjustableDate.dateAdjustments.businessDayConvention.overriding" select="$adjustableDate.dateAdjustments.businessDayConvention.overriding"/>
+				<xsl:with-param name="adjustableDate.dateAdjustments.businessDayConvention.defaultValue" select="$adjustableDate.dateAdjustments.businessDayConvention.defaultValue" />
+				<!-- Documentation -->
+				<xsl:with-param name="masterAgreementTypeScheme" select="$masterAgreementTypeScheme" />
+				<xsl:with-param name="masterAgreementType.defaultValue" select="$masterAgreementType.defaultValue" />		
+				<!-- trade side node -->
+				<xsl:with-param name="side1" select="$side1" />
+				<xsl:with-param name="side2" select="$side2" />
+
+				<!-- earlyTerminationProvision -->
+				<xsl:with-param name="optionForm" select="$optionForm" />
+				<xsl:with-param name="bermudaExerciseDates.period"  select="$bermudaExerciseDates.period"/> 
+				<xsl:with-param name="bermudaExerciseDates.periodMultiplier" select="$bermudaExerciseDates.periodMultiplier"/>
+				<xsl:with-param name="bermudaExerciseDates.dayType" select="$bermudaExerciseDates.dayType"/>
+				<xsl:with-param name="bermudaExerciseDates.businessDayConvention" select="$bermudaExerciseDates.businessDayConvention"/>
+				<xsl:with-param name="bermudaExerciseDates.dateRelativeTo.href" select="$bermudaExerciseDates.dateRelativeTo.href"/>
+				<xsl:with-param name="bermudaExerciseDates.businessCenter.nodes" select="$bermudaExerciseDates.businessCenter.nodes" />
+
+				<xsl:with-param name="earliestExerciseTime.hourMinuteTime"    select="$earliestExerciseTime.hourMinuteTime" />  
+				<xsl:with-param name="earliestExerciseTime.businessCenter.name"  select="$earliestExerciseTime.businessCenter.name" />
+
+				<xsl:with-param name="latestExerciseTime.hourMinuteTime" select="$latestExerciseTime.hourMinuteTime" />
+				<xsl:with-param name="latestExerciseTime.businessCenter.name" select="$latestExerciseTime.businessCenter.name" />
+
+				<xsl:with-param name="expirationTime.hourMinuteTime"   select="$expirationTime.hourMinuteTime" /> 
+				<xsl:with-param name="expirationTime.businessCenter.name"        select="$expirationTime.businessCenter.name" />      
+
+				<xsl:with-param name="earlyTerminationProvision.calculationAgentParty"  select="$earlyTerminationProvision.calculationAgentParty" />
+				<xsl:with-param name="earlyTerminationProvision.calculationAgentParty.nodes"  select="$earlyTerminationProvision.calculationAgentParty.nodes" />
+
+				<xsl:with-param name="earlyTerminationProvision.hourMinuteTime"  select="$earlyTerminationProvision.hourMinuteTime" />
+				<xsl:with-param name="earlyTerminationProvision.businessCenter.name"   select="$earlyTerminationProvision.businessCenter.name" /> 
+
+				<xsl:with-param name="earlyTerminationProvision.dateAdjustments.businessDayConvention" select="$earlyTerminationProvision.dateAdjustments.businessDayConvention" />
+				<xsl:with-param name="earlyTerminationProvision.unadjustedDate.nodes" select="$earlyTerminationProvision.unadjustedDate.nodes" />
+				<xsl:with-param name="earlyTerminationProvision.cashSettlementValuationDate.businessCenter.businessCenterScheme"  select="$earlyTerminationProvision.cashSettlementValuationDate.businessCenter.businessCenterScheme" />
+
+				<xsl:with-param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSource" select="$earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSource"/>
+				<xsl:with-param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSourcePage" select="$earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSourcePage"/>
+				<xsl:with-param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.quotationRateType" select="$earlyTerminationProvision.zeroCouponYieldAdjustedMethod.quotationRateType"/>
+				<xsl:with-param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.referenceBank.node" select="$earlyTerminationProvision.zeroCouponYieldAdjustedMethod.referenceBank.node"/>
+
+				<xsl:with-param name="earlyTerminationProvision.cashPriceMethod.currency" select="$earlyTerminationProvision.cashPriceMethod.currency"/>
+				<xsl:with-param name="earlyTerminationProvision.cashPriceMethod.quotationRateType" select="$earlyTerminationProvision.cashPriceMethod.quotationRateType"/>
+				<xsl:with-param name="earlyTerminationProvision.cashPriceMethod.referenceBank.node" select="$earlyTerminationProvision.cashPriceMethod.referenceBank.node"/>
+
+				<xsl:with-param name="earlyTerminationProvision.cashPriceAlternateMethod.currency" select="$earlyTerminationProvision.cashPriceAlternateMethod.currency"/>
+				<xsl:with-param name="earlyTerminationProvision.cashPriceAlternateMethod.quotationRateType" select="$earlyTerminationProvision.cashPriceAlternateMethod.quotationRateType"/>
+				<xsl:with-param name="earlyTerminationProvision.cashPriceAlternateMethod.referenceBank.node" select="$earlyTerminationProvision.cashPriceAlternateMethod.referenceBank.node"/>
+				<xsl:with-param name="collateral.nodes" select="$collateral.nodes" />
+				<xsl:with-param name="additionalPayment.nodes" select="$additionalPayment.nodes" />
+				<xsl:with-param name="contractualDefinitions.nodes" select="$contractualDefinitions.nodes" />
+			</xsl:call-template>
+
+			<!-- ===================== -->
+			<!--Parties-->
+			<!-- ===================== -->
+			<!-- Create the first party tag -->
+			<xsl:call-template name="create-trade-party">
+				<xsl:with-param name="party.id" select="$originatorId" />
+				<xsl:with-param name="party.partyId" select="$party.partyId2" />
+				<xsl:with-param name="party.partyIdScheme" select="$party.partyId2Scheme" />
+			</xsl:call-template>
+
+			<!-- Create the second party tag -->
+			<xsl:call-template name="create-trade-party">
+				<xsl:with-param name="party.id" select="$counterpartId" />
+				<xsl:with-param name="party.partyId" select="$party.partyId1" />
+				<xsl:with-param name="party.partyIdScheme" select="$party.partyId1Scheme" />
+			</xsl:call-template>
+
+			<xsl:if test="string-length($additionalParties.nodes)&gt;0">
+				<xsl:copy-of select="$additionalParties.nodes" />
+			</xsl:if>
+		</FpML>
+	</xsl:template>
+
+	<xsl:template name="generate-fpml-ird-fra-trade">
+
+		<!-- mandatory mapping table-->
+		<xsl:param name="mapCounterparty" />
+		<xsl:param name="mapTradeId" />
+		<xsl:param name="ourPartyIdOverwrite" />
+		<xsl:param name="counterpartyIdOverwrite" />
+		<xsl:param name="partyTradeIdentifier.nodes" />
+		<xsl:param name="mapOurPartyLabel" />
+		<xsl:param name="messageIdScheme" />
+		<xsl:param name="buyerPartyReference" />
+		<xsl:param name="sellerPartyReference" />
+		<xsl:param name="party.partyId1Scheme" />
+		<xsl:param name="party.partyId2Scheme" />
+		<xsl:param name="allocationPartiesIds" />
+		<xsl:param name="partyAlternateSystem" />
+		<xsl:param name="fraDiscounting" />
+		<!--fpml message type-->
+		<xsl:param name="fpmlType" select="'DataDocument'" />
+		<xsl:param name="tradeId1" />
+		<xsl:param name="tradeIdScheme1" />
+		<xsl:param name="dayCountFractionScheme" />
+		<xsl:param name="masterAgreementTypeScheme" />
+		<!-- mandatory parameters (refers to our tradeId) -->
+		<xsl:param name="tradeId2" />
+		<xsl:param name="tradeId2.scheme" />
+		<xsl:param name="relativeDateOffSet.dateRelativeTo" />
+		<xsl:param name="relativeDateOffSet.businessCenter.nodes" />
+		<xsl:param name="relativeDateOffSet.dateRelativeTo.href" />
+		<!-- Overriding values -->
+		<xsl:param name="adjustableDate.dateAdjustments.businessDayConvention.overriding"/>
+		<xsl:param name="adjustableDate.dateAdjustments.businessDayConvention.defaultValue" />
+
+		<xsl:param name="party1.id" />
+		<xsl:param name="party2.id" />
+		<xsl:param name="side1" />
+		<xsl:param name="side2" />
+
+		<!-- earlyTerminationProvision -->
+		<xsl:param name="followUpConfirmation" select="'false'" />
+		<xsl:param name="optionForm" />
+		<xsl:param name="bermudaExerciseDates.period"/> 
+		<xsl:param name="bermudaExerciseDates.periodMultiplier"/>
+		<xsl:param name="bermudaExerciseDates.dayType"/>
+		<xsl:param name="bermudaExerciseDates.businessDayConvention"/>
+		<xsl:param name="bermudaExerciseDates.dateRelativeTo.href"/>
+		<xsl:param name="bermudaExerciseDates.dateRelativeTo"/>
+		<xsl:param name="bermudaExerciseDates.businessCenter" />
+		<xsl:param name="bermudaExerciseDates.businessCenter.nodes" />
+		<xsl:param name="bermudaExerciseDates.businessCenter.businessCenterScheme" />
+
+		<xsl:param name="earliestExerciseTime.hourMinuteTime" />  
+		<xsl:param name="earliestExerciseTime.businessCenter.name" />
+		<xsl:param name="earliestExerciseTime.businessCenter.businessCenterScheme" />
+
+		<xsl:param name="latestExerciseTime.hourMinuteTime" />
+		<xsl:param name="latestExerciseTime.businessCenter.name" />
+		<xsl:param name="latestExerciseTime.businessCenter.businessCenterScheme" />
+
+		<xsl:param name="expirationTime.hourMinuteTime" /> 
+		<xsl:param name="expirationTime.businessCenter.name" />      
+		<xsl:param name="expirationTime.businessCenter.businessCenterScheme" />
+
+		<xsl:param name="earlyTerminationProvision.calculationAgentParty" />
+		<xsl:param name="earlyTerminationProvision.calculationAgentParty.nodes" />
+
+		<xsl:param name="earlyTerminationProvision.hourMinuteTime" />
+		<xsl:param name="earlyTerminationProvision.businessCenter.name" /> 
+		<xsl:param name="earlyTerminationProvision.businessCenter.businessCenterScheme" />
+
+		<xsl:param name="earlyTerminationProvision.cashSettlementValuationDate.businessCenter" />
+		<xsl:param name="earlyTerminationProvision.cashSettlementValuationDate.businessCenter.businessCenterScheme" />
+
+		<xsl:param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSource"/>
+		<xsl:param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSourcePage"/>
+		<xsl:param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.quotationRateType"/>
+		<xsl:param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.referenceBank.node"/>
+
+		<xsl:param name="earlyTerminationProvision.cashPriceMethod.currency"/>
+		<xsl:param name="earlyTerminationProvision.cashPriceMethod.quotationRateType"/>
+		<xsl:param name="earlyTerminationProvision.cashPriceMethod.referenceBank.node"/>
+
+		<xsl:param name="earlyTerminationProvision.cashPriceAlternateMethod.currency"/>
+		<xsl:param name="earlyTerminationProvision.cashPriceAlternateMethod.quotationRateType"/>
+		<xsl:param name="earlyTerminationProvision.cashPriceAlternateMethod.referenceBank.node"/>
+		<!-- ======================= -->
+		<xsl:param name="collateral.nodes" />
+		<xsl:param name="contractualDefinitions.nodes" />
+
+		<xsl:variable name="entity" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeHeader/tradeViews/tradeView/entity" />
+		<xsl:variable name="legalEntity" select="/MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeHeader/tradeViews/tradeView/legalEntity" />
+		<xsl:variable name="paramCtpLabel" select="concat('partyLabel:', $ctpName)" />
+		<xsl:variable name="paramOurLabel" select="concat('partyLabel:', $ourName,',userName:',$ourUserName, ',entity:', $entity, ',legalEntity:', $legalEntity)" />
+
+		<!-- counterparty identifier-->
+		<!-- counterpartId -->
+		<xsl:variable name="party.partyId1">
+			<xsl:variable name="ctpAltIdFromDisplayLabel">
+				<xsl:if test="string-length($partyAlternateSystem)&gt;0">
+					<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.sql.ctpAltIdFromDisplayLabel',concat('displayLabel:',$ctpName,',altSys:',$partyAlternateSystem))" />
+				</xsl:if>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="string-length($ctpAltIdFromDisplayLabel)&gt;0">
+					<xsl:value-of select="$ctpAltIdFromDisplayLabel" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="mx:execute-formula($mapCounterparty, $paramCtpLabel)" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:call-template name="AssertNotMapped">
+			<xsl:with-param name="value" select="$party.partyId1" />
+			<xsl:with-param name="message" select="concat('Party ', $ctpName,' not mapped')" />
+			<xsl:with-param name="formula" select="$mapCounterparty" />
+		</xsl:call-template>
+		<xsl:variable name="party.partyName1" select="$party.partyId1" />
+		<xsl:variable name="party.id1">
+			<xsl:choose>
+				<xsl:when test="string-length($party1.id) &gt; 0">
+					<xsl:value-of select="$party1.id" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="$party.partyId1" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+
+		<!-- our party identifier-->
+		<!-- originatorId -->
+		<xsl:variable name="party.partyId2">
+			<xsl:variable name="ctpAltIdFromDisplayLabel">
+				<xsl:if test="string-length($partyAlternateSystem)&gt;0">
+					<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.sql.ctpAltIdFromDisplayLabel',concat('displayLabel:',$ourName,',altSys:',$partyAlternateSystem))" />
+				</xsl:if>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="string-length($ctpAltIdFromDisplayLabel)&gt;0">
+					<xsl:value-of select="$ctpAltIdFromDisplayLabel" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="mx:execute-formula($mapCounterparty, $paramOurLabel)" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:call-template name="AssertNotMapped">
+			<xsl:with-param name="value" select="$party.partyId2" />
+			<xsl:with-param name="message" select="concat('Party ', $ourName,' not mapped')" />
+			<xsl:with-param name="formula" select="$mapCounterparty" />
+		</xsl:call-template>
+		<xsl:variable name="party.partyName2" select="$party.partyId2" />
+		<xsl:variable name="party.id2">
+			<xsl:choose>
+				<xsl:when test="string-length($party2.id) &gt; 0">
+					<xsl:value-of select="$party2.id" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="$party.partyId2" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+
+		<!-- specific novation -->
+		<xsl:variable name="paramPartyNameEvent" select="concat('partyLabel:', $partyNameEvent)" />
+		<xsl:variable name="party.partyNameEventId" select="concat('#', $partyNameEventId)" />
+		<xsl:variable name="party.partyNameEvent">
+			<xsl:if test="string-length($partyNameEventId) &gt; 0">
+				<xsl:value-of select="mx:execute-formula($mapCounterparty, $paramPartyNameEvent)" />
+			</xsl:if>
+		</xsl:variable>
+		<xsl:if test="string-length($partyNameEventId) &gt; 0">
+			<xsl:call-template name="AssertNotMapped">
+				<xsl:with-param name="value" select="$party.partyNameEvent" />
+				<xsl:with-param name="message" select="concat('Party ', $partyNameEvent,' not mapped')" />
+				<xsl:with-param name="formula" select="$mapCounterparty" />
+			</xsl:call-template>
+		</xsl:if>
+
+		<!-- ========================== -->
+		<!-- deduced variables STREAM 1 -->
+		<!-- ========================== -->
+		<xsl:variable name="swapStream1.paramMaturityBusinessDayConvention" select="concat('businessDayConvention:', $leg1.maturity.businessDayConvention)" />
+
+		<!--adjustableDate.dateAdjustments.businessDayConvention-->
+		<xsl:variable name="leg1.payment.businessDayConvention">
+			<xsl:call-template name="extract-streamSchedules-businessDayConvention">
+				<xsl:with-param name="legNb" select="1" />
+				<xsl:with-param name="stream" select="1" />
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:variable name="adjustableDate.dateAdjustments.businessDayConvention">
+			<xsl:choose>
+				<xsl:when test="string-length($adjustableDate.dateAdjustments.businessDayConvention.overriding)&gt;0 ">
+					<xsl:copy-of select="$adjustableDate.dateAdjustments.businessDayConvention.overriding" />
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:choose>
+						<xsl:when test="string-length($swapStream1.payment.businessDayConvention) &gt; 0 and $swapStream1.payment.businessDayConvention != 'NONE'">
+							<xsl:value-of select="$swapStream1.payment.businessDayConvention" />
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:value-of select="$adjustableDate.dateAdjustments.businessDayConvention.defaultValue" />
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+
+		<xsl:call-template name="create-trade-ird-fra">
+
+			<!-- ===================== -->
+			<!-- Trade Header          -->
+			<!-- ===================== -->
+			<xsl:with-param name="partyTradeIdentifier.nodes" select="$partyTradeIdentifier.nodes" />
+			<xsl:with-param name="tradeDate" select="$tradeDate" />
+			<xsl:with-param name="party.id2" select="$party.id2" />
+			<xsl:with-param name="party.partyId2" select="$party.partyId2" />
+			<xsl:with-param name="party.partyName2" select="$party.partyName2" />
+			<xsl:with-param name="tradeId1" select="$tradeId1" />
+			<xsl:with-param name="tradeIdScheme1" select="$tradeIdScheme1" />
+			<xsl:with-param name="tradeId2" select="$tradeId2" />
+			<xsl:with-param name="tradeIdScheme2" select="$tradeId2.scheme" />
+			<xsl:with-param name="tradeHeader.party.id2" select="$party.id2" />
+			<xsl:with-param name="party.id1" select="$party.id1" />
+			<xsl:with-param name="party.partyId1" select="$party.partyId1" />
+			<xsl:with-param name="allocation.parties" select="$allocationPartiesIds" />
+			<!-- specific for novations -->
+			<xsl:with-param name="party.partyNameEventId" select="$party.partyNameEventId" />
+			<xsl:with-param name="party.partyNameEvent" select="$party.partyNameEvent" />
+
+			<!-- ===================== -->
+			<!--FRA node               -->
+			<!-- ===================== -->
+			<!--buyerPartyReference-->
+			<xsl:with-param name="buyerPartyReference" select="$buyerPartyReference" />
+			<!--sellerPartyReference-->
+			<xsl:with-param name="sellerPartyReference" select="$sellerPartyReference" />
+			<!--adjustedEffectiveDate.id-->
+			<xsl:with-param name="adjustedEffectiveDate.id" select="'fraEffectiveDate'" />
+			<!--adjustedEffectiveDate-->
+			<xsl:with-param name="adjustedEffectiveDate.value" select="$stream1.adjustedEffectiveDate" />
+			<xsl:with-param name="calculationPeriodNumberOfDays" select="$calculationPeriodNumberOfDays" />
+			<!--terminationDate-->
+			<xsl:with-param name="adjustedTerminationDate" select="$terminationDate" />
+			<xsl:with-param name="terminationDate.unadjustedDate" select="$swapStream1.termination.unadjustedDate" />
+			<xsl:with-param name="terminationDate.dateAdjustments.businessDayConvention" select="$swapStream1.terminationDate.dateAdjustments.businessDayConvention" />
+			<xsl:with-param name="terminationDate.dateAdjustments.businessCenter.nodes" select="$swapStream1.businessCenter.nodes" />
+			<!--paymentDate-->
+			<xsl:with-param name="adjustableDate.unadjustedDate" select="$firstPayment.interestFlows.unadjustedPaymentDate" />
+			<xsl:with-param name="adjustableDate.dateAdjustments.businessDayConvention" select="$adjustableDate.dateAdjustments.businessDayConvention" />
+			<xsl:with-param name="adjustableDate.dateAdjustments.businessCenter.nodes" select="$swapStream1.businessCenter.nodes" />
+			<!-- fixingDateOffset tag -->
+			<xsl:with-param name="relativeDateOffSet.period" select="$fraResetDatesPeriodUnit" />
+			<xsl:with-param name="relativeDateOffSet.periodMultiplier" select="$fraResetDatesPeriodMultiplier" />
+			<xsl:with-param name="relativeDateOffSet.dayType" select="$fraResetDatesDayType" />
+			<xsl:with-param name="relativeDateOffSet.businessDayConvention" select="$fraResetBusinessDayConvention" />
+			<xsl:with-param name="relativeDateOffSet.businessCenter.nodes" select="$relativeDateOffSet.businessCenter.nodes" />
+			<xsl:with-param name="relativeDateOffSet.dateRelativeTo.href" select="$relativeDateOffSet.dateRelativeTo.href" />
+			<xsl:with-param name="relativeDateOffSet.dateRelativeTo" select="$relativeDateOffSet.dateRelativeTo" />
+			<!-- dayCountFraction tag -->
+			<xsl:with-param name="dayCountFraction" select="$swapStream1.dayCountFraction" />
+			<xsl:with-param name="dayCountFractionScheme" select="$dayCountFractionScheme" />
+			<!-- notional tag -->
+			<xsl:with-param name="currency.currencyScheme" select="$currencyScheme" />
+			<xsl:with-param name="notional.currency" select="$swapStream1.notionalSchedule.notionalStepSchedule.currency" />
+			<xsl:with-param name="notional.amount" select="$swapStream1.notionalSchedule.notionalStepSchedule.initialValue" />
+			<!-- fixedRate tag -->
+			<xsl:with-param name="fixedRate" select="$fraFixedRate" />
+			<!-- floatingRateIndex tag -->
+			<xsl:with-param name="floatingRateIndex" select="$fraFloatingIndex" />
+			<xsl:with-param name="floatingRateIndexScheme" select="$floatingRateIndexScheme" />
+			<!-- indexTenor -->
+			<xsl:with-param name="indexTenor.nodes"  select="$indexTenor.nodes" />
+			<xsl:with-param name="indexTenor.period">
+				<xsl:if test="string-length ($indexTenor.nodes) = 0">
+					<xsl:value-of select="$swapStream1.calculationPeriodAmount.period" />
+				</xsl:if>
+			</xsl:with-param> 
+			<xsl:with-param name="indexTenor.periodMultiplier">
+				<xsl:if test="string-length ($indexTenor.nodes) = 0">
+					<xsl:value-of select="$swapStream1.calculationPeriodAmount.periodMultiplier" />
+				</xsl:if>
+			</xsl:with-param>
+			<!-- fraDiscounting tag -->
+			<xsl:with-param name="fraDiscounting" select="$fraDiscounting" />
+
+			<!-- ===================== -->
+			<!--documentation          -->
+			<!-- ===================== -->
+			<xsl:with-param name="masterAgreementType" select="$masterAgreementType" />
+			<xsl:with-param name="masterAgreementTypeScheme" select="$masterAgreementTypeScheme" />
+			<xsl:with-param name="masterAgreementDate" select="$masterAgreementDate" />
+			<xsl:with-param name="contractualDefinitions" select="$contractualDefinitions" />
+			<xsl:with-param name="contractualDefinitionsScheme" select="$contractualDefinitionsScheme" />
+			<!-- trade side node -->
+			<xsl:with-param name="side1" select="$side1" />
+			<xsl:with-param name="side2" select="$side2" />
+
+			<!-- earlyTerminationProvision -->
+			<xsl:with-param name="optionForm" select="$optionForm" />
+			<xsl:with-param name="bermudaExerciseDates.period"  select="$bermudaExerciseDates.period"/> 
+			<xsl:with-param name="bermudaExerciseDates.periodMultiplier" select="$bermudaExerciseDates.periodMultiplier"/>
+			<xsl:with-param name="bermudaExerciseDates.dayType" select="$bermudaExerciseDates.dayType"/>
+			<xsl:with-param name="bermudaExerciseDates.businessDayConvention" select="$bermudaExerciseDates.businessDayConvention"/>
+			<xsl:with-param name="bermudaExerciseDates.dateRelativeTo.href" select="$bermudaExerciseDates.dateRelativeTo.href"/>
+			<xsl:with-param name="bermudaExerciseDates.dateRelativeTo" select="$bermudaExerciseDates.dateRelativeTo"/>
+			<xsl:with-param name="bermudaExerciseDates.businessCenter"  select="$bermudaExerciseDates.businessCenter" />
+			<xsl:with-param name="bermudaExerciseDates.businessCenter.nodes" select="$bermudaExerciseDates.businessCenter.nodes" />
+			<xsl:with-param name="bermudaExerciseDates.businessCenter.businessCenterScheme"  select="$bermudaExerciseDates.businessCenter.businessCenterScheme" />
+
+			<xsl:with-param name="followUpConfirmation" select="$followUpConfirmation" />
+
+			<xsl:with-param name="earliestExerciseTime.hourMinuteTime"    select="$earliestExerciseTime.hourMinuteTime" />  
+			<xsl:with-param name="earliestExerciseTime.businessCenter.name"  select="$earliestExerciseTime.businessCenter.name" />
+			<xsl:with-param name="earliestExerciseTime.businessCenter.businessCenterScheme"  select="$earliestExerciseTime.businessCenter.businessCenterScheme" />
+
+			<xsl:with-param name="latestExerciseTime.hourMinuteTime" select="$latestExerciseTime.hourMinuteTime" />
+			<xsl:with-param name="latestExerciseTime.businessCenter.name" select="$latestExerciseTime.businessCenter.name" />
+			<xsl:with-param name="latestExerciseTime.businessCenter.businessCenterScheme" select="$latestExerciseTime.businessCenter.businessCenterScheme" />
+
+			<xsl:with-param name="expirationTime.hourMinuteTime"   select="$expirationTime.hourMinuteTime" /> 
+			<xsl:with-param name="expirationTime.businessCenter.name"        select="$expirationTime.businessCenter.name" />      
+			<xsl:with-param name="expirationTime.businessCenter.businessCenterScheme"  select="$expirationTime.businessCenter.businessCenterScheme" />
+
+			<!-- earlyTerminationProvision parameters -->
+			<xsl:with-param name="expirationDate.periodMultiplier" select="$expirationDate.periodMultiplier" />
+			<xsl:with-param name="expirationDate.period" select="$expirationDate.period" />
+			<xsl:with-param name="expirationDate.dayType" select="$expirationDate.dayType" />
+			<xsl:with-param name="expirationDate.businessDayConvention" select="$expirationDate.businessDayConvention"/>
+			<xsl:with-param name="expirationDate.businessCenter.nodes" select="$expirationDate.businessCenter.nodes"/>
+			<xsl:with-param name="expirationDate.dateRelativeTo.href" select="$expirationDate.dateRelativeTo.href"/>
+			<xsl:with-param name="earlyTerminationProvision.exerciseMode"  select="$earlyTerminationProvision.exerciseMode" />
+			<xsl:with-param name="earlyTerminationProvision.calculationAgentParty"  select="$earlyTerminationProvision.calculationAgentParty" />
+			<xsl:with-param name="earlyTerminationProvision.calculationAgentParty.nodes"  select="$earlyTerminationProvision.calculationAgentParty.nodes" />
+
+			<xsl:with-param name="earlyTerminationProvision.hourMinuteTime"  select="$earlyTerminationProvision.hourMinuteTime" />
+			<xsl:with-param name="earlyTerminationProvision.businessCenter.name"   select="$earlyTerminationProvision.businessCenter.name" /> 
+			<xsl:with-param name="earlyTerminationProvision.businessCenter.businessCenterScheme"  select="$earlyTerminationProvision.businessCenter.businessCenterScheme" />
+
+			<xsl:with-param name="earlyTerminationProvision.dateAdjustments.businessDayConvention" select="$earlyTerminationProvision.dateAdjustments.businessDayConvention" />
+			<xsl:with-param name="earlyTerminationProvision.unadjustedDate.nodes" select="$earlyTerminationProvision.unadjustedDate.nodes" />
+			<xsl:with-param name="earlyTerminationProvision.cashSettlementValuationDate.periodMultiplier"  select="$earlyTerminationProvision.cashSettlementValuationDate.periodMultiplier" />
+			<xsl:with-param name="earlyTerminationProvision.cashSettlementValuationDate.period"  select="$earlyTerminationProvision.cashSettlementValuationDate.period" />
+			<xsl:with-param name="earlyTerminationProvision.cashSettlementValuationDate.dayType"  select="$earlyTerminationProvision.cashSettlementValuationDate.dayType" />
+			<xsl:with-param name="earlyTerminationProvision.cashSettlementValuationDate.businessCenter"  select="$earlyTerminationProvision.cashSettlementValuationDate.businessCenter" />
+			<xsl:with-param name="earlyTerminationProvision.cashSettlementValuationDate.businessCenter.businessCenterScheme"  select="$earlyTerminationProvision.cashSettlementValuationDate.businessCenter.businessCenterScheme" />
+
+			<xsl:with-param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSource" select="$earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSource"/>
+			<xsl:with-param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSourcePage" select="$earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSourcePage"/>
+			<xsl:with-param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.quotationRateType" select="$earlyTerminationProvision.zeroCouponYieldAdjustedMethod.quotationRateType"/>
+			<xsl:with-param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.referenceBank.node" select="$earlyTerminationProvision.zeroCouponYieldAdjustedMethod.referenceBank.node"/>
+
+			<xsl:with-param name="earlyTerminationProvision.cashPriceMethod.currency" select="$earlyTerminationProvision.cashPriceMethod.currency"/>
+			<xsl:with-param name="earlyTerminationProvision.cashPriceMethod.quotationRateType" select="$earlyTerminationProvision.cashPriceMethod.quotationRateType"/>
+			<xsl:with-param name="earlyTerminationProvision.cashPriceMethod.referenceBank.node" select="$earlyTerminationProvision.cashPriceMethod.referenceBank.node"/>
+
+			<xsl:with-param name="earlyTerminationProvision.cashPriceAlternateMethod.currency" select="$earlyTerminationProvision.cashPriceAlternateMethod.currency"/>
+			<xsl:with-param name="earlyTerminationProvision.cashPriceAlternateMethod.quotationRateType" select="$earlyTerminationProvision.cashPriceAlternateMethod.quotationRateType"/>
+			<xsl:with-param name="earlyTerminationProvision.cashPriceAlternateMethod.referenceBank.node" select="$earlyTerminationProvision.cashPriceAlternateMethod.referenceBank.node"/>
+
+			<!-- earlyTerminationProvision parameters -->
+			<xsl:with-param name="earlyTerminationProvision.calculationAgentParty"  select="$earlyTerminationProvision.calculationAgentParty" />
+			<xsl:with-param name="earlyTerminationProvision.calculationAgentParty.nodes"  select="$earlyTerminationProvision.calculationAgentParty.nodes" />
+
+			<xsl:with-param name="earlyTerminationProvision.hourMinuteTime"  select="$earlyTerminationProvision.hourMinuteTime" />
+			<xsl:with-param name="earlyTerminationProvision.businessCenter.name"   select="$earlyTerminationProvision.businessCenter.name" /> 
+			<xsl:with-param name="earlyTerminationProvision.businessCenter.businessCenterScheme"  select="$earlyTerminationProvision.businessCenter.businessCenterScheme" />
+
+			<xsl:with-param name="earlyTerminationProvision.cashSettlement.id" select="$earlyTerminationProvision.cashSettlement.id" />
+			<xsl:with-param name="earlyTerminationProvision.cashSettlementPaymentDate.id"  select="$earlyTerminationProvision.cashSettlementPaymentDate.id" />
+			<xsl:with-param name="earlyTerminationProvision.dateAdjustments.businessDayConvention" select="$earlyTerminationProvision.dateAdjustments.businessDayConvention" />
+			<xsl:with-param name="earlyTerminationProvision.unadjustedDate.nodes" select="$earlyTerminationProvision.unadjustedDate.nodes" />
+			<xsl:with-param name="earlyTerminationProvision.cashSettlementPaymentDate.businessCenter.nodes" select="$earlyTerminationProvision.cashSettlementPaymentDate.businessCenter.nodes" />
+			<xsl:with-param name="earlyTerminationProvision.cashSettlementValuationDate.periodMultiplier"  select="$earlyTerminationProvision.cashSettlementValuationDate.periodMultiplier" />
+			<xsl:with-param name="earlyTerminationProvision.cashSettlementValuationDate.period"  select="$earlyTerminationProvision.cashSettlementValuationDate.period" />
+			<xsl:with-param name="earlyTerminationProvision.cashSettlementValuationDate.dayType"  select="$earlyTerminationProvision.cashSettlementValuationDate.dayType" />
+			<xsl:with-param name="earlyTerminationProvision.businessDayConvention"  select="$earlyTerminationProvision.businessDayConvention" />
+			<xsl:with-param name="earlyTerminationProvision.cashSettlementValuationDate.businessCenter"  select="$earlyTerminationProvision.cashSettlementValuationDate.businessCenter" />
+			<xsl:with-param name="earlyTerminationProvision.cashSettlementValuationDate.businessCenter.nodes"  select="$earlyTerminationProvision.cashSettlementValuationDate.businessCenter.nodes" />
+			<xsl:with-param name="earlyTerminationProvision.cashSettlementValuationDate.businessCenter.businessCenterScheme"  select="$earlyTerminationProvision.cashSettlementValuationDate.businessCenter.businessCenterScheme" />
+			<xsl:with-param name="earlyTerminationProvision.cashSettlementValuationDate.dateRelativeTo.href"  select="$earlyTerminationProvision.cashSettlementValuationDate.dateRelativeTo.href" />
+			<xsl:with-param name="earlyTerminationProvision.cashSettlementValuationDate.dateRelativeTo"  select="$earlyTerminationProvision.cashSettlementValuationDate.dateRelativeTo" />
+			<xsl:with-param name="earlyTerminationProvision.dateAdjustments.businessCenter.nodes" select="$earlyTerminationProvision.cashSettlementPaymentDate.businessCenter.nodes" />
+
+			<xsl:with-param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSource" select="$earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSource"/>
+			<xsl:with-param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSourcePage" select="$earlyTerminationProvision.zeroCouponYieldAdjustedMethod.rateSourcePage"/>
+			<xsl:with-param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.quotationRateType" select="$earlyTerminationProvision.zeroCouponYieldAdjustedMethod.quotationRateType"/>
+			<xsl:with-param name="earlyTerminationProvision.zeroCouponYieldAdjustedMethod.referenceBank.node" select="$earlyTerminationProvision.zeroCouponYieldAdjustedMethod.referenceBank.node"/>
+
+			<xsl:with-param name="earlyTerminationProvision.cashPriceMethod.currency" select="$earlyTerminationProvision.cashPriceMethod.currency"/>
+			<xsl:with-param name="earlyTerminationProvision.cashPriceMethod.quotationRateType" select="$earlyTerminationProvision.cashPriceMethod.quotationRateType"/>
+			<xsl:with-param name="earlyTerminationProvision.cashPriceMethod.referenceBank.node" select="$earlyTerminationProvision.cashPriceMethod.referenceBank.node"/>
+
+			<xsl:with-param name="earlyTerminationProvision.cashPriceAlternateMethod.currency" select="$earlyTerminationProvision.cashPriceAlternateMethod.currency"/>
+			<xsl:with-param name="earlyTerminationProvision.cashPriceAlternateMethod.quotationRateType" select="$earlyTerminationProvision.cashPriceAlternateMethod.quotationRateType"/>
+			<xsl:with-param name="earlyTerminationProvision.cashPriceAlternateMethod.referenceBank.node" select="$earlyTerminationProvision.cashPriceAlternateMethod.referenceBank.node"/>
+			<xsl:with-param name="collateral.nodes" select="$collateral.nodes" />
+			<xsl:with-param name="contractualDefinitions.nodes" select="$contractualDefinitions.nodes" />
+		</xsl:call-template>
+	</xsl:template>
+</xsl:stylesheet>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<requestConfirmation xmlns="http://www.fpml.org/FpML-5/confirmation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.fpml.org/FpML-5/confirmation ../../fpml-main-5-3.xsd http://www.w3.org/2000/09/xmldsig# ../../xmldsig-core-schema.xsd" fpmlVersion="5-3">
+	<header>
+		<messageId messageIdScheme="http://www.partyA.com/coding-scheme/messageId">MX129469</messageId>
+		<sentBy messageAddressScheme="http://www.partyA.com/partyId">party1</sentBy>
+		<sendTo messageAddressScheme="http://www.partyA.com/partyId">MATCHSRV</sendTo>
+		<creationTimestamp>2012-11-27T13:54:11.000+01:00</creationTimestamp>
+	</header>
+	<isCorrection>false</isCorrection>
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="party1"/>
+				<tradeId tradeIdScheme="http://www.db.com/swaps/trade-id">MX129469</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2017-01-15</tradeDate>
+		</tradeHeader>
+		<fxSwap>
+			<nearLeg>
+				<exchangedCurrency1>
+					<payerPartyReference href="party2"/>
+					<receiverPartyReference href="party1"/>
+					<paymentAmount>
+						<currency>EUR</currency>
+						<amount>105000000</amount>
+					</paymentAmount>
+				</exchangedCurrency1>
+				<exchangedCurrency2>
+					<payerPartyReference href="party1"/>
+					<receiverPartyReference href="party2"/>
+					<paymentAmount>
+						<currency>CZK</currency>
+						<amount>127640273.14605</amount>
+					</paymentAmount>
+				</exchangedCurrency2>
+				<valueDate>2017-01-15</valueDate>
+				<exchangeRate>
+					<quotedCurrencyPair>
+						<currency1>CZK</currency1>
+						<currency2>EUR</currency2>
+						<quoteBasis>Currency1PerCurrency2</quoteBasis>
+					</quotedCurrencyPair>
+					<rate>1.21562165</rate>
+				</exchangeRate>
+				<nonDeliverableSettlement>
+					<settlementCurrency>EUR</settlementCurrency>
+					<fixing>
+						<quotedCurrencyPair>
+							<currency1>CZK</currency1>
+							<currency2>EUR</currency2>
+							<quoteBasis>Currency1PerCurrency2</quoteBasis>
+						</quotedCurrencyPair>
+						<fixingDate>2017-01-15</fixingDate>
+						<fxSpotRateSource>
+							<primaryRateSource>
+								<rateSource>Reuters</rateSource>
+								<rateSourcePage>CNB02</rateSourcePage>
+							</primaryRateSource>
+							<fixingTime>
+								<hourMinuteTime>14:15:00</hourMinuteTime>
+								<businessCenter>CZPR</businessCenter>
+							</fixingTime>
+						</fxSpotRateSource>
+					</fixing>
+				</nonDeliverableSettlement>
+			</nearLeg>
+			<farLeg>
+				<exchangedCurrency1>
+					<payerPartyReference href="party1"/>
+					<receiverPartyReference href="party2"/>
+					<paymentAmount>
+						<currency>EUR</currency>
+						<amount>105000000</amount>
+					</paymentAmount>
+				</exchangedCurrency1>
+				<exchangedCurrency2>
+					<payerPartyReference href="party2"/>
+					<receiverPartyReference href="party1"/>
+					<paymentAmount>
+						<currency>CZK</currency>
+						<amount>129834328.4889</amount>
+					</paymentAmount>
+				</exchangedCurrency2>
+				<valueDate>2022-01-15</valueDate>
+				<exchangeRate>
+					<quotedCurrencyPair>
+						<currency1>CZK</currency1>
+						<currency2>EUR</currency2>
+						<quoteBasis>Currency1PerCurrency2</quoteBasis>
+					</quotedCurrencyPair>
+					<rate>1.23651741</rate>
+					<forwardPoints>0.00813261</forwardPoints>
+				</exchangeRate>
+			</farLeg>
+		</fxSwap>
+	</trade>
+	<party id="party1">
+		<partyId>party1</partyId>
+	</party>
+	<party id="party2">
+		<partyId>party2</partyId>
+	</party>
+</requestConfirmation>

@@ -1,0 +1,389 @@
+[
+ {
+  "pair": "crd-cds/OUT_CRD_CDS_5-3_INS_07_NoRecovery",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "DOWNGRADE_MINOR",
+  "refuted": true,
+  "confidence": 78,
+  "rationale": "The MXML fixedRecoveryRate=0. is a Murex creditTemplate sentinel meaning 'no fixed recovery applies' (standard auction/physical settlement), not an economic fixed-0%-recovery feature; this is corroborated by protectionSettlementMode=auction and protectionRecoveryMode=100-R (floating recovery) in the same MXML, so physical-settlement CDM is faithful.",
+  "evidence": "MXML lines 1023 (fixedRecoveryRate=0.), 1024 (settlementMode=auction), 1091 (protectionRecoveryMode=100-R); sibling INS_07_Recovery has fixedRecoveryRate=1. -> FpML cashSettlementTerms/recoveryFactor=1 -> CDM Cash; here rate=0 -> FpML physicalSettlementTerms (no recoveryFactor) -> CDM Physical. The '0' would only be a real fixed recovery if it carried cashSettlementTerms like the rate=1 sibling; it does not."
+ },
+ {
+  "pair": "crd-cds/OUT_CRD_CDS_5-3_INS_12",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 80,
+  "rationale": "The option strike (FpML strike/price=1.0, sourced from MXML 'Premium 1.00' / fixedRate=1.) is genuinely absent from the CDM: exerciseTerms is empty {} and no strike appears anywhere; an option without its strike cannot be valued, so the loss is material.",
+  "evidence": "FpML lines 39-41 <strike><price>1.</price></strike>; MXML line 326 'Sell risk on Airbus SE Premium 1.00' and lines 1053/1089; CDM line 191 exerciseTerms {} and full grep of CDM finds only exerciseTerms{} (no strike value)."
+ },
+ {
+  "pair": "crd-crdio/OUT_CRD_CRDIO_5-3_INS_02",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 70,
+  "rationale": "The restructuring sub-finding is mis-attributed (MXML has no restructuring type; empty <restructuring/> in FpML is faithfully reproduced), but the dominant loss stands: distinct MXML parties UBS-RCSR and _69243/7236800 both collapse to BARCLAYS with payer=receiver=buyer=seller=Party1, destroying counterparty identity and direction.",
+  "evidence": "MXML lines 159-165 (UBS-RCSR and 7236800), 548-551/1056-1081 (payer UBS / receiver _69243); CDM payer=receiver=Party1, single counterparty BARCLAYS. MXML has NO restructuring/creditEvent-type element (grep empty), so that part is immaterial. Dataset-wide grep shows many trades DO preserve distinct parties (UBS-RCSR x121, MUREX-DEMO, _1637...), so the collapse here is a real per-trade defect, not blanket anonymization."
+ },
+ {
+  "pair": "crd-rtrs/OUT_CRD_RTRS_5-3_CancelAndReIssue_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 85,
+  "rationale": "MXML is a riskyTotalReturnSwap on a real EUREX bond (FTEL 3.75 03/12, security 1685); the return underlier is replaced in FpML/CDM by an unrelated EquityIndex 'EUR-Annual Swap Rate-3 Month' (assetClass=Equity) and product mistyped as EquitySwap; the reference asset is the core economics of a TRS, so the loss is material. Parties also collapse to party1.",
+  "evidence": "MXML <riskyTotalReturnSwap>/<bondIndex> securityDisplayLabel 'FTEL 3.75 03/12', securityMarket EUREX, identifier EUREX;1685; FpML line 197 <index><instrumentId>EUR-Annual Swap Rate-3 Month; CDM lines 297-307 EquityIndex assetClass=Equity, taxonomy EquitySwap_PriceReturnBasicPerformance_Index; CDM parties both party1."
+ },
+ {
+  "pair": "crd-rtrs/OUT_CRD_RTRS_5-3_INS_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 85,
+  "rationale": "Same defect family: MXML bond TRS underlier (FTEL 3.75 03/12, EUREX 1685) replaced by EquityIndex 'EUR-Annual Swap Rate-3 Month' assetClass=Equity and mistyped EquitySwap; bond reference asset (the heart of a TRS) is destroyed, which is material even though the EURIBOR-3M interest leg is preserved.",
+  "evidence": "MXML lines 387 <riskyTotalReturnSwap>, 1367-1384 <bondIndex> FTEL 3.75 03/12 EUREX;1685; FpML line 180 instrumentId EUR-Annual Swap Rate-3 Month; CDM lines 296-308 EquityIndex/assetClass=Equity, line 6 taxonomy EquitySwap_PriceReturnBasicPerformance_Index."
+ },
+ {
+  "pair": "crd-rtrs/OUT_CRD_RTRS_5-3_Restructure_01",
+  "original_verdict": "FAIL",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 86,
+  "rationale": "MXML riskyTotalReturnSwap on bond FTEL 3.75 03/12 (EUREX 1685) reduced to a fake EquityIndex 'EUR-Annual Swap Rate-3 Month' (assetClass=Equity), product class wrong (EquitySwap_Index), and both legs/parties collapse to party1 losing the counterparty entirely; bond underlier loss plus party loss justifies FAIL.",
+  "evidence": "FpML line 197 <index><instrumentId>EUR-Annual Swap Rate-3 Month; CDM lines 297-307 EquityIndex assetClass=Equity, line 6 taxonomy EquitySwap_PriceReturnBasicPerformance_Index, parties all 'party1' (lines 323/329/355/364). MXML riskyTotalReturnSwap bondIndex confirmed in sibling files of same family."
+ },
+ {
+  "pair": "crd-scdo/OUT_CRD_SCDO_5-3_CancelAndReIssue_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 95,
+  "rationale": "MXML explicitly carries attachmentPoint=1. / detachmentPoint=3. (a 1%-3% tranche, corroborated by the UDF 'Sell risk1% - 3%'), but FpML and CDM both show attachmentPoint=0 / exhaustionPoint=3. Collapsing a 1%-3% mezzanine into a 0%-3% equity tranche materially changes first-loss exposure.",
+  "evidence": "MXML lines 1116-1117 attachmentPoint=1./detachmentPoint=3. and UDF line 608 '1% - 3%'; FpML tranche lines 50-51 attachmentPoint=0/exhaustionPoint=3; CDM generalTerms.tranche attachmentPoint=0/exhaustionPoint=3 (no alternate nesting found)."
+ },
+ {
+  "pair": "crd-scdo/OUT_CRD_SCDO_5-3_Restructure_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 93,
+  "rationale": "Same material attachmentPoint 1%->0% distortion confirmed (MXML=1., CDM/FpML=0). Additionally firstPaymentDate=2008-12-22 in FpML/CDM skips the genuine 2006-12-20 first coupon present in the MXML for a trade effective 2006-12-16. The attachment distortion alone keeps MAJOR.",
+  "evidence": "MXML lines 7067-7068 attachmentPoint=1./detachmentPoint=3.; MXML line 7549 earliest paymentDate 20061220 vs FpML firstPaymentDate 2008-12-22 (line 61) and CDM firstPaymentDate 2008-12-22; CDM tranche attachmentPoint=0/exhaustionPoint=3."
+ },
+ {
+  "pair": "curr-fxd/OUT_CURR_FXD_FXD_GEN_PDT_INS_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 92,
+  "rationale": "CDM retains only the AUD 2M leg; the JPY 172,880,755.60532 counter-leg, the 86.44 exchange rate, payerReceiver direction and settlementTerms are all absent (SettlementPayout has empty {} for both), and the fxRange window is gone. The trade economics and direction are unrecoverable from the CDM.",
+  "evidence": "MXML currency2Flow JPY 172880755.60532 (line 418), exchangeRate rate 86.44037780266 (line 427), fxRange startDate 20090105 (lines 429-436); FpML kept both notionals but dropped range/rate; CDM payout SettlementPayout payerReceiver {} / settlementTerms {} and only quantity AUD 2,000,000, price has AUD unit but no value; string-searched CDM for 172880755 and 86.44 - absent."
+ },
+ {
+  "pair": "curr-opt/OUT_CURR_OPT_BAR2_INS_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 95,
+  "rationale": "FpML has two Knockout barriers (triggerRate 102 and 115) forming a double-barrier KO corridor; CDM is reduced to a plain ForeignExchange_VanillaOption Call (strike 105.05) with no barrier/trigger anywhere. A double-KO option is materially cheaper than the vanilla it was rendered as.",
+  "evidence": "FpML features/barrier triggerRate 102 (line 57) and 115 (line 70), barrierType Knockout; CDM productQualifier ForeignExchange_VanillaOption, OptionPayout optionType Call strike 105.05, exhaustively no barrier/trigger/knockout in exerciseTerms, settlementTerms, tradeLot, or transferHistory."
+ },
+ {
+  "pair": "curr-opt/OUT_CURR_OPT_BAR_INS_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 94,
+  "rationale": "FpML has a single down-and-in Knockin barrier triggerRate 0.8975; CDM is a plain VanillaOption Call (strike 0.9) with the knock-in trigger entirely dropped. A knock-in option only activates if spot touches 0.8975, so pricing it as vanilla materially overstates value.",
+  "evidence": "FpML features/barrier barrierType Knockin triggerRate 0.8975 (lines 51,57); CDM productQualifier ForeignExchange_VanillaOption, OptionPayout Call strike 0.9, no barrier/trigger/knockin found anywhere in product or transferHistory."
+ },
+ {
+  "pair": "curr-opt/OUT_CURR_OPT_RBT_INS_01",
+  "original_verdict": "FAIL",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 95,
+  "rationale": "FpML is an fxDigitalOption with a Touch trigger (triggerRate 1.1, observation window 2008-12-15 to 2009-03-13) and a USD 100,000 digital payout; the CDM is a bare OptionPayout with no optionType, strike, underlier, trigger or payout - only the EUR 500 premium survives in transferHistory. The core digital economics are entirely absent.",
+  "evidence": "FpML touch triggerRate 1.1 / touchCondition Touch (lines 46-60) and payout USD 100,000 (lines 61-65); CDM OptionPayout has no optionType/strike/underlier/priceQuantity, no 100000, no 1.1, no USD/EUR pair; only transferHistory premium EUR 500 retained."
+ },
+ {
+  "pair": "curr-opt/OUT_CURR_OPT_RBT_INS_02",
+  "original_verdict": "FAIL",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 96,
+  "rationale": "CDM is a bare OptionPayout that dropped the noTouch trigger 1.13, the AUD 329,000 digital payout, the USD/AUD currency pair, and the product type; all present in MXML/FpML but entirely absent from CDM, plus premium zeroed and one counterparty collapsed. Multiple unrecoverable material losses.",
+  "evidence": "CDM grep for 329000|1.13|touch|trigger|currency1|AUD|digital returned NONE. MXML lines 490-521 carry fxTouchRebateOption touchRebateType=noTouchUp rate 1.13 payout AUD 329000. MXML party id=CBA (option writer) plus DBSBANKSGP are genuine counterparties; FpML already collapsed buyer=seller=BARCLAYS (upstream corruption) and CDM kept only one counterparty."
+ },
+ {
+  "pair": "ird-aswp/OUT_IRD_ASWP_5-3_InflationSwapCustom",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 88,
+  "rationale": "floatingRateMultiplier 0.0128 directly scales the YoY inflation leg payout (~78x vs implicit 1) and is dropped from both InflationRateSpecification and the CDM cashflow representation, which carries no observedRate and no multiplier for the inflation leg, so the loss is unrecoverable and economically material.",
+  "evidence": "FpML lines 233-235 floatingRateMultiplierSchedule 0.0128 and per-period floatingRateMultiplier 0.0128 (lines 267,293...). CDM grep multiplier matches only periodMultiplier date fields; inflation-leg cashflows (lines 283-291) have rateObservation only, no observedRate/multiplier."
+ },
+ {
+  "pair": "ird-aswp/OUT_IRD_ASWP_5-3_Inflation_Interp_02",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "DOWNGRADE_MINOR",
+  "refuted": true,
+  "confidence": 78,
+  "rationale": "The flagged inflation calc params have their economic effect preserved in the CDM cashflows (cashflowsMatchParameters=true): initialIndexLevel 245.1483871 appears as observedRate 245.1483870968, interpolation is encoded via observation weights 17/14, and inflationLag via the adjusted fixing dates; the dropped structured flags are largely cosmetic/recoverable.",
+  "evidence": "CDM lines 141-156 rateObservation observedRate 245.1483870968 weights 17/14 plus 104.56; FpML lines 104-106 inflationLag/interpolationMethod LinearZeroYield/initialIndexLevel 245.1483871. Loss is mis-rated as MAJOR; economically-defining values survive in cashflows."
+ },
+ {
+  "pair": "ird-aswp/OUT_IRD_ASWP_5-3_Inflation_Interpolated",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "DOWNGRADE_MINOR",
+  "refuted": true,
+  "confidence": 80,
+  "rationale": "Finding claims CDM cannot distinguish interpolated vs non-interpolated, but the CDM cashflows encode the LinearZeroYield interpolation via day-split observation weights 19/9 (=28) and preserve initialIndexLevel 99.32143 as observedRate; the interpolation economics are represented at cashflow level, so the dropped flag is recoverable/cosmetic.",
+  "evidence": "CDM observationWeight values 1,9,19,28 (interpolation day-split) and observedRate 99.32143 (=FpML initialIndexLevel 99.32143). Contrast with NonInterpolated CDM where all weights=1. interpolationMethod flag dropped but effect preserved."
+ },
+ {
+  "pair": "ird-aswp/OUT_IRD_ASWP_5-3_Inflation_NonInterpolated",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "DOWNGRADE_MINOR",
+  "refuted": true,
+  "confidence": 80,
+  "rationale": "Dropped interpolationMethod None / initialIndexLevel 99 / inflationLag are recoverable from the precomputed CDM cashflows: initialIndexLevel 99 appears as observedRate, all observationWeight=1 correctly encodes non-interpolation, and fixing dates encode the lag; loss is cosmetic, not material.",
+  "evidence": "CDM observedRate 99 (=FpML initialIndexLevel 99), observationWeight uniformly 1 (vs 19/9 in the Interpolated variant) - the interpolated/non-interpolated distinction IS preserved at cashflow level, refuting the indistinguishability claim."
+ },
+ {
+  "pair": "ird-aswp/OUT_IRD_ASWP_5-3_Restructure",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 85,
+  "rationale": "floatingRateMultiplier 0.011 scales the EUR 100,000,000 inflation leg (~91x vs implicit 1) and is absent from the CDM, whose inflation-leg cashflows carry observedRate 1 (=initialIndexLevel) but no multiplier; the scaling factor is unrecoverable and materially large given the 100M notional.",
+  "evidence": "FpML lines 108-110 floatingRateMultiplierSchedule plus per-period floatingRateMultiplier 0.011 (lines 147,174,201). CDM grep 0.011/floatingRateMultiplier matches only periodMultiplier; inflation cashflows show observedRate 1 only, no multiplier."
+ },
+ {
+  "pair": "ird-cf/OUT_IRD_CF_4-3_INS_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "DOWNGRADE_MINOR",
+  "refuted": true,
+  "confidence": 72,
+  "rationale": "The EUR 100 premium is genuinely absent from the CDM (no transferHistory/premium/additionalPayment), but EUR 100 on a EUR 1,000,000 cap is de minimis (0.01% of notional, trivial absolute amount); all defining cap economics are preserved, so the loss is immaterial.",
+  "evidence": "CDM (full read) has zero premium/transfer keywords; FpML lines 114-130 confirm premium EUR 100 paid 2013-01-02. Loss is real but cosmetic in magnitude."
+ },
+ {
+  "pair": "ird-cf/OUT_IRD_CF_5-3_Bermudan_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 95,
+  "rationale": "The entire Bermudan optionalEarlyTermination (35 exercise dates, cashSettlement, 35 earlyTerminationEvents) plus inflation params (lag 3M, interpolationMethod None, initialIndexLevel) are present in FpML but absent from CDM, turning a cancellable inflation cap into a plain cap; this is a defining structural loss.",
+  "evidence": "FpML lines 91-97 (inflation params) and 132+ (earlyTerminationProvision/bermudaExercise/cashSettlement); CDM has only one InterestRatePayout with no exercise/OptionPayout structure (grep returned 0 matches)."
+ },
+ {
+  "pair": "ird-cf/OUT_IRD_CF_5-3_CancelAndReissue_MultiPremium",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 85,
+  "rationale": "The three premium payments (497.62, 586.48, 497.62 EUR) that constitute the entire cost of the option and are the trade's defining MultiPremium feature are present in FpML but completely dropped from CDM.",
+  "evidence": "FpML lines 193-246 show premium_1..3 with amounts/paydates; CDM (full read + grep) contains no premium/transferHistory/additionalPayment."
+ },
+ {
+  "pair": "ird-cf/OUT_IRD_CF_5-3_FinalStub",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 78,
+  "rationale": "The EUR 10,000 option premium is present in FpML but absent from CDM; EUR 10,000 is a non-trivial cash settlement amount (the option's cost), so its loss is materially significant even though all other terms incl. final stub are preserved.",
+  "evidence": "FpML lines 297-314 show premium EUR 10,000; CDM stub/spread/rate preserved but no premium/transfer node anywhere (grep 0 matches)."
+ },
+ {
+  "pair": "ird-cf/OUT_IRD_CF_5-3_PeriodicPremium",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 90,
+  "rationale": "Five periodic premiums totaling ~25,000 EUR (~2.5% of the EUR 1,000,000 notional) form the entire premium leg and the trade's defining feature, yet are entirely dropped from the CDM.",
+  "evidence": "FpML lines 218-307 show premium_1..5 (~4999.99/5027.78/4986.11/4986.11/4999.99 EUR); CDM has only the cap InterestRatePayout, no premium/OptionPayout/additionalPayment (grep 0 matches)."
+ },
+ {
+  "pair": "ird-cs/OUT_IRD_CS_5-3_BusinessDayConvention",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 92,
+  "rationale": "MXML source is unambiguously a 'USD FEDFUND 3M AVG' (averaged overnight Fed Funds, indexFormulaType=average, FEDFUNDS-H.15) vs USD LIBOR 3M basis swap, but CDM shows both legs as USD-LIBOR-BBA, collapsing a genuine basis swap into a degenerate LIBOR/LIBOR swap; floating index of one leg is materially wrong.",
+  "evidence": "MXML has templateLabel 'USD FED FUND AVG LIBOR 3M', indexLabel 'USD FEDFUND 3M AVG' with averagedIndex/FEDFUND O/N and many FEDFUND observations; FpML (lines 100,913) already shows both legs USD-LIBOR confirming loss at MXML->FpML; CDM observable-1 and observable-2 both USD-LIBOR-BBA."
+ },
+ {
+  "pair": "ird-cs/OUT_IRD_CS_5-3_CancelAndReissue_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 95,
+  "rationale": "MXML floating index is unambiguously CAD CDOR 3M (indexLabel 'CAD CDOR 3M', alternateId 'BA-CDOR', label 'CDOR', summary 'Receive CAD CDOR 3M'), but CDM observable renders it as CAD-LIBOR-BBA. CDOR and LIBOR are distinct benchmarks; this is a material index-identity distortion.",
+  "evidence": "MXML lines 989/1019/1904/2049/2056/2162 show CAD CDOR 3M / BA-CDOR / CDOR; CDM tradeLot.observable (line 501/507) shows CAD-LIBOR-BBA. Note template label 'CAD-JPY CDOR-LIBOR 3M-3M' contains 'LIBOR' for the JPY side only, likely confusing the converter."
+ },
+ {
+  "pair": "ird-cs/OUT_IRD_CS_5-3_INS_11",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 96,
+  "rationale": "MXML explicitly carries CHF SARON CMP / USD SOFR CMP compounded RFR indices (template 'CHF-USD SARON-SOFR 6M-6M', indexDescription 'OIS CHF SARON compounded', indexFormulaType 'compounding'); CDM renders CHF-LIBOR-BBA 3M / USD-LIBOR-BBA 3M. Wrong index family and lost compounding is materially economic.",
+  "evidence": "MXML line 299 'Pay CHF SARON CMP / Receive USD SOFR CMP', lines 406/599/605/707-709 SARON compounding; CDM observables (lines 612-619, 667-672) show CHF-LIBOR-BBA / USD-LIBOR-BBA."
+ },
+ {
+  "pair": "ird-fra/OUT_IRD_FRA_5-3_INS_02_doubleIndexTenor",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 90,
+  "rationale": "MXML interpolates EUR EURIBOR 3M (wt 0.6444) and 6M (wt 0.3556) via observationFormula 'interpolation'/periodIndex 'interpolatedIndex'; FpML retained both indexTenor 3M+6M, but CDM kept only a single 3M indexTenor, collapsing the interpolated reference rate. For a 123-day FRA period, the interpolated rate is the settlement rate, so the loss is material.",
+  "evidence": "MXML lines 993,1288-1298 show interpolation with weights; FpML lines 45-52 have two indexTenor elements; CDM (lines 237-240) has only one 3M indexTenor. paymentDate 0002-11-30 corruption pre-exists in FpML but the interpolation loss alone justifies MAJOR."
+ },
+ {
+  "pair": "ird-irs/OUT_IRD_IRS_5-3_INS_07",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 95,
+  "rationale": "MXML floating index is 'MY1 KLIBOR 3M' (template 'MY1 KLIBOR Q 3M', label 'KLIBOR'); CDM renders USD-LIBOR-BBA 3M. KLIBOR (Malaysian) and USD-LIBOR are different benchmarks in different currencies. The USD/MY1 reference in source is only the quanto FX rate source, not the rate index, so the distortion is genuine and material.",
+  "evidence": "MXML lines 307,550,915,1007 show MY1 KLIBOR 3M / KLIBOR; USD/MY1 (lines 1088/2116) is the fxLinkedNotionalSchedule FX pair only. CDM observable (lines 899-905) shows USD-LIBOR-BBA."
+ },
+ {
+  "pair": "ird-irs/OUT_IRD_IRS_5-3_INS_08",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 95,
+  "rationale": "Same KLIBOR distortion as INS_07: MXML floating index 'MY1 KLIBOR 3M' (template 'MY1 KLIBOR Q 3M', label 'KLIBOR') rendered as USD-LIBOR-BBA in CDM. Wrong reference rate and currency; materially economic. USD/MY1 in source is only the quanto FX source.",
+  "evidence": "MXML lines 300,543,911,1003 show MY1 KLIBOR 3M / KLIBOR; no USD-LIBOR-BBA token in MXML source, confirming distortion introduced in conversion."
+ },
+ {
+  "pair": "ird-irs/OUT_IRD_IRS_5-3_INS_Callable_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 94,
+  "rationale": "MXML is 'IRS Callable' with optionCallableByParty=ratePayer and strike 2.03289; FpML preserves it as a full cancelableProvision/europeanExercise (verified). The CDM contains no terminationProvision, earlyTerminationProvision, cancelableProvision or exerciseTerms anywhere -- only the two vanilla legs. The defining embedded-option optionality is entirely dropped, a material economic loss.",
+  "evidence": "MXML lines 59/185 typology 'IRS Callable', lines 519/531 strike+optionCallableByParty; FpML lines 210-252 full cancelableProvision/europeanExercise; CDM economicTerms ends at the two payouts (lines 116-262) with no terminationProvision."
+ },
+ {
+  "pair": "ird-irs/OUT_IRD_IRS_5-3_INS_Callable_02",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 92,
+  "rationale": "Two real material losses: MXML DIST_DESC says 'Pay 1.20% fixed Receive EUR EURIBOR 3M' but FpML/CDM carry 0.50% and EURIBOR 1M (rate+tenor distortion, mxml->fpml), and the extendibleProvision (extend to 2017-11-23) present in FpML is entirely dropped in CDM. Neither is recoverable from any alternate CDM nesting.",
+  "evidence": "MXML line 295 fieldValue '1.20% ... EURIBOR 3M' and lines 773/779 'EUR EURIBOR 3M'; CDM fixedRate 0.005 and indexTenor 1M (lines 115/523-526), no terminationProvision/extendibleProvision; FpML extendibleProvision lines 458-501."
+ },
+ {
+  "pair": "ird-irs/OUT_IRD_IRS_5-3_INS_Extendable_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 80,
+  "rationale": "MXML is an Extendable Swap / European Swaption with optionToEnter (extend up to 2017-11-23) and FpML carries a full extendibleProvision; the CDM models only the two plain InterestRatePayout legs with no terminationProvision/exerciseTerms, so the product is degraded from an extendable swap to a vanilla swap. Underlying economics faithful but the defining optionality feature is genuinely absent.",
+  "evidence": "MXML typology 'Extendable Swap IRD' (line 19), optionForm optionToEnter (line 1927), DIST_DESC 'extendable up to 23 nov 2017' (line 399); FpML extendibleProvision lines 458-501; CDM has no terminationProvision anywhere (searched full file)."
+ },
+ {
+  "pair": "ird-irs/OUT_IRD_IRS_5-3_INS_Extendable_02",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 80,
+  "rationale": "Same pattern as Extendable_01: FpML extendibleProvision (European exercise, extend to 2017-11-23) is entirely missing from the CDM, which holds only the two vanilla swap legs. The product-defining extension optionality is lost, not present in any alternate nesting.",
+  "evidence": "FpML extendibleProvision lines 458-501; CDM (MX78) has only two InterestRatePayout legs and no terminationProvision/exerciseTerms (full file read)."
+ },
+ {
+  "pair": "ird-irs/OUT_IRD_IRS_5-3_INS_Extendable_03",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 80,
+  "rationale": "Identical to the other Extendable cases: the FpML extendibleProvision is dropped in the CDM, reducing an extendable swap to a plain vanilla swap. Genuine structural feature loss, not recoverable from any alternate CDM field.",
+  "evidence": "CDM (MX79) read in full — only two InterestRatePayout legs, no terminationProvision; FpML for this family carries extendibleProvision (lines 458-501)."
+ },
+ {
+  "pair": "ird-irs/OUT_IRD_IRS_5-3_Restructure-PAYG_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 85,
+  "rationale": "FpML amendment carries a real CAPITAL payment of EUR 41,509.99 (UBS->_1637, 2016-12-27) which is ~4.15% of the EUR 1,000,000 notional; the CDM omits it entirely (no additionalPayment/transferHistory/priceTransfer). A settled cash transfer of this size is materially economic.",
+  "evidence": "FpML payment CAPITAL amount 41509.99024125 inside <amendment> (lines 403-414); CDM grep found no CAPITAL/additionalPayment/transferHistory, only the two interest legs."
+ },
+ {
+  "pair": "ird-irs/OUT_IRD_IRS_5-3_Restructure_03",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "DOWNGRADE_MINOR",
+  "refuted": true,
+  "confidence": 70,
+  "rationale": "The dropped CAPITAL payment is real (EUR 1,606.87 in the FpML amendment, absent from CDM) but is only ~0.0016% of the EUR 100,000,000 notional and far below the trade's own monthly coupons (fixed leg first period 13,200 EUR). A one-off settlement of this size is economically immaterial relative to the trade, so the omission is MINOR rather than MAJOR.",
+  "evidence": "FpML payment CAPITAL amount 1606.87037853 inside <amendment> (lines 326-337); CDM grep for CAPITAL/additionalPayment/transferHistory returned no matches; notional 100,000,000 EUR (CDM line 366)."
+ },
+ {
+  "pair": "ird-irs/OUT_IRD_IRS_5-3_SWAP_INS_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 90,
+  "rationale": "The inflation index identity (US CPI-U / USA-CPI-U, clearly present in MXML and as CPURNSA in FpML) is genuinely absent from the CDM, whose InflationIndex block carries only assetClass:InterestRate and no inflationRateIndex.value; an inflation leg with no identifiable CPI cannot be valued or settled, so the loss is material.",
+  "evidence": "CDM lines 1160-1175 and 320-335 show InflationIndex with assetClass only; grep of CDM for CPI/CPURNSA/inflationRateIndex returns nothing. MXML lines 1894-1937 carry indexLabel 'US CPI-U', alternateId 'USA-CPI-U', indexCategory inflationIndex. FpML preserves indexSource CPURNSA (line 100)."
+ },
+ {
+  "pair": "ird-irs/OUT_IRD_IRS_Restructure_V2",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 88,
+  "rationale": "Same defect class: the US CPI-U / CPURNSA inflation index identity is entirely lost in the CDM (InflationIndex has only assetClass), leaving the inflation leg unidentifiable; the carried observations 252.038/251.233 are unattributed to any named index, which is materially insufficient to value or settle the leg.",
+  "evidence": "CDM line 324 InflationIndex assetClass-only; grep for CPI/CPURNSA/Federal Funds returns nothing except the observedRate numbers. MXML confirms US CPI-U; FpML carries indexSource CPURNSA. No index name recoverable anywhere in CDM."
+ },
+ {
+  "pair": "ird-irs/OUT_IRD_IRS_ZC_5-3_INS_02",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 95,
+  "rationale": "The entire fixed/known-amount leg payment (12,000,000 EUR) is missing from the CDM: leg-2 InterestRatePayout has only dates, with no rateSpecification, no priceQuantity, no notional and no amount; this guts one of the two legs and is a clear material economic loss.",
+  "evidence": "CDM leg-2 lines 116-167 contain only dates; grep of CDM for 12000000/knownAmount/quantity-2/transferHistory/additionalPayment returns no matches. MXML leg-2 repaymentAmount 12000000 (line 265); FpML knownAmountSchedule initialValue 12000000 EUR (lines 138-141)."
+ },
+ {
+  "pair": "ird-ois/OUT_IRD_OIS_Average_INS_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 90,
+  "rationale": "MXML leg-1 is unambiguously USD FEDFUND 3M AVG (alternateId USD-FEDERAL FUNDS-H.15-OIS-COMPOUND, indexFormulaType=average, averagingType=automaticallyWeighted) but the CDM shows USD-LIBOR-BBA on BOTH legs and drops the averaging entirely; turning a Fed Funds OIS averaging leg into a plain LIBOR leg is a material index/feature distortion.",
+  "evidence": "CDM tradeLot shows USD-LIBOR-BBA on both InterestRateIndex-1 and -2 (lines 972-987, 1027-1042), no averaging. MXML lines 1670-1881 show FEDFUND 3M AVG with averagingMethod=weighted. FpML mislabels index as USD-LIBOR-BBA but kept averagingMethod=Weighted (line 104); CDM has neither."
+ },
+ {
+  "pair": "ird-ois/OUT_IRD_OIS_CutOff_INS_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 90,
+  "rationale": "Same Fed Funds->LIBOR index distortion as the sibling case plus loss of both the averaging characteristic and the rateCutOffDaysOffset (-2 Business) that defines the product; CDM shows USD-LIBOR-BBA on both legs and contains no cutoff/averaging at all, a material loss of the defining rate mechanics.",
+  "evidence": "CDM FloatingRateIndex both legs USD-LIBOR-BBA (lines 972-1036); grep of CDM for cutOff/averag returns no matches. MXML lines 1562-1758 FEDFUND 3M AVG averagingType automaticallyWeighted. FpML has rateCutOffDaysOffset -2 Business (lines 75-79) and averagingMethod=Weighted (line 109); CDM dropped both."
+ },
+ {
+  "pair": "ird-oswp/OUT_IRD_OSWP_5-3_CustomizedFlows",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 88,
+  "rationale": "Not mere anonymization: the MXML has two distinct parties (UBS-RCSR vs 45093) with a directional premium flow (UBS-RCSR->45093) and opposing pay/receive swap legs, but the CDM collapses to a single BARCLAYS counterparty with buyer=seller=payer=receiver=Party1 everywhere, including a nonsensical BARCLAYS->BARCLAYS premium; all buy/sell and pay/receive direction is destroyed, which is materially fatal for a swaption.",
+  "evidence": "CDM has one counterparty (line 351-356), OptionPayout buyer=seller=payer=receiver=Party1 (lines 11-18), underlying legs payer=receiver=Party1, premium BARCLAYS->BARCLAYS (lines 422-428). MXML parties UBS-RCSR and _15650(=45093); premium payer #UBS-RCSR receiver #_15650 (lines 1494-1497), Leg1 Pay UBS-RCSR->45093, Leg2 Rec reversed (lines 2250-2252). FpML already collapsed all refs to BARCLAYS (lines 12-16,55-56,138-139), confirming loss_locus mxml_to_fpml but not refuting materiality."
+ },
+ {
+  "pair": "ird-swaption/OUT_IRD_SWAPTION_INS_01",
+  "original_verdict": "MAJOR",
+  "adjudicated_verdict": "CONFIRMED",
+  "refuted": false,
+  "confidence": 95,
+  "rationale": "The CDM underlying swap has both fixed and floating InterestRatePayouts set to payer=Party2/receiver=Party1, a degenerate (non-opposite) swap. The MXML shows genuinely opposite directions: fixed leg payer=_1123(party2)/receiver=MUREX-DEMO(party1), assetLiability=asset; floating leg payer=MUREX-DEMO(party1)/receiver=_1123(party2), assetLiability=liability. The CDM floating-leg direction is inverted, materially distorting the swaption's underlying swap economics.",
+  "evidence": "CDM lines 29-32 (fixed payer=Party2) and 122-125 (float payer=Party2) both identical. MXML fixedRate stream lines 668-672 (payer=_1123, receiver=MUREX-DEMO, payReceive=receive, assetLiability=asset L692); floatingRate stream lines 1044-1048 (payer=MUREX-DEMO, receiver=_1123, payReceive=pay, assetLiability=liability L1071). Party mapping fixed via premium: MXML premium L498-501 MUREX-DEMO->_1123 == FpML/CDM party1->party2, so MUREX-DEMO=party1, _1123=party2. FpML floatingLeg L126-127 already wrong (payer=party2); CDM reproduced it. Float leg should be payer=Party1/receiver=Party2."
+ }
+]

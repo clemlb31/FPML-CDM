@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FpML xmlns="http://www.fpml.org/2007/FpML-4-3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" version="4-3" xsi:schemaLocation="http://www.fpml.org/2007/FpML-4-3 ../fpml-main-4-3.xsd http://www.w3.org/2000/09/xmldsig# ../xmldsig-core-schema.xsd" xsi:type="RequestTradeConfirmation">
+	<header>
+		<messageId messageIdScheme="perFpMLReqmt">675</messageId>
+		<sentBy>party1</sentBy>
+		<sendTo>party2</sendTo>
+		<creationTimestamp>2012-11-27T13:54:11.000+01:00</creationTimestamp>
+	</header>
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="DTCC000003A7"/>
+				<tradeId tradeIdScheme="TradeRefNbr">MX675</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2008-12-15</tradeDate>
+		</tradeHeader>
+		<bondOption>
+			<buyerPartyReference href="party1"/>
+			<sellerPartyReference href="party2"/>
+			<optionType>Call</optionType>
+			<premium>
+				<payerPartyReference href="party1"/>
+				<receiverPartyReference href="party2"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>10</amount>
+				</paymentAmount>
+				<paymentDate>
+					<adjustableDate>
+						<unadjustedDate>2008-12-17</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>NONE</businessDayConvention>
+						</dateAdjustments>
+					</adjustableDate>
+				</paymentDate>
+			</premium>
+			<europeanExercise id="ExerciseDate">
+				<expirationDate>
+					<adjustableDate>
+						<unadjustedDate>2009-02-02</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>NONE</businessDayConvention>
+						</dateAdjustments>
+					</adjustableDate>
+				</expirationDate>
+				<earliestExerciseTime>
+					<hourMinuteTime>14:00:00</hourMinuteTime>
+					<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">EUTA</businessCenter>
+				</earliestExerciseTime>
+				<expirationTime>
+					<hourMinuteTime>14:00:00</hourMinuteTime>
+					<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">EUTA</businessCenter>
+				</expirationTime>
+			</europeanExercise>
+			<exerciseProcedure>
+				<manualExercise/>
+				<followUpConfirmation>false</followUpConfirmation>
+			</exerciseProcedure>
+			<notionalAmount>
+				<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+				<amount>100000000</amount>
+			</notionalAmount>
+			<optionEntitlement>100000000</optionEntitlement>
+			<entitlementCurrency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</entitlementCurrency>
+			<numberOfOptions>100000</numberOfOptions>
+			<settlementType>Cash</settlementType>
+			<settlementAmount>
+				<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+			</settlementAmount>
+			<settlementDate>
+				<relativeDate>
+					<periodMultiplier>0</periodMultiplier>
+					<period>D</period>
+					<dayType>Business</dayType>
+					<businessDayConvention>NONE</businessDayConvention>
+					<businessCenters>
+						<businessCenter businessCenterScheme="http://www.fpml.org/coding-scheme/business-center-6-4">EUTA</businessCenter>
+					</businessCenters>
+					<dateRelativeTo href="ExerciseDate"/>
+				</relativeDate>
+			</settlementDate>
+			<strike>
+				<price>
+					<strikePrice>101.489</strikePrice>
+				</price>
+			</strike>
+			<bond>
+				<instrumentId instrumentIdScheme="http://www.fpml.org/spec/2002/instrument-id-ISIN-1-0">FR0000571218</instrumentId>
+			</bond>
+		</bondOption>
+	</trade>
+	<party id="party1">
+		<partyId partyIdScheme="DTCC">party1</partyId>
+	</party>
+	<party id="party2">
+		<partyId partyIdScheme="DTCC">party2</partyId>
+	</party>
+</FpML>

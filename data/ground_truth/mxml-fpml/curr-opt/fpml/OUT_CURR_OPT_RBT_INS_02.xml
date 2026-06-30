@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<requestConfirmation xmlns="http://www.fpml.org/FpML-5/confirmation" fpmlVersion="5-3">
+	<header>
+		<messageId messageIdScheme="http://www.matchingservice.com/coding-scheme/messageId">MX164560</messageId>
+		<sentBy messageAddressScheme="http://www.matchingservice.com/partyId">BARCLAYS</sentBy>
+		<sendTo messageAddressScheme="http://www.matchingservice.com/partyId">MATCHSRV</sendTo>
+		<creationTimestamp>2012-11-27T13:54:11.000+01:00</creationTimestamp>
+	</header>
+	<isCorrection>false</isCorrection>
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="BARCLAYS"/>
+				<tradeId tradeIdScheme="http://www.murex.com/fx/trade-id">MX164560</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2014-08-12</tradeDate>
+		</tradeHeader>
+		<fxDigitalOption>
+			<buyerPartyReference href="BARCLAYS"/>
+			<sellerPartyReference href="BARCLAYS"/>
+			<effectiveDate>
+				<adjustableDate>
+					<unadjustedDate>2014-08-12</unadjustedDate>
+					<dateAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</dateAdjustments>
+				</adjustableDate>
+			</effectiveDate>
+			<americanExercise>
+				<commencementDate>
+					<adjustableDate>
+						<unadjustedDate>2014-08-12</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>NONE</businessDayConvention>
+						</dateAdjustments>
+					</adjustableDate>
+				</commencementDate>
+				<expiryDate>2014-09-11</expiryDate>
+				<expiryTime>
+					<hourMinuteTime>10:00:00</hourMinuteTime>
+					<businessCenter>USNY</businessCenter>
+				</expiryTime>
+				<cutName>NYC</cutName>
+				<latestValueDate>2014-09-15</latestValueDate>
+			</americanExercise>
+			<touch>
+				<touchCondition>Notouch</touchCondition>
+				<quotedCurrencyPair>
+					<currency1>USD</currency1>
+					<currency2>AUD</currency2>
+					<quoteBasis>Currency1PerCurrency2</quoteBasis>
+				</quotedCurrencyPair>
+				<triggerRate>1.13</triggerRate>
+				<informationSource>
+					<rateSource>Reuters</rateSource>
+					<rateSourcePage>HSRA</rateSourcePage>
+				</informationSource>
+				<observationStartDate>2014-08-12</observationStartDate>
+				<observationEndDate>2014-09-11</observationEndDate>
+			</touch>
+			<payout>
+				<currency>AUD</currency>
+				<amount>329000</amount>
+				<payoutStyle>Deferred</payoutStyle>
+			</payout>
+			<premium>
+				<payerPartyReference href="BARCLAYS"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentDate>
+					<adjustableDate>
+						<unadjustedDate>2014-08-12</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>NONE</businessDayConvention>
+						</dateAdjustments>
+					</adjustableDate>
+				</paymentDate>
+				<paymentAmount>
+					<currency>USD</currency>
+					<amount>0</amount>
+				</paymentAmount>
+				<quote>
+					<value>0</value>
+					<quoteBasis>Explicit</quoteBasis>
+				</quote>
+			</premium>
+		</fxDigitalOption>
+	</trade>
+	<party id="BARCLAYS">
+		<partyId>BARCLAYS</partyId>
+	</party>
+	<party id="BARCLAYS">
+		<partyId>BARCLAYS</partyId>
+	</party>
+</requestConfirmation>

@@ -1,0 +1,230 @@
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"  xmlns:mx="http://murex.com/xslt/common" exclude-result-prefixes="mx">
+	<!-- ========================================================= -->
+	<!-- This template contains variables needing mapping formulas -->
+	<!-- ========================================================= --> 
+	<xsl:import href="mx.xml2xml.extract.mxml.products.ird.templates" />
+	<xsl:import href="mx.generic.errorHandling.assert" />
+
+	<!--fraResetDatesPeriodUnit-->
+	<xsl:variable name="fraResetDatesPeriodUnitMx">
+		<xsl:call-template name="extract-shifter-periodUnit-generic">
+			<xsl:with-param name="legNb" select="1" />
+			<xsl:with-param name="payoutType" select="'floatingRate'" />
+			<xsl:with-param name="schedule" select="'resetSchedule'" />
+		</xsl:call-template>
+	</xsl:variable>
+
+	<!-- fraResetDatesPeriodUnit -->
+	<xsl:variable name="fra.paramResetPeriodUnit" select="concat('periodUnit:', $fraResetDatesPeriodUnitMx)" />
+	<xsl:variable name="fraResetDatesPeriodUnit">
+		<xsl:choose>
+			<xsl:when test="number($fraResetDatesPeriodMultiplier) = 0">
+				<xsl:value-of select="'D'"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="mx:execute-formula($mapPeriodUnit, $fra.paramResetPeriodUnit)//row[1]" />
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<!-- fraResetDatesDayType -->
+	<xsl:variable name="fraResetDatesDayType">
+		<xsl:value-of select="mx:execute-formula($mapPeriodUnit, $fra.paramResetPeriodUnit)//row[2]" />
+	</xsl:variable> 
+
+	<!-- fraIndexPeriodUnit -->
+	<xsl:variable name="fraPeriodUnitMx">
+		<xsl:call-template name="extract-indexPeriodUnitFixFloat" />
+	</xsl:variable>
+	<xsl:variable name="fra.paramCalculationPeriodUnit" select="concat('periodUnit:', $fraPeriodUnitMx)" />
+	<xsl:variable name="fraIndexPeriodUnit">
+		<xsl:value-of select="mx:execute-formula($mapPeriodUnit, $fra.paramCalculationPeriodUnit)//row[1]" />
+	</xsl:variable>
+
+	<!-- fraFloatingIndex -->
+	<xsl:variable name="fraFloatingIndexMx">
+		<xsl:call-template name="extract-floatingIndexFixFloat" />
+	</xsl:variable>
+	<xsl:variable name="index.params" select="concat('index:', $fraFloatingIndexMx,',contractualDefinitions:',$contractualDefinitions)" />
+	<xsl:variable name="fraFloatingIndex">
+		<xsl:variable name="fraFloatingIndexTmp" select="mx:execute-formula($mapIndex, $index.params)//row[1]" />
+		<xsl:call-template name="AssertNotMapped">
+			<xsl:with-param name="value" select="$fraFloatingIndexTmp" />
+			<xsl:with-param name="message" select="concat('unmapped index: -', $fraFloatingIndexMx, '-', ' Please check:',$mapIndex)" />
+			<xsl:with-param name="formula" select="$mapIndex" />
+		</xsl:call-template>
+		<xsl:value-of select="$fraFloatingIndexTmp" />
+	</xsl:variable>
+
+	<!-- fra.dayCountFraction -->
+	<xsl:variable name="leg1.dayCountFractionLabel">
+		<xsl:call-template name="extract-dayCountFractionLabel">
+			<xsl:with-param name="legNb" select="1" />
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="fra.paramDayCountFraction" select="concat('rateConventionLabel:', $leg1.dayCountFractionLabel)" />
+	
+	<xsl:variable name="fraDayCountFraction">
+		<xsl:variable name="fraDayCountFractionPre" select="mx:execute-formula($mapDayCountBasis, $fra.paramDayCountFraction)" />
+		<!-- Assert not mapped -->
+		<xsl:call-template name="AssertNotMapped">
+			<xsl:with-param name="value" select="$fraDayCountFractionPre" />
+			<xsl:with-param name="formula" select="$mapDayCountBasis" />
+			<xsl:with-param name="message" select="concat('Unmapped dayCountFraction:', $leg1.dayCountFractionLabel)" />
+		</xsl:call-template>
+		<xsl:value-of select="$fraDayCountFractionPre" />
+	</xsl:variable>
+
+	<!-- fra.payment.businessDayConvention -->
+	<xsl:variable name="leg1.payment.businessDayConvention">
+		<xsl:call-template name="extract-businessDayConvention">
+			<xsl:with-param name="legNb" select="1" />
+			<xsl:with-param name="stream" select="1" />
+			<xsl:with-param name="schedule" select="'paymentSchedule'"/>    
+		</xsl:call-template>
+	</xsl:variable>
+
+	<xsl:variable name="fra.payment.businessDayConvention" select="mx:execute-formula($mapBusinessDayConv, concat('businessDayConvention:', $leg1.payment.businessDayConvention))" />
+
+	<!-- fraDiscounting -->
+	<xsl:variable name="fraDiscounting" select="mx:execute-formula($mapFraDiscounting)" />
+
+	<!-- fra.fixingDates.businessDayConvention -->
+	<xsl:variable name="fra.fixingDates.businessDayConvention">
+		<xsl:choose>
+			<xsl:when test="$fraResetDatesDayType = 'Business'">
+				<xsl:value-of select="'NONE'" />
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$fra.payment.businessDayConvention" />      
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>		
+
+	<xsl:variable name="fra.payment.calendar">
+		<xsl:call-template name="extract-businessCenterLabel">
+			<xsl:with-param name="legNb" select="1" />
+			<xsl:with-param name="stream" select="'1'" />
+		</xsl:call-template>
+	</xsl:variable>
+
+	<xsl:variable name="fra.payment.adjustedDate">
+		<xsl:variable name="firstPayment.interestFlows.unadjustedPaymentDateTmp">
+			<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.utils.adaptDate',concat('date:',$firstPayment.interestFlows.unadjustedPaymentDate,',format:yyyy-MM-dd,outputFormat:yyyyMMdd'))" />
+		</xsl:variable>
+		<xsl:variable name="fra.adjustedDateTmp">
+			<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.utils.dateshiftAdjusted',concat('date:',$firstPayment.interestFlows.unadjustedPaymentDateTmp,',calendar:',$fra.payment.calendar))"/>
+		</xsl:variable>
+		<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.utils.adaptDate',concat('date:',$fra.adjustedDateTmp,',format:yyyyMMdd,outputFormat:yyyy-MM-dd'))"/>
+	</xsl:variable>
+
+	<xsl:variable name="fra.reset.calendar">
+		<xsl:call-template name="extract-resetBusinessCenterLabel">
+			<xsl:with-param name="legNb" select="1" />
+			<xsl:with-param name="stream" select="'1'" />
+		</xsl:call-template>
+	</xsl:variable>
+
+	<xsl:variable name="fra.reset.adjustedDate">
+		<xsl:variable name="firstPayment.interestFlows.unadjustedPaymentDateTmp">
+			<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.utils.adaptDate',concat('date:',$firstPayment.interestFlows.unadjustedPaymentDate,',format:yyyy-MM-dd,outputFormat:yyyyMMdd'))" />
+		</xsl:variable>
+		<xsl:variable name="fra.reset.adjustedDateTmp">
+			<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.utils.dateshiftAdjusted',concat('date:',$firstPayment.interestFlows.unadjustedPaymentDateTmp,',days:',$fraResetDatesPeriodMultiplier,',calendar:',$fra.reset.calendar))"/>
+		</xsl:variable>
+		<xsl:value-of select="mx:execute-formula('mx.xml2xml.ECN.common.utils.adaptDate',concat('date:',$fra.reset.adjustedDateTmp,',format:yyyyMMdd,outputFormat:yyyy-MM-dd'))"/>
+	</xsl:variable>
+
+	<!-- initialStub for Floating Leg-->
+	<xsl:variable name="initialStub.floatingRate.params">
+		<xsl:call-template name="extract-initialStub-indexLabel">
+			<xsl:with-param name="legNb" select="1" />
+			<xsl:with-param name="index" select="1" />
+		</xsl:call-template>
+	</xsl:variable>
+
+	<xsl:variable name="initialStub.floatingRate.params.details" select="mx:execute-formula($mapIndex, concat('index:',$initialStub.floatingRate.params))"/>
+	<xsl:variable name="initialStub.floatingRate.floatingRateIndex">
+		<xsl:value-of select="initialStub.floatingRate.params.details//row[1]"/>   
+	</xsl:variable>
+	<xsl:variable name="initialStub.floatingRate.floatingRateIndexScheme">
+		<xsl:value-of select="$initialStub.floatingRate.params.details//row[4]"/>
+	</xsl:variable>
+	<xsl:variable name="initialStub.floatingRate.periodMultiplier">
+		<xsl:value-of select="$initialStub.floatingRate.params.details//row[3]"/>
+	</xsl:variable>
+	<xsl:variable name="initialStub.floatingRate.period">
+		<xsl:value-of select="$initialStub.floatingRate.params.details//row[2]"/>
+	</xsl:variable>
+	<xsl:variable name="initialStub.floatingRate2.params">
+		<xsl:call-template name="extract-initialStub-indexLabel">   
+			<xsl:with-param name="legNb" select="1" />
+			<xsl:with-param name="index" select="2" />   
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="initialStub.floatingRate2.params.details" select="mx:execute-formula($mapIndex, concat('index:',$initialStub.floatingRate2.params))"/>
+	<xsl:variable name="initialStub.floatingRate2.floatingRateIndex">
+		<xsl:value-of select="$initialStub.floatingRate2.params.details//row[1]"/>
+	</xsl:variable>
+	<xsl:variable name="initialStub.floatingRate2.floatingRateIndexScheme">
+		<xsl:value-of select="$initialStub.floatingRate2.params.details//row[4]"/>
+	</xsl:variable>
+	<xsl:variable name="initialStub.floatingRate2.periodMultiplier">
+		<xsl:value-of select="$initialStub.floatingRate2.params.details//row[3]"/>
+	</xsl:variable>
+	<xsl:variable name="initialStub.floatingRate2.period">
+		<xsl:value-of select="$initialStub.floatingRate2.params.details//row[2]"/>
+	</xsl:variable>
+	<!--final Stub for Floating Leg-->
+	<xsl:variable name="finalStub.floatingRate.params">
+		<xsl:call-template name="extract-finalStub-indexLabel">
+			<xsl:with-param name="legNb" select="1" />
+			<xsl:with-param name="stream" select="2"/>
+			<xsl:with-param name="index" select="1" />
+		</xsl:call-template>
+	</xsl:variable>
+
+	<xsl:variable name="finalStub.floatingRate.params.details" select="mx:execute-formula($mapIndex, concat('index:',$finalStub.floatingRate.params))"/>
+	<xsl:variable name="finalStub.floatingRate.floatingRateIndex">
+		<xsl:value-of select="$finalStub.floatingRate.params.details//row[1]"/>
+	</xsl:variable>
+	<xsl:variable name="finalStub.floatingRate.floatingRateIndexScheme">
+		<xsl:value-of select="$finalStub.floatingRate.params.details//row[4]"/>
+	</xsl:variable>
+	<xsl:variable name="finalStub.floatingRate.periodMultiplier">
+		<xsl:value-of select="$finalStub.floatingRate.params.details//row[3]"/>
+	</xsl:variable>
+	<xsl:variable name="finalStub.floatingRate.period">
+		<xsl:value-of select="$finalStub.floatingRate.params.details//row[2]"/>
+	</xsl:variable>
+	<xsl:variable name="finalStub.floatingRate2.params">
+		<xsl:call-template name="extract-finalStub-indexLabel">
+			<xsl:with-param name="legNb" select="1" />
+			<xsl:with-param name="stream" select="2"/>
+			<xsl:with-param name="index" select="2" />
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="finalStub.floatingRate2.params.details" select="mx:execute-formula($mapIndex, concat('index:',$finalStub.floatingRate2.params))"/>
+	<xsl:variable name="finalStub.floatingRate2.floatingRateIndex">
+		<xsl:value-of select="$finalStub.floatingRate2.params.details//row[1]"/>  
+	</xsl:variable>
+	<xsl:variable name="finalStub.floatingRate2.floatingRateIndexScheme">
+		<xsl:value-of select="$finalStub.floatingRate2.params.details//row[4]"/>
+	</xsl:variable>
+	<xsl:variable name="finalStub.floatingRate2.periodMultiplier">
+		<xsl:value-of select="$finalStub.floatingRate2.params.details//row[3]"/>
+	</xsl:variable>
+	<xsl:variable name="finalStub.floatingRate2.period">
+		<xsl:value-of select="$finalStub.floatingRate2.params.details//row[2]"/>  
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.inflationRate.interpolationMethod">
+		<xsl:value-of select="'None'"/>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream2.inflationRate.interpolationMethod">
+		<xsl:value-of select="'None'"/>
+	</xsl:variable>
+
+</xsl:stylesheet>

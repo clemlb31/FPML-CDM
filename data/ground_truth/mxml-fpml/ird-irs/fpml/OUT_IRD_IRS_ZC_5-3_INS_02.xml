@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataDocument xmlns="http://www.fpml.org/FpML-5/confirmation" fpmlVersion="5-3">
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="party_0"/>
+				<tradeId tradeIdScheme="http://www.murex.com/contract-id">MX</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2014-10-13</tradeDate>
+		</tradeHeader>
+		<swap>
+			<swapStream id="floatingLeg">
+				<payerPartyReference href="party_1"/>
+				<receiverPartyReference href="party_0"/>
+				<calculationPeriodDates id="leg_1_calculationPeriodDates">
+					<effectiveDate>
+						<unadjustedDate>2014-10-15</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+						</dateAdjustments>
+						<adjustedDate>
+      </adjustedDate>
+					</effectiveDate>
+					<terminationDate>
+						<unadjustedDate>2017-10-15</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+						</dateAdjustments>
+						<adjustedDate>
+      </adjustedDate>
+					</terminationDate>
+					<calculationPeriodDatesAdjustments>
+						<businessDayConvention>MODFOLLOWING</businessDayConvention>
+					</calculationPeriodDatesAdjustments>
+					<calculationPeriodFrequency>
+						<periodMultiplier>6</periodMultiplier>
+						<period>M</period>
+						<rollConvention>15</rollConvention>
+					</calculationPeriodFrequency>
+				</calculationPeriodDates>
+				<paymentDates id="leg_1_paymentDates">
+					<calculationPeriodDatesReference href="leg_1_calculationPeriodDates"/>
+					<paymentFrequency>
+						<periodMultiplier>1</periodMultiplier>
+						<period>T</period>
+					</paymentFrequency>
+					<payRelativeTo>CalculationPeriodEndDate</payRelativeTo>
+					<paymentDatesAdjustments>
+						<businessDayConvention>MODFOLLOWING</businessDayConvention>
+					</paymentDatesAdjustments>
+				</paymentDates>
+				<resetDates id="leg_1_resetDates">
+					<calculationPeriodDatesReference href="leg_1_calculationPeriodDates"/>
+					<resetRelativeTo>CalculationPeriodStartDate</resetRelativeTo>
+					<fixingDates>
+						<periodMultiplier>-2</periodMultiplier>
+						<period>D</period>
+						<dayType>Business</dayType>
+						<businessDayConvention>NONE</businessDayConvention>
+						<dateRelativeTo href="leg_1_calculationPeriodDates"/>
+					</fixingDates>
+					<resetFrequency>
+						<periodMultiplier>6</periodMultiplier>
+						<period>M</period>
+					</resetFrequency>
+					<resetDatesAdjustments>
+						<businessDayConvention>MODFOLLOWING</businessDayConvention>
+					</resetDatesAdjustments>
+				</resetDates>
+				<calculationPeriodAmount>
+					<calculation>
+						<notionalSchedule id="leg_1_notionalSchedule">
+							<notionalStepSchedule>
+								<initialValue>10000000</initialValue>
+								<currency>EUR</currency>
+							</notionalStepSchedule>
+						</notionalSchedule>
+						<floatingRateCalculation>
+							<floatingRateIndex>EUR-EURIBOR-Reuters</floatingRateIndex>
+							<indexTenor>
+								<periodMultiplier>6</periodMultiplier>
+								<period>M</period>
+							</indexTenor>
+							<spreadSchedule>
+								<initialValue>0.001</initialValue>
+								<type>Long</type>
+							</spreadSchedule>
+						</floatingRateCalculation>
+						<dayCountFraction>ACT/360</dayCountFraction>
+						<compoundingMethod>Straight</compoundingMethod>
+					</calculation>
+				</calculationPeriodAmount>
+				<cashflows>
+					<cashflowsMatchParameters>true</cashflowsMatchParameters>
+				</cashflows>
+			</swapStream>
+			<swapStream id="fixedLeg">
+				<payerPartyReference href="party_0"/>
+				<receiverPartyReference href="party_1"/>
+				<calculationPeriodDates id="leg_2_calculationPeriodDates">
+					<effectiveDate>
+						<unadjustedDate>2014-10-15</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>FOLLOWING</businessDayConvention>
+						</dateAdjustments>
+						<adjustedDate>
+      </adjustedDate>
+					</effectiveDate>
+					<terminationDate>
+						<unadjustedDate>2017-10-15</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>NONE</businessDayConvention>
+						</dateAdjustments>
+						<adjustedDate>
+      </adjustedDate>
+					</terminationDate>
+					<calculationPeriodDatesAdjustments>
+						<businessDayConvention>NONE</businessDayConvention>
+					</calculationPeriodDatesAdjustments>
+					<calculationPeriodFrequency>
+						<periodMultiplier>1</periodMultiplier>
+						<period>T</period>
+						<rollConvention>NONE</rollConvention>
+					</calculationPeriodFrequency>
+				</calculationPeriodDates>
+				<paymentDates id="leg_2_paymentDates">
+					<calculationPeriodDatesReference href="leg_2_calculationPeriodDates"/>
+					<paymentFrequency>
+						<periodMultiplier>1</periodMultiplier>
+						<period>T</period>
+					</paymentFrequency>
+					<payRelativeTo>CalculationPeriodEndDate</payRelativeTo>
+					<paymentDatesAdjustments>
+						<businessDayConvention>FOLLOWING</businessDayConvention>
+					</paymentDatesAdjustments>
+				</paymentDates>
+				<calculationPeriodAmount>
+					<knownAmountSchedule>
+						<initialValue>12000000</initialValue>
+						<currency>EUR</currency>
+					</knownAmountSchedule>
+				</calculationPeriodAmount>
+				<cashflows>
+					<cashflowsMatchParameters>true</cashflowsMatchParameters>
+				</cashflows>
+			</swapStream>
+		</swap>
+	</trade>
+	<party id="party_1">
+		<partyId>BARCLAYS</partyId>
+	</party>
+	<party id="party_0">
+		<partyId>party1</partyId>
+	</party>
+</dataDocument>

@@ -1,0 +1,319 @@
+<Operator Code="BestMatching">
+	<Context Code="InputValues">
+		<Context Code="InputValue">
+			<Context Code="Column">0</Context>
+			<Context Code="Value">MxCTX#group#Mx</Context>
+			<Context Code="Label">MX.3 Group</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+		<Context Code="InputValue">
+			<Context Code="Column">1</Context>
+			<Context Code="Value">MxCTX#typology#Mx</Context>
+			<Context Code="Label">MX.3 Typology</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+		<Context Code="InputValue">
+			<Context Code="Column">2</Context>
+			<Context Code="Value">MxCTX#typeLeg#Mx</Context>
+			<Context Code="Label">Leg Type</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+		<Context Code="InputValue">
+			<Context Code="Column">3</Context>
+			<Context Code="Value">MxCTX#frequencyType#Mx</Context>
+			<Context Code="Label">Frequency type</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+		<Context Code="InputValue">
+			<Context Code="Column">4</Context>
+			<Context Code="Value">MxCTX#scheduleGeneratorLabel#Mx</Context>
+			<Context Code="Label">Schedule label</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+		<Context Code="InputValue">
+			<Context Code="Column">5</Context>
+			<Context Code="Value">MxCTX#periodMultiplier#Mx</Context>
+			<Context Code="Label">MX.3 period multiplier</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+		<Context Code="InputValue">
+			<Context Code="Column">6</Context>
+			<Context Code="Value">MxCTX#periodUnit#Mx</Context>
+			<Context Code="Label">MX.3 period unit</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+		<Context Code="InputValue">
+			<Context Code="Column">7</Context>
+			<Context Code="Value">MxCTX#singlePeriod#Mx</Context>
+			<Context Code="Label">Single Period</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+	</Context>
+	<Operator Code="OrderBestMatching">
+		<Operand Code="Matrix">
+			<Operand Code="Vector">
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">MxCTX#periodMultiplier#Mx</Operand>
+				<Operand Code="ScalarString">MxCTX#periodUnit#Mx</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">CS</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">floatingRate</Operand>
+				<Operand Code="ScalarString">index</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">1</Operand>
+				<Operand Code="ScalarString">year</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">12</Operand>
+				<Operand Code="ScalarString">month</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">FRA</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">index</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">1</Operand>
+				<Operand Code="ScalarString">year</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">12</Operand>
+				<Operand Code="ScalarString">month</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">IRS</Operand>
+				<Operand Code="ScalarString">BS_IRS</Operand>
+				<Operand Code="ScalarString">floatingRate</Operand>
+				<Operand Code="ScalarString">index</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">1</Operand>
+				<Operand Code="ScalarString">year</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">12</Operand>
+				<Operand Code="ScalarString">month</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">IRS</Operand>
+				<Operand Code="ScalarString">BS_IRS</Operand>
+				<Operand Code="ScalarString">floatingRate</Operand>
+				<Operand Code="ScalarString">index</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">12</Operand>
+				<Operand Code="ScalarString">month</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">12</Operand>
+				<Operand Code="ScalarString">month</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">IRS</Operand>
+				<Operand Code="ScalarString">IRS</Operand>
+				<Operand Code="ScalarString">floatingRate</Operand>
+				<Operand Code="ScalarString">index</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">1</Operand>
+				<Operand Code="ScalarString">year</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">1</Operand>
+				<Operand Code="ScalarString">year</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">IRS</Operand>
+				<Operand Code="ScalarString">IRS</Operand>
+				<Operand Code="ScalarString">floatingRate</Operand>
+				<Operand Code="ScalarString">index</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">12</Operand>
+				<Operand Code="ScalarString">month</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">1</Operand>
+				<Operand Code="ScalarString">year</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString">IRS</Operand>
+				<Operand Code="ScalarString">ZC_IRS</Operand>
+				<Operand Code="ScalarString">floatingRate</Operand>
+				<Operand Code="ScalarString">index</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">12</Operand>
+				<Operand Code="ScalarString">month</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">12</Operand>
+				<Operand Code="ScalarString">month</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">OIS</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">ZERO COUPON</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">1</Operand>
+				<Operand Code="ScalarString">term</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">OIS</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">1</Operand>
+				<Operand Code="ScalarString">year</Operand>
+				<Operand Code="ScalarString">true</Operand>
+				<Operand Code="ScalarString">1</Operand>
+				<Operand Code="ScalarString">term</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">OIS</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">12</Operand>
+				<Operand Code="ScalarString">month</Operand>
+				<Operand Code="ScalarString">false</Operand>
+				<Operand Code="ScalarString">1</Operand>
+				<Operand Code="ScalarString">year</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">OIS</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">12</Operand>
+				<Operand Code="ScalarString">month</Operand>
+				<Operand Code="ScalarString">true</Operand>
+				<Operand Code="ScalarString">1</Operand>
+				<Operand Code="ScalarString">term</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">OIS</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">false</Operand>
+				<Operand Code="ScalarString">MxCTX#periodMultiplier#Mx</Operand>
+				<Operand Code="ScalarString">MxCTX#periodUnit#Mx</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">OIS_IRS</Operand>
+				<Operand Code="ScalarString">floatingRate</Operand>
+				<Operand Code="ScalarString">index</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">1</Operand>
+				<Operand Code="ScalarString">year</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">12</Operand>
+				<Operand Code="ScalarString">month</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">floatingRate</Operand>
+				<Operand Code="ScalarString">index</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">0</Operand>
+				<Operand Code="ScalarString">businessDay</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">1</Operand>
+				<Operand Code="ScalarString">businessDay</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">calculation</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">12</Operand>
+				<Operand Code="ScalarString">month</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">1</Operand>
+				<Operand Code="ScalarString">year</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">payment</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">12</Operand>
+				<Operand Code="ScalarString">month</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">1</Operand>
+				<Operand Code="ScalarString">year</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">reset</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">12</Operand>
+				<Operand Code="ScalarString">month</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">1</Operand>
+				<Operand Code="ScalarString">year</Operand>
+			</Operand>
+			<Operand Code="Vector">
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">index</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">4</Operand>
+				<Operand Code="ScalarString">week</Operand>
+				<Operand Code="ScalarString"/>
+				<Operand Code="ScalarString">28</Operand>
+				<Operand Code="ScalarString">day</Operand>
+			</Operand>
+		</Operand>
+		<Context Code="Priorities">
+			<Context Code="Column">0</Context>
+			<Context Code="Column">1</Context>
+			<Context Code="Column">2</Context>
+			<Context Code="Column">3</Context>
+			<Context Code="Column">4</Context>
+			<Context Code="Column">5</Context>
+			<Context Code="Column">6</Context>
+			<Context Code="Column">7</Context>
+		</Context>
+	</Operator>
+	<Context Code="OutputColumns">
+		<Context Code="OutputColumn">
+			<Context Code="Column">8</Context>
+			<Context Code="Label">FpML Period Multiplier</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+		<Context Code="OutputColumn">
+			<Context Code="Column">9</Context>
+			<Context Code="Label">FpML Period Unit</Context>
+			<Context Code="DisplayWidth">10</Context>
+			<Context Code="ChoiceFormula">null</Context>
+		</Context>
+	</Context>
+	<Context Code="ReturnType">
+		<Context Code="MultipleLineResult">false</Context>
+	</Context>
+</Operator>

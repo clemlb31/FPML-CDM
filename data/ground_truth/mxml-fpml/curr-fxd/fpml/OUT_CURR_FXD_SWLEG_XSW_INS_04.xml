@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<requestConfirmation xmlns="http://www.fpml.org/FpML-5/confirmation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.fpml.org/FpML-5/confirmation ../../fpml-main-5-3.xsd http://www.w3.org/2000/09/xmldsig# ../../xmldsig-core-schema.xsd" fpmlVersion="5-3">
+	<header>
+		<messageId messageIdScheme="http://www.partyA.com/coding-scheme/messageId">MX162</messageId>
+		<sentBy messageAddressScheme="http://www.partyA.com/partyId">party1</sentBy>
+		<sendTo messageAddressScheme="http://www.partyA.com/partyId">MATCHSRV</sendTo>
+		<creationTimestamp>2012-11-27T13:54:11.000+01:00</creationTimestamp>
+	</header>
+	<isCorrection>false</isCorrection>
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="party2"/>
+				<tradeId tradeIdScheme="http://www.db.com/swaps/trade-id">MX162</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2016-05-18</tradeDate>
+		</tradeHeader>
+		<fxSwap>
+			<nearLeg>
+				<exchangedCurrency1>
+					<payerPartyReference href="BARCLAYS"/>
+					<receiverPartyReference href="party2"/>
+					<paymentAmount>
+						<currency>EUR</currency>
+						<amount>1000000</amount>
+					</paymentAmount>
+				</exchangedCurrency1>
+				<exchangedCurrency2>
+					<payerPartyReference href="party2"/>
+					<receiverPartyReference href="BARCLAYS"/>
+					<paymentAmount>
+						<currency>GBP</currency>
+						<amount>798826.17382617</amount>
+					</paymentAmount>
+				</exchangedCurrency2>
+				<valueDate>2016-05-20</valueDate>
+				<exchangeRate>
+					<quotedCurrencyPair>
+						<currency1>GBP</currency1>
+						<currency2>EUR</currency2>
+						<quoteBasis>Currency1PerCurrency2</quoteBasis>
+					</quotedCurrencyPair>
+					<rate>0.79882617</rate>
+				</exchangeRate>
+				<nonDeliverableSettlement>
+					<settlementCurrency>EUR</settlementCurrency>
+					<fixing>
+						<quotedCurrencyPair>
+							<currency1>GBP</currency1>
+							<currency2>EUR</currency2>
+							<quoteBasis>Currency1PerCurrency2</quoteBasis>
+						</quotedCurrencyPair>
+						<fixingDate>2016-05-18</fixingDate>
+						<fxSpotRateSource>
+							<primaryRateSource>
+								<rateSource>Reuters</rateSource>
+								<rateSourcePage>WMRPSPOT01</rateSourcePage>
+							</primaryRateSource>
+							<fixingTime>
+								<hourMinuteTime>11:00:00</hourMinuteTime>
+								<businessCenter>GBLO</businessCenter>
+							</fixingTime>
+						</fxSpotRateSource>
+					</fixing>
+				</nonDeliverableSettlement>
+			</nearLeg>
+			<farLeg>
+				<exchangedCurrency1>
+					<payerPartyReference href="party2"/>
+					<receiverPartyReference href="BARCLAYS"/>
+					<paymentAmount>
+						<currency>EUR</currency>
+						<amount>1000000</amount>
+					</paymentAmount>
+				</exchangedCurrency1>
+				<exchangedCurrency2>
+					<payerPartyReference href="BARCLAYS"/>
+					<receiverPartyReference href="party2"/>
+					<paymentAmount>
+						<currency>GBP</currency>
+						<amount>57084.14818932</amount>
+					</paymentAmount>
+				</exchangedCurrency2>
+				<valueDate>2019-05-20</valueDate>
+				<exchangeRate>
+					<quotedCurrencyPair>
+						<currency1>GBP</currency1>
+						<currency2>EUR</currency2>
+						<quoteBasis>Currency1PerCurrency2</quoteBasis>
+					</quotedCurrencyPair>
+					<rate>0.05708415</rate>
+					<forwardPoints>-0.74174202</forwardPoints>
+				</exchangeRate>
+				<nonDeliverableSettlement>
+					<settlementCurrency>EUR</settlementCurrency>
+					<fixing>
+						<quotedCurrencyPair>
+							<currency1>GBP</currency1>
+							<currency2>EUR</currency2>
+							<quoteBasis>Currency1PerCurrency2</quoteBasis>
+						</quotedCurrencyPair>
+						<fixingDate>2019-05-16</fixingDate>
+						<fxSpotRateSource>
+							<primaryRateSource>
+								<rateSource>Reuters</rateSource>
+								<rateSourcePage>WMRPSPOT01</rateSourcePage>
+							</primaryRateSource>
+							<fixingTime>
+								<hourMinuteTime>11:00:00</hourMinuteTime>
+								<businessCenter>GBLO</businessCenter>
+							</fixingTime>
+						</fxSpotRateSource>
+					</fixing>
+				</nonDeliverableSettlement>
+			</farLeg>
+		</fxSwap>
+	</trade>
+	<party id="party2">
+		<partyId>party2</partyId>
+	</party>
+	<party id="BARCLAYS">
+		<partyId>BARCLAYS</partyId>
+	</party>
+</requestConfirmation>

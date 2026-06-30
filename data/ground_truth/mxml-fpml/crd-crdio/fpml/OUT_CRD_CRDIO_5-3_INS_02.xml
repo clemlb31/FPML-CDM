@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataDocument xmlns="http://www.fpml.org/FpML-5/confirmation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.fpml.org/FpML-5/confirmation                                         ../../fpml-main-5-3.xsd http://www.w3.org/2000/09/xmldsig#                                         ../../xmldsig-core-schema.xsd" fpmlVersion="5-3">
+	<trade>
+		<tradeHeader>
+			<partyTradeIdentifier>
+				<partyReference href="BARCLAYS"/>
+				<tradeId tradeIdScheme="http://www.murex.com/contract-id">MX1384322</tradeId>
+			</partyTradeIdentifier>
+			<tradeDate>2018-08-22</tradeDate>
+		</tradeHeader>
+		<creditDefaultSwapOption>
+			<buyerPartyReference href="BARCLAYS"/>
+			<sellerPartyReference href="BARCLAYS"/>
+			<optionType>Call</optionType>
+			<premium>
+				<payerPartyReference href="BARCLAYS"/>
+				<receiverPartyReference href="BARCLAYS"/>
+				<paymentAmount>
+					<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+					<amount>15000</amount>
+				</paymentAmount>
+				<paymentDate>
+					<adjustableDate>
+						<unadjustedDate>2018-08-27</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+						</dateAdjustments>
+						<adjustedDate>2018-08-27</adjustedDate>
+					</adjustableDate>
+				</paymentDate>
+			</premium>
+			<europeanExercise>
+				<expirationDate>
+					<adjustableDate>
+						<unadjustedDate>2018-08-24</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+						</dateAdjustments>
+					</adjustableDate>
+				</expirationDate>
+				<earliestExerciseTime>
+					<hourMinuteTime>14:00:00</hourMinuteTime>
+					<businessCenter>businessCenter</businessCenter>
+				</earliestExerciseTime>
+				<expirationTime>
+					<hourMinuteTime>14:00:00</hourMinuteTime>
+					<businessCenter>businessCenter</businessCenter>
+				</expirationTime>
+			</europeanExercise>
+			<exerciseProcedure>
+				<manualExercise>
+					<fallbackExercise>false</fallbackExercise>
+				</manualExercise>
+				<followUpConfirmation>false</followUpConfirmation>
+			</exerciseProcedure>
+			<settlementType>Physical</settlementType>
+			<strike>
+				<price>20.</price>
+			</strike>
+			<creditDefaultSwap>
+				<generalTerms>
+					<effectiveDate>
+						<unadjustedDate>2018-08-25</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+						</dateAdjustments>
+						<adjustedDate>2018-08-25</adjustedDate>
+					</effectiveDate>
+					<scheduledTerminationDate>
+						<unadjustedDate>2019-06-20</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+						</dateAdjustments>
+						<adjustedDate>2019-06-20</adjustedDate>
+					</scheduledTerminationDate>
+					<buyerPartyReference href="BARCLAYS"/>
+					<sellerPartyReference href="BARCLAYS"/>
+					<dateAdjustments>
+						<businessDayConvention>MODFOLLOWING</businessDayConvention>
+						<businessCenters>
+							<businessCenter>LNB</businessCenter>
+						</businessCenters>
+					</dateAdjustments>
+					<indexReferenceInformation>
+						<indexName>ITX-EUROPE-5Y-SFBN</indexName>
+						<indexId indexIdScheme="http://www.fpml.org/spec/2003/instrument-id-RED-pair">2I667DAO2</indexId>
+					</indexReferenceInformation>
+				</generalTerms>
+				<feeLeg>
+					<singlePayment>
+						<adjustablePaymentDate>2018-08-27</adjustablePaymentDate>
+						<fixedAmount>
+							<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+							<amount>15000</amount>
+						</fixedAmount>
+					</singlePayment>
+					<periodicPayment>
+						<paymentFrequency>
+							<periodMultiplier>3</periodMultiplier>
+							<period>M</period>
+						</paymentFrequency>
+						<firstPaymentDate>2018-09-20</firstPaymentDate>
+						<fixedAmountCalculation>
+							<fixedRate>0.2</fixedRate>
+						</fixedAmountCalculation>
+						<adjustedPaymentDates>
+							<adjustedPaymentDate>2018-09-20</adjustedPaymentDate>
+							<paymentAmount>
+								<currency>EUR</currency>
+								<amount>14328.88888889</amount>
+							</paymentAmount>
+						</adjustedPaymentDates>
+						<adjustedPaymentDates>
+							<adjustedPaymentDate>2018-12-20</adjustedPaymentDate>
+							<paymentAmount>
+								<currency>EUR</currency>
+								<amount>50151.11111111</amount>
+							</paymentAmount>
+						</adjustedPaymentDates>
+						<adjustedPaymentDates>
+							<adjustedPaymentDate>2019-03-20</adjustedPaymentDate>
+							<paymentAmount>
+								<currency>EUR</currency>
+								<amount>49600.</amount>
+							</paymentAmount>
+						</adjustedPaymentDates>
+						<adjustedPaymentDates>
+							<adjustedPaymentDate>2019-06-20</adjustedPaymentDate>
+							<paymentAmount>
+								<currency>EUR</currency>
+								<amount>51253.33333333</amount>
+							</paymentAmount>
+						</adjustedPaymentDates>
+					</periodicPayment>
+					<marketFixedRate>0.0295269992</marketFixedRate>
+					<quotationStyle>TradedSpread</quotationStyle>
+				</feeLeg>
+				<protectionTerms>
+					<calculationAmount>
+						<currency currencyScheme="http://www.fpml.org/ext/iso4217">EUR</currency>
+						<amount>1000000.</amount>
+					</calculationAmount>
+					<creditEvents>
+						<bankruptcy>true</bankruptcy>
+						<failureToPay>
+							<applicable>true</applicable>
+							<paymentRequirement>
+								<currency currencyScheme="http://www.fpml.org/ext/iso4217">USD</currency>
+								<amount>1000000</amount>
+							</paymentRequirement>
+						</failureToPay>
+						<restructuring/>
+						<defaultRequirement>
+							<currency currencyScheme="http://www.fpml.org/ext/iso4217"/>
+							<amount/>
+						</defaultRequirement>
+						<creditEventNotice>
+							<notifyingParty>
+								<buyerPartyReference href="BARCLAYS"/>
+								<sellerPartyReference href="BARCLAYS"/>
+							</notifyingParty>
+						</creditEventNotice>
+					</creditEvents>
+					<obligations>
+						<category>BorrowedMoney</category>
+					</obligations>
+				</protectionTerms>
+				<physicalSettlementTerms>
+					<settlementCurrency>EUR</settlementCurrency>
+					<physicalSettlementPeriod>
+						<businessDays>30</businessDays>
+					</physicalSettlementPeriod>
+					<deliverableObligations>
+						<accruedInterest>true</accruedInterest>
+					</deliverableObligations>
+					<escrow>true</escrow>
+				</physicalSettlementTerms>
+			</creditDefaultSwap>
+		</creditDefaultSwapOption>
+		<calculationAgent>
+			<calculationAgentPartyReference href="BARCLAYS"/>
+		</calculationAgent>
+		<documentation>
+			<contractualDefinitions contractualDefinitionsScheme="http://www.fpml.org/coding-scheme/contractual-definitions">isda14</contractualDefinitions>
+		</documentation>
+	</trade>
+	<party id="BARCLAYS">
+		<partyId>BARCLAYS</partyId>
+	</party>
+	<party id="BARCLAYS">
+		<partyId>BARCLAYS</partyId>
+	</party>
+</dataDocument>

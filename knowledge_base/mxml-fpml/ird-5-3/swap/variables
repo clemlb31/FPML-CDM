@@ -1,0 +1,3926 @@
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns="http://www.fpml.org/FpML-5/confirmation" 
+	xmlns:str="http://exslt.org/strings" xmlns:mx="http://murex.com/xslt/common"
+	xmlns:exsl="http://exslt.org/common" xmlns:date="http://exslt.org/dates-and-times"
+	exclude-result-prefixes="mx exsl date str">
+
+	<!-- ========================================================= -->
+	<!-- This template contains XSL extraction variables           -->
+	<!-- ========================================================= -->
+	<xsl:import href="mx.xml2xml.transform.mxml2fpml.5-3.products.ird.variables"/>
+	<xsl:import href="mx.xml2xml.extract.mxml.products.ird.templates"/>
+	<xsl:import href="mx.xml2xml.extract.mxml.products.ird.swap.templates"/>
+	<xsl:import href="mx.xml2xml.extract.mxml.products.common.templates"/>
+	<xsl:import href="mx.xml2xml.transform.any2fpml.5-3.products.common.spreadSchedule"/>
+	<xsl:import href="mx.xml2xml.transform.any2fpml.5-3.products.common.payment"/>
+	<xsl:import href="mx.xml2xml.extract.mxml.products.ird.templates"/>
+	<xsl:import href="mx.generic.exslt.date.format-date"/>
+
+	<xsl:variable name="FpMLDateFormula" select="'mx.xml2xml.ECN.common.utils.adaptDate'"/>
+	<xsl:variable name="lowercase" select="'abcdefghijklmnopqrstuvwxyz'"/>
+	<xsl:variable name="uppercase" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'"/>
+
+	<!-- =================== -->
+	<!-- Swap Stream 1       -->
+	<!-- =================== -->
+	<!-- swapStream1 : Payers and receivers  -->
+	<xsl:variable name="swapStream1.payerPartyReference.href">
+		<xsl:call-template name="swapStream-payerPartyReferenceHref">
+			<xsl:with-param name="nbTradeNode" select="$nbTradeNode"/>
+			<xsl:with-param name="leg" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.receiverPartyReference.href">
+		<xsl:call-template name="swapStream-receiverPartyReferenceHref">
+			<xsl:with-param name="nbTradeNode" select="$nbTradeNode"/>
+			<xsl:with-param name="leg" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<xsl:variable name="leg1.reset.resetPosition">
+		<xsl:call-template name="extract-resetPosition">
+			<xsl:with-param name="legNb" select="1"/>
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.calculationPeriodDates.identifier">
+		<xsl:value-of select="'leg_1_calculationPeriodDates'"/>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.effectiveDate.unadjustedDate">
+		<xsl:variable name="effectiveDateMx">
+			<xsl:call-template name="extract-effectiveDate">
+				<xsl:with-param name="legNb" select="1"/>
+				<xsl:with-param name="stream" select="1"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:value-of
+			select="mx:execute-formula($FpMLDateFormula, concat('date:', $effectiveDateMx, ',format:yyyymmdd,outputFormat:yyyy-mm-dd'))"
+		/>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.effectiveDate.adjustedDate">
+		<xsl:variable name="effectiveDateMx">
+			<xsl:value-of
+				select="/MxML/trades/trade[1]/tradeBody/*/stream[streamTemplate/leg = 1]/adjustedEffectiveDate"
+			/>
+		</xsl:variable>
+		<xsl:value-of
+			select="mx:execute-formula($FpMLDateFormula, concat('date:', $effectiveDateMx, ',format:yyyymmdd,outputFormat:yyyy-mm-dd'))"
+		/>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.termination.unadjustedDate">
+		<xsl:variable name="swapStream1.paramMaturityDate"
+			select="concat('date:', $leg1.maturity, ',format:yyyyMMdd,outputFormat:yyyy-MM-dd')"/>
+		<xsl:value-of select="mx:execute-formula($FpMLDateFormula, $swapStream1.paramMaturityDate)"
+		/>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.terminationDate.adjustedDate">
+		<xsl:variable name="terminationDateMx">
+			<xsl:value-of
+				select="/MxML/trades/trade[1]/tradeBody/*/stream[streamTemplate/leg = 1]/adjustedMaturity"
+			/>
+		</xsl:variable>
+		<xsl:value-of
+			select="mx:execute-formula($FpMLDateFormula, concat('date:', $terminationDateMx, ',format:yyyymmdd,outputFormat:yyyy-mm-dd'))"
+		/>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.frequency.periodMultiplier1">
+		<xsl:choose>
+			<xsl:when
+				test="$swapStream1.paymentSchedule.zeroCouponMode = 'true' or $swapStream1.singlePeriod = 'true'">
+				<xsl:value-of select="'1'"/>
+			</xsl:when>
+			<xsl:when test="$leg1.payment.periodUnit = 'quarter'">
+				<xsl:value-of select="$leg1.payment.periodMultiplier * 3"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$leg1.payment.periodMultiplier"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.paymentScheduleNature"
+		select="/MxML/trades/trade[1]/tradeBody/*/stream[1]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature"/>
+	<xsl:variable name="swapStream1.paymentUnderlyingSchedule"
+		select="/MxML/trades/trade[1]/tradeBody/*/stream[1]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule"/>
+	<xsl:variable name="swapStream1.payRelativeTo1">
+		<xsl:variable name="swapStream1.paymentPosition"
+			select="/MxML/trades/trade[1]/tradeBody/*/stream[1]/streamTemplate/paymentPosition"/>
+		<xsl:choose>
+			<xsl:when
+				test="$swapStream1.paymentPosition = 'inArrears' and ($swapStream1.paymentUnderlyingSchedule = 'calculationSchedule' or $swapStream1.paymentUnderlyingSchedule = 'calculationEndSchedule')">
+				<xsl:value-of select="'CalculationPeriodEndDate'"/>
+			</xsl:when>
+			<xsl:when
+				test="$swapStream1.paymentPosition = 'upFront' and ($swapStream1.paymentUnderlyingSchedule = 'calculationSchedule' or $swapStream1.paymentUnderlyingSchedule = 'calculationEndSchedule')">
+				<xsl:value-of select="'CalculationPeriodStartDate'"/>
+			</xsl:when>
+			<xsl:when test="$swapStream1.paymentUnderlyingSchedule = 'resetSchedule'">
+				<xsl:value-of select="'ResetDate'"/>
+			</xsl:when>
+			<xsl:when test="$swapStream1.paymentScheduleNature = 'drivingSchedule'">
+				<xsl:value-of select="'CalculationPeriodStartDate'"/>
+			</xsl:when>
+			<xsl:otherwise/>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.resetDates.id1">
+		<xsl:choose>
+			<xsl:when test="$swapStream1.isInflationIndexed = 'true'">
+				<xsl:value-of select="$swapStream1.leg1.resetDate.id"/>
+			</xsl:when>
+			<xsl:when test="$leg1.payoutType = 'floatingRate'">
+				<xsl:value-of select="$swapStream1.leg1.resetDate.id"/>
+			</xsl:when>
+			<xsl:when test="$leg1.payoutType = 'fixedRate'">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="'NaN'"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.calculationPeriodDatesReferenceHref">
+		<xsl:value-of select="'leg_1_calculationPeriodDates'"/>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.resetRelativeTo1">
+		<xsl:choose>
+			<xsl:when test="$swapStream1.isInflationIndexed = 'true'">
+				<xsl:variable name="resetPosition">
+					<xsl:call-template name="extract-indexationScheduleResetPosition">
+						<xsl:with-param name="stream" select="'1'"/>
+					</xsl:call-template>
+				</xsl:variable>
+				<xsl:choose>
+					<xsl:when test="$resetPosition = 'upFront'">
+						<xsl:value-of select="'CalculationPeriodStartDate'"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="'CalculationPeriodEndDate'"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:when test="$leg1.reset.resetPosition = 'upFront'"
+				>CalculationPeriodStartDate</xsl:when>
+			<xsl:when test="$leg1.reset.resetPosition = 'inArrears'"
+				>CalculationPeriodEndDate</xsl:when>
+			<xsl:otherwise/>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.fixingDates.dateRelativeToHref">
+		<xsl:choose>
+			<xsl:when test="$swapStream1.isInflationIndexed = 'true'">
+				<xsl:value-of select="$swapStream1.leg1.resetDate.id"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$swapStream1.calculationPeriodDatesReferenceHref"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.resetFrequency.periodMultiplier1">
+		<xsl:choose>
+		<!-- DEF#731150 ttt-->
+			<xsl:when test="$typology = 'Asset Swap IRS'">
+					<xsl:value-of select="'1'"/>
+			</xsl:when>
+			<xsl:when test="$leg1.reset.periodUnit = 'quarter'">
+				<xsl:value-of select="$leg1.reset.periodMultiplier * 3"/>
+			</xsl:when>
+			<xsl:when test="$leg1.reset.periodMultiplier = '0'">
+				<xsl:value-of select="'1'"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$leg1.reset.periodMultiplier"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="lastContractEventReference.mefClass">
+		<xsl:call-template name="extract-contractEvent-mefClass"/>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.notionalSchedule.notionalStepSchedule.tmpValue">
+		<xsl:variable name="initialCapitalAmount">
+			<xsl:call-template name="extract-initialCapitalAmount">
+				<xsl:with-param name="legNb" select="1"/>
+				<xsl:with-param name="stream" select="1"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:value-of select="$initialCapitalAmount"/>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.notionalSchedule.notionalStepSchedule.value">
+		<xsl:value-of
+			select="format-number($swapStream1.notionalSchedule.notionalStepSchedule.tmpValue, '##.##########')"
+		/>
+	</xsl:variable>
+
+	<xsl:variable name="oldSwapStream1.notionalSchedule.notionalStepSchedule.tmpValue">
+		<xsl:variable name="legNb">
+			<xsl:choose>
+				<xsl:when
+					test="$event = 'partyAssignment' and $lastContractEventReference.mefClass != 'mxContractEventICANCEL'">
+					<xsl:value-of select="2"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="1"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="initialCapitalAmount">
+			<xsl:call-template name="extract-initialCapitalAmount">
+				<xsl:with-param name="legNb" select="number($legNb)"/>
+				<xsl:with-param name="stream" select="1"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:value-of select="$initialCapitalAmount"/>
+	</xsl:variable>
+
+	<xsl:variable name="oldSwapStream1.notionalSchedule.notionalStepSchedule.value">
+		<xsl:value-of
+			select="format-number($oldSwapStream1.notionalSchedule.notionalStepSchedule.tmpValue, '##.##########')"
+		/>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.notionalSchedule.notionalStepSchedule.currency">
+		<xsl:call-template name="extract-initialCapitalCurrency">
+			<xsl:with-param name="legNb" select="1"/>
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.notionalSchedule.id">
+		<!--xsl:if test="$Mxgroup!='CS'"-->
+		<xsl:value-of select="'leg_1_notionalSchedule'"/>
+		<!--/xsl:if-->
+	</xsl:variable>
+	<xsl:variable name="swapStream1.paymentDates.id">
+		<!--xsl:if test="$Mxgroup ='CS'"-->
+		<xsl:value-of select="'leg_1_paymentDates'"/>
+		<!--/xsl:if-->
+	</xsl:variable>
+	<xsl:variable name="swapStream1.fixedRateSchedule.initialValue">
+		<xsl:choose>
+			<xsl:when test="$leg1.payoutType = 'floatingRate'">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:when
+				test="$leg1.payoutType = 'fixedRate' and string-length($leg1.rateOrMargin) &gt; 0">
+				<xsl:value-of select="format-number($leg1.rateOrMargin, '##.##########')"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of
+					select="mx:execute-formula('mx.xml2xml.ECN.common.errorHandling.throwException', concat('errorMessage: payment type for stream 1 is incorrect. Returned value is: ', $leg1.payoutType))"
+				/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.interestRateCustomized">
+		<xsl:choose>
+			<xsl:when test="MxML/trades/trade[@id = $contractRef]/tradeBody/*/customized = 'true'">
+				<xsl:choose>
+					<xsl:when
+						test="MxML/trades/trade[@id = $contractRef]/tradeBody/*/customizations/*[leg = '1']/customizedObject = 'interestRate'"
+						>true</xsl:when>
+					<xsl:otherwise>false</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:otherwise>false</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.fixedRateSchedule.steps">
+		<xsl:if
+			test="$leg1.payoutType = 'fixedRate' and $swapStream1.interestRateCustomized = 'true'">
+			<xsl:for-each
+				select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod">
+				<xsl:variable name="previousRate1">
+					<xsl:choose>
+						<xsl:when test="position() = 1">
+							<xsl:value-of
+								select="format-number($swapStream1.fixedRateSchedule.initialValue, '##.##########')"
+							/>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:value-of
+								select="format-number(preceding-sibling::interestPaymentPeriod[1]/calculationPeriod[last()]/fixedRatePeriod/fixedRate div 100, '##.##########')"
+							/>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:variable>
+				<xsl:for-each select="./calculationPeriod">
+					<xsl:variable name="previousRate">
+						<xsl:choose>
+							<xsl:when test="position() = 1">
+								<xsl:value-of select="$previousRate1"/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of
+									select="format-number(preceding-sibling::calculationPeriod[1]/fixedRatePeriod/fixedRate div 100, '##.##########')"
+								/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:variable>
+					<xsl:variable name="thisPeriodRate"
+						select="format-number(fixedRatePeriod/fixedRate div 100, '##.##########')"/>
+					<xsl:if test="$thisPeriodRate != $previousRate">
+						<xsl:call-template name="create-step">
+							<xsl:with-param name="stepDate"
+								select="mx:execute-formula($FpMLDateFormula, concat('date:', calculationStartDate, ',format:yyyymmdd,outputFormat:yyyy-mm-dd'))"/>
+							<xsl:with-param name="stepValue"
+								select="format-number($thisPeriodRate, '##.##########')"/>
+						</xsl:call-template>
+					</xsl:if>
+				</xsl:for-each>
+			</xsl:for-each>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.calculationPeriodFrequency.periodMultiplier1">
+		<xsl:choose>
+			<xsl:when test="$leg1.calculation.periodUnit = 'quarter'">
+				<xsl:value-of select="$leg1.calculation.periodMultiplier * 3"/>
+			</xsl:when>
+			<xsl:when test="$leg1.calculation.periodMultiplier = '0'">
+				<xsl:value-of select="'1'"/>
+			</xsl:when>
+			<xsl:when
+				test="$swapStream1.paymentSchedule.zeroCouponMode = 'true' and $leg1.payoutType = 'fixedRate'">
+				<xsl:value-of select="'1'"/>
+			</xsl:when>
+			<xsl:when test="$leg1.singlePeriod = 'true' and $leg1.payoutType = 'fixedRate'">
+				<xsl:value-of select="'1'"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$leg1.calculation.periodMultiplier"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.fixingDates.periodMultiplier1">
+		<xsl:choose>
+			<xsl:when test="$swapStream1.isInflationIndexed = 'true'">
+				<xsl:value-of select="$swapStream1.fixingDates.periodMultiplier"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$leg1.reset.shifter.periodMultiplier"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="leg1.periodUnit">
+		<xsl:call-template name="extract-shifter-payment-periodUnit">
+			<xsl:with-param name="legNb" select="1"/>
+			<xsl:with-param name="tradeNb" select="$trdNb"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.paymentDaysOffset.period">
+		<xsl:choose>
+			<xsl:when test="$leg1.periodUnit = 'businessDay'">D</xsl:when>
+			<xsl:when test="$leg1.periodUnit = 'day'">D</xsl:when>
+			<xsl:when test="$leg1.periodUnit = 'week'">W</xsl:when>
+			<xsl:when test="$leg1.periodUnit = 'month'">M</xsl:when>
+			<xsl:when test="$leg1.periodUnit = 'year'">Y</xsl:when>
+			<xsl:otherwise>Business</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.paymentDaysOffset.periodMultiplier">
+		<xsl:value-of
+			select="/MxML/trades/trade[$trdNb]/tradeBody/*/stream[1]/streamTemplate/streamSchedules/paymentSchedule/shifter/shift/periodMultiplier"
+		/>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.paymentDaysOffset.dayType">
+		<xsl:choose>
+			<xsl:when
+				test="$swapStream1.paymentDaysOffset.periodMultiplier = '0' and $leg1.periodUnit = 'businessDay'"
+				>Business</xsl:when>
+			<xsl:otherwise>
+				<xsl:choose>
+					<xsl:when test="$leg1.periodUnit = 'day'">Calendar</xsl:when>
+					<xsl:otherwise>Business</xsl:otherwise>
+				</xsl:choose>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="stubPeriodPosition"
+		select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/structure/stubPeriodPosition"/>
+
+	<!--margin stream1-->
+	<xsl:variable name="swapStream1.margin">
+		<xsl:choose>
+			<xsl:when test="$swapStream1.isInflationIndexed = 'true'">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:call-template name="extract-margin">
+					<xsl:with-param name="stream" select="1"/>
+				</xsl:call-template>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.step.nodes">
+		<xsl:choose>
+			<xsl:when test="$swapStream1.isInflationIndexed = 'true'">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:variable name="initialSpread"
+					select="format-number($swapStream1.margin, '##.##########')"/>
+				<xsl:for-each
+					select="/MxML/trades/trade[(not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))][@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod">
+					<xsl:variable name="previousSpread1">
+						<xsl:choose>
+							<xsl:when test="position() = 1">
+								<xsl:value-of select="$initialSpread"/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of
+									select="format-number(preceding-sibling::interestPaymentPeriod[1]/calculationPeriod[last()]/floatingRatePeriod/margin, '##.##########')"
+								/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:variable>
+					<xsl:for-each select="calculationPeriod">
+						<xsl:variable name="previousSpread">
+							<xsl:choose>
+								<xsl:when test="position() = 1">
+									<xsl:value-of select="$previousSpread1"/>
+								</xsl:when>
+								<xsl:otherwise>
+									<xsl:value-of
+										select="format-number(preceding-sibling::calculationPeriod[1]/floatingRatePeriod/margin, '##.##########')"
+									/>
+								</xsl:otherwise>
+							</xsl:choose>
+						</xsl:variable>
+						<xsl:variable name="thisPeriodSpread"
+							select="format-number(floatingRatePeriod/margin, '##.##########')"/>
+						<xsl:if test="$previousSpread != $thisPeriodSpread">
+							<xsl:call-template name="create-step">
+								<xsl:with-param name="stepDate"
+									select="mx:execute-formula($FpMLDateFormula, concat('date:', calculationStartDate, ',format:yyyymmdd,outputFormat:yyyy-mm-dd'))"/>
+								<xsl:with-param name="stepValue"
+									select="format-number($thisPeriodSpread div 100, '##.##########')"
+								/>
+							</xsl:call-template>
+						</xsl:if>
+					</xsl:for-each>
+				</xsl:for-each>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<!-- swapStream1.spreadScheduleType -->
+	<xsl:variable name="swapStream1.spreadScheduleType">
+		<xsl:choose>
+			<xsl:when test="$swapStream1.isInflationIndexed = 'true'">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:variable name="spreadSchedule.initialValue"
+					select="format-number($swapStream1.margin div 100, '##.##########')"/>
+				<xsl:choose>
+					<xsl:when test="number($spreadSchedule.initialValue) > 0">
+						<xsl:value-of select="'Long'"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="'Short'"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.spreadSchedule.nodes">
+		<xsl:choose>
+			<xsl:when test="$swapStream1.isInflationIndexed = 'true'">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:call-template name="create-spreadSchedule">
+					<xsl:with-param name="initialValue"
+						select="format-number($swapStream1.margin div 100, '##.##########')"/>
+					<xsl:with-param name="step.nodes" select="$swapStream1.step.nodes"/>
+					<xsl:with-param name="type" select="$swapStream1.spreadScheduleType"/>
+				</xsl:call-template>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<!--stream1 initialCapitalExchange-->
+	<xsl:variable name="swapStream1.initialExchange">
+		<xsl:if test="$Mxgroup = 'CS'">
+			<xsl:variable name="value">
+				<xsl:call-template name="extract-initialCapitalExchange">
+					<xsl:with-param name="tradeRef" select="$contractRef"/>
+					<xsl:with-param name="stream" select="1"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="string-length($value) &gt; 0">
+					<xsl:value-of select="$value"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="'false'"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<!--stream1 finalCapitalExchange-->
+	<xsl:variable name="swapStream1.finalExchange">
+		<xsl:if test="$Mxgroup = 'CS'">
+			<xsl:variable name="value">
+				<xsl:call-template name="extract-finalCapitalExchange">
+					<xsl:with-param name="tradeRef" select="$contractRef"/>
+					<xsl:with-param name="stream" select="1"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="string-length($value) &gt; 0">
+					<xsl:value-of select="$value"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="'false'"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<!--stream1 intermediateCapitalExchange-->
+	<xsl:variable name="swapStream1.intermediateExchange">
+		<xsl:if test="$Mxgroup = 'CS'">
+			<xsl:variable name="value">
+				<xsl:call-template name="extract-intermediateCapitalExchange">
+					<xsl:with-param name="stream" select="1"/>
+					<xsl:with-param name="legNb" select="$trdNb"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="string-length($value) &gt; 0">
+					<xsl:value-of select="$value"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="'false'"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<!--stream1 intermediateCapitalExchange-->
+	<xsl:variable name="oldSwapStream1.intermediateExchange">
+		<xsl:if test="$Mxgroup = 'CS'">
+			<xsl:variable name="legNb">
+				<xsl:choose>
+					<xsl:when test="$event = 'partyAssignment'">
+						<xsl:value-of select="2"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="1"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+			<xsl:variable name="value">
+				<xsl:call-template name="extract-intermediateCapitalExchange">
+					<xsl:with-param name="legNb" select="number($legNb)"/>
+					<xsl:with-param name="stream" select="1"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="string-length($value) &gt; 0">
+					<xsl:value-of select="$value"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="'false'"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<!-- swapStream1.notionalSchedule.notionalStepSchedule.steps -->
+	<xsl:variable name="swapStream1.capitalPaymentFlowCustomized">
+		<xsl:choose>
+			<xsl:when
+				test="string-length(/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/capital/amortizingRule/amortizingFormula) &gt; 0"
+				>true</xsl:when>
+			<xsl:when test="MxML/trades/trade[@id = $contractRef]/tradeBody/*/customized = 'true'">
+				<xsl:choose>
+					<xsl:when
+						test="MxML/trades/trade[@id = $contractRef]/tradeBody/*/customizations/*[leg = '1']/customizedObject = 'capitalPaymentFlow'"
+						>true</xsl:when>
+					<xsl:otherwise>false</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:otherwise>false</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.mainOriginalStrikeCustomized">
+		<xsl:choose>
+			<xsl:when test="MxML/trades/trade[@id = $contractRef]/tradeBody/*/customizations/*[leg = '1']/customizedObject = 'mainOriginalStrike'">true</xsl:when>
+			<xsl:when test="MxML/trades/trade[@id = $contractRef]/tradeBody/*/customizations/*[leg = '1']/customizedObject = 'mainStrike'">true</xsl:when>
+			<xsl:otherwise>false</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	
+	<xsl:variable name="ird.fpml.terminating.event">
+		<xsl:variable name="allocatedRatio">
+			<xsl:variable name="impQty">
+				<xsl:call-template name="extract-impactQuantity"/>
+			</xsl:variable>
+			<xsl:variable name="impInitQty">
+				<xsl:call-template name="extract-impactInitialQuantity"/>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="$impInitQty &gt; 0">
+					<xsl:value-of select="$impQty div $impInitQty"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="0"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="event"
+			select="name(/MxML/contractEvents/contractEvent/contractEventBody/*)"/>
+		<xsl:choose>
+			<xsl:when test="$event = 'unwind' and $unwoundRatio = 1">
+				<xsl:value-of select="'true'"/>
+			</xsl:when>
+			<xsl:when test="$event = 'partyAssignment' and $fpmlType = 'NovationOld'">
+				<xsl:value-of select="'true'"/>
+			</xsl:when>
+			<xsl:when test="$event = 'allocation' and $allocatedRatio = 1">
+				<xsl:value-of select="'true'"/>
+			</xsl:when>
+			<xsl:when test="$event = 'stepOut'">
+				<xsl:value-of select="'true'"/>
+			</xsl:when>
+			<xsl:when test="$event = 'portfolioAssignment' and $fpmlType = 'Termination'">
+				<xsl:value-of select="'true'"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="'false'"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+
+	<xsl:variable name="swapStream1.notionalSchedule.notionalStepSchedule.steps">
+		<xsl:if test="$swapStream1.capitalPaymentFlowCustomized = 'true'">
+			<xsl:variable name="event"
+				select="name(/MxML/contractEvents/contractEvent/contractEventBody/*)"/>
+			<xsl:variable name="eventImpactDate"
+				select="/MxML/contractEvents/contractEvent/contractEventImpacts/contractEventImpact/contractEventImpactHeader/contractEventImpactDate"/>
+			<xsl:for-each
+				select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod">
+				<xsl:if
+					test="
+						string-length($eventImpactDate) = 0 or
+						not($ird.fpml.terminating.event = 'true') or
+						($eventImpactDate &gt; calculationPeriod[1]/calculationEndDate) or
+						(calculationPeriod[1]/contributionFlows/contributionFlow[1]/calculationPeriod/notionalAmount &gt; 0)">
+					<xsl:variable name="ippPos" select="position()"/>
+					<xsl:for-each select="calculationPeriod">
+						<xsl:variable name="cpPos" select="position()"/>
+						<xsl:for-each select="contributionFlows/contributionFlow">
+							<xsl:variable name="pos" select="position()"/>
+							<xsl:variable name="tmpPos">
+								<xsl:choose>
+									<xsl:when test="$pos = 1">
+										<xsl:choose>
+											<xsl:when test="$cpPos = 1">
+												<xsl:variable name="tmpCpPos">
+												<xsl:value-of
+												select="count(/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[$ippPos - 1]/calculationPeriod)"
+												/>
+												</xsl:variable>
+												<xsl:value-of
+												select="count(/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[$ippPos - 1]/calculationPeriod[$tmpCpPos]/contributionFlows/contributionFlow)"
+												/>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:value-of
+												select="count(/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[$ippPos]/calculationPeriod[$cpPos - 1]/contributionFlows/contributionFlow)"
+												/>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="$pos - 1"/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:variable>
+							<xsl:variable name="tmpCpPos">
+								<xsl:choose>
+									<xsl:when test="$pos = 1">
+										<xsl:choose>
+											<xsl:when test="$cpPos = 1">
+												<xsl:value-of
+												select="count(/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[$ippPos - 1]/calculationPeriod)"
+												/>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:value-of select="$cpPos - 1"/>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="$cpPos"/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:variable>
+							<xsl:variable name="tmpIppPos">
+								<xsl:choose>
+									<xsl:when test="$pos = 1">
+										<xsl:choose>
+											<xsl:when test="$cpPos = 1">
+												<xsl:value-of select="$ippPos - 1"/>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:value-of select="$ippPos"/>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="$ippPos"/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:variable>
+							<xsl:variable name="previousNotional">
+								<xsl:choose>
+									<xsl:when test="($pos = 1) and ($cpPos = 1) and ($ippPos = 1)">
+										<xsl:choose>
+											<xsl:when test="$event = 'partyAssignment'">
+												<xsl:value-of
+												select="$swapStream1.notionalSchedule.notionalStepSchedule.value"
+												/>
+											</xsl:when>
+											<xsl:when test="$event = 'unwind'">
+												<xsl:value-of
+												select="$swapStream1.notionalSchedule.remainingLiveQuantity"
+												/>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:value-of
+												select="$swapStream1.notionalSchedule.notionalStepSchedule.initialValue"
+												/>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of
+											select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[position() = $tmpIppPos]/calculationPeriod[position() = $tmpCpPos]/contributionFlows/contributionFlow[position() = $tmpPos]/calculationPeriod/notionalAmount"
+										/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:variable>
+							<xsl:variable name="thisPeriodNotional"
+								select="calculationPeriod/notionalAmount"/>
+							<xsl:if
+								test="format-number($thisPeriodNotional, '##.##########') != format-number($previousNotional, '##.##########') and $thisPeriodNotional &gt;= 0">
+								<xsl:element name="step">
+									<xsl:if
+										test="string-length(calculationPeriod/calculationStartDate) &gt; 0">
+										<xsl:element name="stepDate">
+											<xsl:value-of
+												select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', calculationPeriod/calculationStartDate))"
+											/>
+										</xsl:element>
+									</xsl:if>
+									<xsl:element name="stepValue">
+										<xsl:value-of
+											select="format-number($thisPeriodNotional, '##.##########')"
+										/>
+									</xsl:element>
+								</xsl:element>
+							</xsl:if>
+						</xsl:for-each>
+					</xsl:for-each>
+				</xsl:if>
+			</xsl:for-each>
+		</xsl:if>
+	</xsl:variable>
+
+
+	<!-- additionalPayments.nodes -->
+	<xsl:variable name="additionalPayments.nodes">
+
+		<xsl:variable name="swapStream1.businessCenter.nodes">
+			<xsl:if test="$swapStream1.businessDayConvention != 'NONE'">
+				<xsl:copy-of select="$swapStream1.paymentDatesAdjustments.businessCenter.nodes"/>
+			</xsl:if>
+		</xsl:variable>
+
+		<xsl:variable name="swapStream2.businessCenter.nodes">
+			<xsl:if test="$swapStream2.businessDayConvention != 'NONE'">
+				<xsl:copy-of select="$swapStream2.paymentDatesAdjustments.businessCenter.nodes"/>
+			</xsl:if>
+		</xsl:variable>
+
+		<!-- Assume the calendar for both legs are identical that is in practice the case. Otherwise there would be an issue to choose which one as additional payment is common -->
+		<xsl:variable name="calendarTmp">
+			<xsl:value-of
+				select="/MxML/trades/trade[(not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream/streamTemplate/paymentBusinessCenters/businessCenter"
+			/>
+		</xsl:variable>
+
+		<xsl:for-each
+			select="/MxML/trades/trade[(not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/additionalFlows/additionalFlow">
+
+			<xsl:variable name="unadjustedDateTmp">
+				<xsl:if test="string-length(./flow/date) &gt; 0">
+					<xsl:value-of
+						select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', ./flow/date))"
+					/>
+				</xsl:if>
+			</xsl:variable>
+			<xsl:variable name="unadjustedDateAsMx">
+				<xsl:value-of
+					select="mx:execute-formula('mx.xml2xml.ECN.common.utils.adaptDate', concat('date:', $unadjustedDateTmp, ',format:yyyy-MM-dd,outputFormat:yyyyMMdd'))"
+				/>
+			</xsl:variable>
+			<xsl:variable name="adjustedDateAsMx">
+				<xsl:value-of
+					select="mx:execute-formula('mx.xml2xml.ECN.common.utils.dateshiftAdjusted', concat('date:', $unadjustedDateAsMx, ',calendar:', $calendarTmp))"
+				/>
+			</xsl:variable>
+			<xsl:variable name="adjustedDateTmp">
+				<xsl:value-of
+					select="mx:execute-formula('mx.xml2xml.ECN.common.utils.adaptDate', concat('date:', $adjustedDateAsMx, ',format:yyyyMMdd,outputFormat:yyyy-MM-dd'))"
+				/>
+			</xsl:variable>
+
+			<xsl:call-template name="create-payment-additionalPayment">
+				<xsl:with-param name="payerPartyReference.href">
+					<xsl:choose>
+						<xsl:when
+							test="string-length(substring(./flow/payerPartyReference/@href, 2)) &gt; 0">
+							<xsl:value-of select="substring(./flow/payerPartyReference/@href, 2)"/>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:value-of select="$ctpNameRef"/>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:with-param>
+				<xsl:with-param name="receiverPartyReference.href"
+					select="substring(./flow/receiverPartyReference/@href, 2)"/>
+				<xsl:with-param name="paymentAmount.currency" select="./flow/currency"/>
+				<xsl:with-param name="paymentAmount.currency.currencyScheme"/>
+				<xsl:with-param name="paymentAmount.amount" select="./flow/amount"/>
+				<xsl:with-param name="unadjustedDate" select="$unadjustedDateTmp"/>
+				<xsl:with-param name="adjustableDateNode" select="'false'"/>
+				<xsl:with-param name="dateAdjustments.businessDayConvention"
+					select="$swapStream1.businessDayConvention"/>
+				<xsl:with-param name="dateAdjustments.businessCenter.nodes"
+					select="$swapStream1.businessCenter.nodes"/>
+				<xsl:with-param name="adjustedDate" select="$adjustedDateTmp"/>
+			</xsl:call-template>
+		</xsl:for-each>
+		<xsl:for-each
+			select="/MxML/trades/trade[(not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeHeader/tradeFees/tradeFee">
+			<xsl:if
+				test="payerPartyReference/@href = ../../../tradeHeader/tradeViews/tradeView[2]/partyReference/@href or receiverPartyReference/@href = ../../../tradeHeader/tradeViews/tradeView[2]/partyReference/@href">
+				<xsl:call-template name="create-payment-additionalPayment">
+					<xsl:with-param name="payerPartyReference.href">
+						<xsl:choose>
+							<xsl:when
+								test="string-length(substring(./flow/payerPartyReference/@href, 2)) &gt; 0">
+								<xsl:value-of
+									select="substring(./flow/payerPartyReference/@href, 2)"/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of select="$ctpNameRef"/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:with-param>
+					<xsl:with-param name="receiverPartyReference.href"
+						select="substring(./receiverPartyReference/@href, 2)"/>
+					<xsl:with-param name="paymentAmount.currency" select="./feeCurrency"/>
+					<xsl:with-param name="paymentAmount.currency.currencyScheme"/>
+					<xsl:with-param name="paymentAmount.amount" select="./feeAmount"/>
+					<xsl:with-param name="unadjustedDate">
+						<xsl:if test="string-length(./feeDate) &gt; 0">
+							<xsl:value-of
+								select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', ./feeDate))"
+							/>
+						</xsl:if>
+					</xsl:with-param>
+					<xsl:with-param name="adjustableDateNode" select="'false'"/>
+					<xsl:with-param name="dateAdjustments.businessDayConvention"
+						select="$swapStream2.businessDayConvention"/>
+					<xsl:with-param name="dateAdjustments.businessCenter.nodes"
+						select="$swapStream2.businessCenter.nodes"/>
+				</xsl:call-template>
+			</xsl:if>
+		</xsl:for-each>
+		<!-- If it is a ctpAssignment, then we have 2 trades and we must take the one pointed by contractRef variable -->
+		<xsl:variable name="useContractRefVariableToParseRelevantNode">
+			<xsl:choose>
+				<xsl:when test="$nbTradeNode = '2' and $eventType = 'mxContractEventIASSIGNMENT'">
+					<xsl:value-of select="boolean('true')"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="boolean('false')"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:for-each
+			select="
+				/MxML/trades/trade[($useContractRefVariableToParseRelevantNode and @id = $contractRef) or
+				(not($useContractRefVariableToParseRelevantNode) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1)))
+				]/tradeBody/*/parAdjustment/standardPaymentFlow">
+			<!-- Add same condition that is set for single additional flow -->
+			<xsl:if
+				test="string-length(substring(./payerPartyReference/@href, 2)) &gt; 0 and string-length(./amount) &gt; 0 and string-length(./currency) &gt; 0">
+				<xsl:call-template name="create-payment-additionalPayment">
+					<xsl:with-param name="payerPartyReference.href">
+						<xsl:choose>
+							<xsl:when
+								test="string-length(substring(./payerPartyReference/@href, 2)) &gt; 0">
+								<xsl:value-of select="substring(./payerPartyReference/@href, 2)"/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of select="$ctpNameRef"/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:with-param>
+					<xsl:with-param name="receiverPartyReference.href"
+						select="substring(./receiverPartyReference/@href, 2)"/>
+					<xsl:with-param name="paymentAmount.currency" select="./currency"/>
+					<xsl:with-param name="paymentAmount.amount" select="./amount"/>
+					<xsl:with-param name="adjustableDateNode" select="'false'"/>
+					<xsl:with-param name="adjustedDate">
+						<xsl:if test="string-length(./date) &gt; 0">
+							<xsl:value-of
+								select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', ./date))"
+							/>
+						</xsl:if>
+					</xsl:with-param>
+				</xsl:call-template>
+			</xsl:if>
+		</xsl:for-each>
+		<xsl:for-each
+			select="
+				/MxML/trades/trade[($useContractRefVariableToParseRelevantNode and @id = $contractRef) or
+				(not($useContractRefVariableToParseRelevantNode) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1)))
+				]/tradeBody/*/parAdjustment/nonParRepaymentFlow">
+			<!-- Add same condition that is set for single additional flow -->
+			<xsl:if
+				test="string-length(substring(./payerPartyReference/@href, 2)) &gt; 0 and string-length(./amount) &gt; 0 and string-length(./currency) &gt; 0">
+				<xsl:call-template name="create-payment-additionalPayment">
+					<xsl:with-param name="payerPartyReference.href">
+						<xsl:choose>
+							<xsl:when
+								test="string-length(substring(./payerPartyReference/@href, 2)) &gt; 0">
+								<xsl:value-of select="substring(./payerPartyReference/@href, 2)"/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of select="$ctpNameRef"/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:with-param>
+					<xsl:with-param name="receiverPartyReference.href"
+						select="substring(./receiverPartyReference/@href, 2)"/>
+					<xsl:with-param name="paymentAmount.currency" select="./currency"/>
+					<xsl:with-param name="paymentAmount.amount" select="./amount"/>
+					<xsl:with-param name="adjustableDateNode" select="'false'"/>
+					<xsl:with-param name="adjustedDate">
+						<xsl:if test="string-length(./date) &gt; 0">
+							<xsl:value-of
+								select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', ./date))"
+							/>
+						</xsl:if>
+					</xsl:with-param>
+				</xsl:call-template>
+			</xsl:if>
+		</xsl:for-each>
+	</xsl:variable>
+
+	<!-- swapStream1.precision -->
+	<xsl:variable name="swapStream1.precision" select="$leg1.roundingPrecision + 2"/>
+
+	<!-- swapStream1.initialStub -->
+	<xsl:variable name="swapStream1.initialStub.floatingRate.params">
+		<xsl:call-template name="extract-initialStub-indexLabel">
+			<xsl:with-param name="tradeRef" select="$contractRef"/>
+			<xsl:with-param name="stream" select="1"/>
+			<xsl:with-param name="index" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.initialStub.floatingRate2.params">
+		<xsl:call-template name="extract-initialStub-indexLabel">
+			<xsl:with-param name="tradeRef" select="$contractRef"/>
+			<xsl:with-param name="stream" select="1"/>
+			<xsl:with-param name="index" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<!-- swapStream1.finalStub -->
+	<xsl:variable name="swapStream1.finalStub.floatingRate.params">
+		<xsl:call-template name="extract-finalStub-indexLabel">
+			<xsl:with-param name="legNb" select="$trdNb"/>
+			<xsl:with-param name="stream" select="1"/>
+			<xsl:with-param name="index" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.finalStub.floatingRate2.params">
+		<xsl:call-template name="extract-finalStub-indexLabel">
+			<xsl:with-param name="legNb" select="$trdNb"/>
+			<xsl:with-param name="stream" select="1"/>
+			<xsl:with-param name="index" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<!-- swapStream1.compoundingMethod -->
+	<xsl:variable name="swapStream1.compoundingFormula">
+		<xsl:call-template name="extract-compoundingFormula">
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.compoundingScope">
+		<xsl:call-template name="extract-compoundingScope">
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.compoundingMethod">
+		<xsl:choose>
+			<xsl:when
+				test="mx:execute-formula($mapDayCountBasis, $swapStream1.paramDayCountFraction) = '1/1' and $swapStream1.singlePeriod = 'true'"
+				>Straight</xsl:when>
+			<xsl:when
+				test="string-length($swapStream1.compoundingFormula) &gt; 0 and $leg1.payoutType = 'floatingRate'">
+				<xsl:value-of
+					select="mx:execute-formula($mapCompounding, concat('compoundingFormula:', $swapStream1.compoundingFormula, ',compoundingScope:', $swapStream1.compoundingScope))"
+				/>
+			</xsl:when>
+			<xsl:otherwise/>
+		</xsl:choose>
+	</xsl:variable>
+
+	<!-- swapStream1.averageMethod -->
+	<xsl:variable name="swapStream1.averageMethod">
+		<xsl:variable name="averageMethod">
+			<xsl:call-template name="extract-averageMethod">
+				<xsl:with-param name="stream" select="1"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:choose>
+			<xsl:when test="$averageMethod = 'weighted'">Weighted</xsl:when>
+			<xsl:when test="$averageMethod = 'unweighted'">Unweighted</xsl:when>
+			<xsl:otherwise/>
+		</xsl:choose>
+	</xsl:variable>
+
+	<!-- number of InterestPaymentPeriod nodes-->
+	<xsl:variable name="nbInterestPaymentPeriod1"
+		select="count(/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod)"/>
+	<!-- number of calculationPeriod nodes-->
+	<xsl:variable name="nbCalculationPeriod1"
+		select="count(/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod)"/>
+
+	<!-- swapStream1.firstPeriodStartDate -->
+	<xsl:variable name="swapStream1.firstPeriodStartDate">
+		<xsl:variable name="unadjustedStartDate">
+			<xsl:value-of
+				select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod/unadjustedStartDate"
+			/>
+		</xsl:variable>
+		<xsl:variable name="calculationStartDate1">
+			<xsl:value-of
+				select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod/calculationStartDate"
+			/>
+		</xsl:variable>
+		<xsl:variable name="calculationStartDate">
+			<xsl:choose>
+				<xsl:when test="string-length($unadjustedStartDate) &gt; 0">
+					<xsl:value-of select="$unadjustedStartDate"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="$calculationStartDate1"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="effectiveDate">
+			<xsl:value-of
+				select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/effectiveDate"
+			/>
+		</xsl:variable>
+		<xsl:variable name="couponLength">
+			<xsl:value-of
+				select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/streamTemplate/potentialStubs/initialStubCharacteristics/couponLength"
+			/>
+		</xsl:variable>
+		<xsl:variable name="dateTreatment">
+			<xsl:value-of
+				select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/startDateTreatment/dateTreatment"
+			/>
+		</xsl:variable>
+
+		<!-- Return empty to prevent the tag to be generated for fullCoupon stubs -->
+		<xsl:if test="$couponLength != 'fullCoupon'">
+			<!-- Returns empty to prevent the tag to be generated as there is no unadjusted date available -->
+			<xsl:if test="$dateTreatment = 'indifferent'">
+				<xsl:if test="number($effectiveDate) &gt; number($calculationStartDate)">
+					<xsl:value-of
+						select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $calculationStartDate))"
+					/>
+				</xsl:if>
+			</xsl:if>
+		</xsl:if>
+	</xsl:variable>
+
+	<!-- swapStream1.firstRegularPeriodStartDate -->
+	<xsl:variable name="swapStream1.firstRegularPeriodStartDate">
+		<xsl:if
+			test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/stubPeriods/initialStub">
+			<xsl:variable name="swapStream1.firstRegularPeriodStartDateTmp">
+				<xsl:choose>
+					<xsl:when
+						test="$nbInterestPaymentPeriod1 = '1' and $nbCalculationPeriod1 &gt; 1">
+						<xsl:choose>
+							<xsl:when
+								test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod/calculationPeriod[2]/unadjustedStartDate">
+								<xsl:value-of
+									select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod/calculationPeriod[2]/unadjustedStartDate"
+								/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of
+									select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod/calculationPeriod[2]/calculationStartDate"
+								/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:choose>
+							<xsl:when
+								test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[2]/calculationPeriod/unadjustedStartDate">
+								<xsl:value-of
+									select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[2]/calculationPeriod/unadjustedStartDate"
+								/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of
+									select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[2]/calculationPeriod/calculationStartDate"
+								/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+
+			<!-- In case there is only one period, ie the STUB is the whole period, there is no regularPeriod so the first regular period is set to NOTHING-->
+			<xsl:choose>
+				<xsl:when test="$swapStream1.firstRegularPeriodStartDateTmp = ''">
+					<xsl:value-of select="''"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of
+						select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $swapStream1.firstRegularPeriodStartDateTmp))"
+					/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<!-- swapStream1.lastRegularPeriodEndDate -->
+	<xsl:variable name="swapStream1.lastRegularPeriodEndDate">
+		<xsl:if
+			test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/stubPeriods/finalStub">
+			<xsl:variable name="swapStream1.lastRegularPeriodEndDateTmp">
+				<xsl:choose>
+					<xsl:when
+						test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod1) - 1]/calculationPeriod/unadjustedEndDate">
+						<xsl:value-of
+							select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod1) - 1]/calculationPeriod/unadjustedEndDate"
+						/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of
+							select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod1) - 1]/calculationPeriod/calculationEndDate"
+						/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+
+			<!-- In case there is only one period, ie the STUB is the whole period, there is no regularPeriod so the first regular period is set to startDate-->
+			<xsl:choose>
+				<xsl:when test="$swapStream1.lastRegularPeriodEndDateTmp = ''">
+					<xsl:value-of select="$swapStream1.effectiveDate.unadjustedDate"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of
+						select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $swapStream1.lastRegularPeriodEndDateTmp))"
+					/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<!-- swapStream1.stubPeriodType -->
+	<xsl:variable name="swapStream1.stubPeriodType">
+		<xsl:variable name="swapStream1.initialStub"
+			select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/stubPeriods/initialStub"/>
+		<xsl:variable name="swapStream1.finalStub"
+			select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/stubPeriods/finalStub"/>
+		<xsl:variable name="swapStream1.isDualStub">
+			<xsl:choose>
+				<xsl:when
+					test="(string-length($stubPeriodPosition) &gt; 0) and (contains($stubPeriodPosition, 'bothSides')) and ($swapStream1.initialStub) and ($swapStream1.finalStub)"
+					>true</xsl:when>
+				<xsl:otherwise>false</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:choose>
+			<xsl:when
+				test="($swapStream1.isDualStub = 'true') or ($swapStream1.initialStub and $swapStream1.finalStub)">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:when test="$swapStream1.initialStub">
+				<xsl:variable name="couponLength"
+					select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/streamTemplate/potentialStubs/initialStubCharacteristics/couponLength"/>
+				<xsl:choose>
+					<xsl:when test="$couponLength = 'shortCoupon'">
+						<xsl:value-of select="'ShortInitial'"/>
+					</xsl:when>
+					<xsl:when test="$couponLength = 'longCoupon'">
+						<xsl:value-of select="'LongInitial'"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="''"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:when test="$swapStream1.finalStub">
+				<xsl:variable name="couponLength"
+					select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/streamTemplate/potentialStubs/finalStubCharacteristics/couponLength"/>
+				<xsl:choose>
+					<xsl:when test="$couponLength = 'shortCoupon'">
+						<xsl:value-of select="'ShortFinal'"/>
+					</xsl:when>
+					<xsl:when test="$couponLength = 'longCoupon'">
+						<xsl:value-of select="'LongFinal'"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="''"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:otherwise/>
+		</xsl:choose>
+	</xsl:variable>
+
+	<!-- swapStream1.firstPaymentDate -->
+	<xsl:variable name="swapStream1.firstPaymentDate">
+		<xsl:if
+			test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/stubPeriods/initialStub">
+			<xsl:variable name="swapStream1.firstPaymentDateTmp">
+				<xsl:choose>
+					<xsl:when
+						test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/unadjustedPaymentDate">
+						<xsl:value-of
+							select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/unadjustedPaymentDate"
+						/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:choose>
+							<xsl:when
+								test="$swapStream1.payRelativeTo1 = 'CalculationPeriodEndDate'">
+								<xsl:choose>
+									<xsl:when
+										test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[last()]/unadjustedEndDate">
+										<xsl:value-of
+											select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[last()]/unadjustedEndDate"
+										/>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of
+											select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[last()]/calculationEndDate"
+										/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<xsl:when
+								test="$swapStream1.payRelativeTo1 = 'CalculationPeriodStartDate'">
+								<xsl:choose>
+									<xsl:when
+										test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod/unadjustedStartDate">
+										<xsl:value-of
+											select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod/unadjustedStartDate"
+										/>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of
+											select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod/calculationStartDate"
+										/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of
+									select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[1]/paymentDate"
+								/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+			<xsl:if test="string-length($swapStream1.firstPaymentDateTmp) &gt; 0">
+				<xsl:value-of
+					select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $swapStream1.firstPaymentDateTmp))"
+				/>
+			</xsl:if>
+		</xsl:if>
+	</xsl:variable>
+
+	<!-- swapStream1.lastRegularPaymentDate -->
+	<xsl:variable name="swapStream1.lastRegularPaymentDate">
+		<xsl:if
+			test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/stubPeriods/finalStub">
+			<xsl:variable name="swapStream1.lastRegularPaymentDateTmp">
+				<xsl:choose>
+					<xsl:when
+						test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod1) - 1]/unadjustedPaymentDate">
+						<xsl:value-of
+							select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod1) - 1]/unadjustedPaymentDate"
+						/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:choose>
+							<xsl:when
+								test="$swapStream1.paymentScheduleNature = 'deducedFrom' and $swapStream1.paymentUnderlyingSchedule = 'calculationSchedule'">
+								<xsl:variable name="calendarTmp">
+									<xsl:value-of
+										select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/streamTemplate/paymentBusinessCenters/businessCenter"
+									/>
+								</xsl:variable>
+								<xsl:if
+									test="$calendarTmp != '' and $swapStream1.lastRegularPeriodEndDate != ''">
+									<xsl:variable name="fromAsMx">
+										<xsl:value-of
+											select="mx:execute-formula('mx.xml2xml.ECN.common.utils.adaptDate', concat('date:', $swapStream1.lastRegularPeriodEndDate, ',format:yyyy-MM-dd,outputFormat:yyyyMMdd'))"
+										/>
+									</xsl:variable>
+									<xsl:value-of
+										select="mx:execute-formula('mx.xml2xml.ECN.common.utils.dateshiftAdjusted2', concat('date:', $fromAsMx, ',days:', $swapStream1.paymentDaysOffset.periodMultiplier))"
+									/>
+								</xsl:if>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of
+									select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod1) - 1]/paymentDate"
+								/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+
+			<!-- In case there is only one period, ie the STUB is the whole period, there is no regularPeriod so the first regular period is set to NOTHING-->
+			<xsl:choose>
+				<xsl:when test="$swapStream1.lastRegularPaymentDateTmp = ''">
+					<xsl:value-of select="''"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of
+						select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $swapStream1.lastRegularPaymentDateTmp))"
+					/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.singlePeriod">
+		<xsl:call-template name="extract-singlePeriod">
+			<xsl:with-param name="tradeRef" select="$contractRef"/>
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<!-- =================== -->
+	<!-- SwapStream2         -->
+	<!-- =================== -->
+	<xsl:variable name="swapStream2.singlePeriod">
+		<xsl:call-template name="extract-singlePeriod">
+			<xsl:with-param name="tradeRef" select="$contractRef"/>
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<xsl:variable name="leg2.reset.resetPosition">
+		<xsl:call-template name="extract-resetPosition">
+			<xsl:with-param name="legNb" select="1"/>
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+
+
+
+
+
+
+
+
+
+
+	<xsl:variable name="swapStream2.calculationPeriodDates.identifier">
+		<xsl:value-of select="'leg_2_calculationPeriodDates'"/>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.effectiveDate.unadjustedDate">
+		<xsl:variable name="effectiveDateMx">
+			<xsl:call-template name="extract-effectiveDate">
+				<xsl:with-param name="legNb" select="1"/>
+				<xsl:with-param name="stream" select="2"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:value-of
+			select="mx:execute-formula($FpMLDateFormula, concat('date:', $effectiveDateMx, ',format:yyyymmdd,outputFormat:yyyy-mm-dd'))"
+		/>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.effectiveDate.adjustedDate">
+		<xsl:variable name="effectiveDateMx">
+			<xsl:value-of
+				select="/MxML/trades/trade[1]/tradeBody/*/stream[streamTemplate/leg = 2]/adjustedEffectiveDate"
+			/>
+		</xsl:variable>
+		<xsl:value-of
+			select="mx:execute-formula($FpMLDateFormula, concat('date:', $effectiveDateMx, ',format:yyyymmdd,outputFormat:yyyy-mm-dd'))"
+		/>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.termination.unadjustedDate">
+		<xsl:variable name="swapStream2.paramMaturityDate"
+			select="concat('date:', $leg2.maturity, ',format:yyyyMMdd,outputFormat:yyyy-MM-dd')"/>
+		<xsl:value-of select="mx:execute-formula($FpMLDateFormula, $swapStream2.paramMaturityDate)"
+		/>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.terminationDate.adjustedDate">
+		<xsl:variable name="terminationDateMx">
+			<xsl:value-of
+				select="/MxML/trades/trade[1]/tradeBody/*/stream[streamTemplate/leg = 2]/adjustedMaturity"
+			/>
+		</xsl:variable>
+		<xsl:value-of
+			select="mx:execute-formula($FpMLDateFormula, concat('date:', $terminationDateMx, ',format:yyyymmdd,outputFormat:yyyy-mm-dd'))"
+		/>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream2.frequency.periodMultiplier2">
+		<xsl:choose>
+			<xsl:when
+				test="$swapStream2.paymentSchedule.zeroCouponMode = 'true' or $swapStream2.singlePeriod = 'true'">
+				<xsl:value-of select="'1'"/>
+			</xsl:when>
+			<xsl:when test="$leg2.payment.periodUnit = 'quarter'">
+				<xsl:value-of select="$leg2.payment.periodMultiplier * 3"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$leg2.payment.periodMultiplier"/>
+			</xsl:otherwise>
+			
+		</xsl:choose>
+	</xsl:variable>
+	
+	<xsl:variable name="swapStream2.paymentScheduleNature"
+		select="/MxML/trades/trade[1]/tradeBody/*/stream[2]/streamTemplate/streamSchedules/paymentSchedule/scheduleNature"/>
+		
+	<xsl:variable name="swapStream2.paymentUnderlyingSchedule"
+		select="/MxML/trades/trade[1]/tradeBody/*/stream[2]/streamTemplate/streamSchedules/paymentSchedule/underlyingSchedule"/>
+		
+	<xsl:variable name="swapStream2.payRelativeTo2">
+		<xsl:variable name="swapStream2.paymentPosition"
+			select="/MxML/trades/trade[1]/tradeBody/*/stream[2]/streamTemplate/paymentPosition"/>
+		<xsl:choose>
+			<xsl:when
+				test="$swapStream2.paymentPosition = 'inArrears' and ($swapStream2.paymentUnderlyingSchedule = 'calculationSchedule' or $swapStream2.paymentUnderlyingSchedule = 'calculationEndSchedule')">
+				<xsl:value-of select="'CalculationPeriodEndDate'"/>
+			</xsl:when>
+			<xsl:when
+				test="$swapStream2.paymentPosition = 'upFront' and ($swapStream2.paymentUnderlyingSchedule = 'calculationSchedule' or $swapStream2.paymentUnderlyingSchedule = 'calculationEndSchedule')">
+				<xsl:value-of select="'CalculationPeriodStartDate'"/>
+			</xsl:when>
+			<xsl:when test="$swapStream2.paymentUnderlyingSchedule = 'resetSchedule'">
+				<xsl:value-of select="'ResetDate'"/>
+			</xsl:when>
+			<xsl:when test="$swapStream2.paymentScheduleNature = 'drivingSchedule'">
+				<xsl:value-of select="'CalculationPeriodStartDate'"/>
+			</xsl:when>
+			<xsl:otherwise/>
+		</xsl:choose>
+	</xsl:variable>
+	
+	<xsl:variable name="swapStream2.resetDates.id2">
+		<xsl:choose>
+			<xsl:when test="$swapStream2.isInflationIndexed = 'true'">
+				<xsl:value-of select="$swapStream2.leg2.resetDate.id"/>
+			</xsl:when>
+			<xsl:when test="$leg2.payoutType = 'floatingRate'">
+				<xsl:value-of select="$swapStream2.leg2.resetDate.id"/>
+			</xsl:when>
+			<xsl:when test="$leg2.payoutType = 'fixedRate'">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="'NaN'"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	
+	<xsl:variable name="swapStream2.calculationPeriodDatesReferenceHref">
+		<xsl:value-of select="'leg_2_calculationPeriodDates'"/>
+	</xsl:variable>
+	
+	<xsl:variable name="swapStream2.resetRelativeTo2">
+		<xsl:choose>
+			<xsl:when test="$swapStream2.isInflationIndexed = 'true'">
+				<xsl:variable name="resetPosition">
+					<xsl:call-template name="extract-indexationScheduleResetPosition">
+						<xsl:with-param name="stream" select="'2'"/>
+					</xsl:call-template>
+				</xsl:variable>
+				<xsl:choose>
+					<xsl:when test="$resetPosition = 'upFront'">
+						<xsl:value-of select="'CalculationPeriodStartDate'"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="'CalculationPeriodEndDate'"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:when test="$leg2.reset.resetPosition = 'upFront'"
+				>CalculationPeriodStartDate</xsl:when>
+			<xsl:when test="$leg2.reset.resetPosition = 'inArrears'"
+				>CalculationPeriodEndDate</xsl:when>
+			<xsl:otherwise/>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream2.fixingDates.dateRelativeToHref">
+		<xsl:choose>
+			<xsl:when test="$swapStream2.isInflationIndexed = 'true'">
+				<xsl:value-of select="$swapStream2.leg2.resetDate.id"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$swapStream2.calculationPeriodDatesReferenceHref"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream2.resetFrequency.periodMultiplier2">
+		<xsl:choose>
+			<xsl:when test="$leg2.reset.periodUnit = 'quarter'">
+				<xsl:value-of select="$leg2.reset.periodMultiplier * 3"/>
+			</xsl:when>
+			<xsl:when test="$leg2.reset.periodMultiplier = '0'">
+				<xsl:value-of select="'1'"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$leg2.reset.periodMultiplier"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<!-- swapStream2.notionalSchedule.id -->
+	<xsl:variable name="swapStream2.notionalSchedule.id">
+		<!--xsl:if test="$Mxgroup!='CS'"-->
+		<xsl:value-of select="'leg_2_notionalSchedule'"/>
+		<!--/xsl:if-->
+	</xsl:variable>
+	<xsl:variable name="swapStream2.paymentDates.id">
+		<!--xsl:if test="$Mxgroup ='CS'"-->
+		<xsl:value-of select="'leg_2_paymentDates'"/>
+		<!--/xsl:if-->
+	</xsl:variable>
+
+	<!-- swapStream2.notionalSchedule.notionalStepSchedule.initialValue -->
+	<xsl:variable name="swapStream2.notionalSchedule.notionalStepSchedule.tmpValue">
+		<xsl:variable name="initialCapitalAmount">
+			<xsl:call-template name="extract-initialCapitalAmount">
+				<xsl:with-param name="legNb" select="1"/>
+				<xsl:with-param name="stream" select="2"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:value-of select="$initialCapitalAmount"/>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.notionalSchedule.notionalStepSchedule.value">
+		<xsl:value-of
+			select="format-number($swapStream2.notionalSchedule.notionalStepSchedule.tmpValue, '##.##########')"
+		/>
+	</xsl:variable>
+
+	<xsl:variable name="oldSwapStream2.notionalSchedule.notionalStepSchedule.tmpValue">
+		<xsl:variable name="legNb">
+			<xsl:choose>
+				<xsl:when
+					test="$event = 'partyAssignment' and $lastContractEventReference.mefClass != 'mxContractEventICANCEL'">
+					<xsl:value-of select="2"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="1"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="initialCapitalAmount">
+			<xsl:call-template name="extract-initialCapitalAmount">
+				<xsl:with-param name="legNb" select="number($legNb)"/>
+				<xsl:with-param name="stream" select="2"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:value-of select="$initialCapitalAmount"/>
+	</xsl:variable>
+	<xsl:variable name="oldSwapStream2.notionalSchedule.notionalStepSchedule.value">
+		<xsl:value-of
+			select="format-number($oldSwapStream2.notionalSchedule.notionalStepSchedule.tmpValue, '##.##########')"
+		/>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream2.notionalSchedule.notionalStepSchedule.currency">
+		<xsl:call-template name="extract-initialCapitalCurrency">
+			<xsl:with-param name="legNb" select="1"/>
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.fixedRateSchedule.initialValue">
+		<xsl:choose>
+			<xsl:when
+				test="$leg2.payoutType = 'floatingRate' and string-length($leg2.rateOrMargin) &gt; 0">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:when test="$leg2.payoutType = 'fixedRate'">
+				<xsl:value-of select="format-number($leg2.rateOrMargin, '##.##########')"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of
+					select="mx:execute-formula('mx.xml2xml.ECN.common.errorHandling.throwException', concat('errorMessage: payment type for stream 1 is incorrect. Returned value is: ', $leg2.payoutType))"
+				/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream2.interestRateCustomized">
+		<xsl:choose>
+			<xsl:when test="MxML/trades/trade[@id = $contractRef]/tradeBody/*/customized = 'true'">
+				<xsl:choose>
+					<xsl:when
+						test="MxML/trades/trade[@id = $contractRef]/tradeBody/*/customizations/*[leg = '2']/customizedObject = 'interestRate'"
+						>true</xsl:when>
+					<xsl:otherwise>false</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:otherwise>false</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream2.fixedRateSchedule.steps">
+		<xsl:if
+			test="$leg2.payoutType = 'fixedRate' and $swapStream2.interestRateCustomized = 'true'">
+			<xsl:for-each
+				select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod">
+				<xsl:variable name="previousRate1">
+					<xsl:choose>
+						<xsl:when test="position() = 1">
+							<xsl:value-of
+								select="format-number($swapStream2.fixedRateSchedule.initialValue, '##.##########')"
+							/>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:value-of
+								select="format-number(preceding-sibling::interestPaymentPeriod[1]/calculationPeriod[last()]/fixedRatePeriod/fixedRate div 100, '##.##########')"
+							/>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:variable>
+				<xsl:for-each select="calculationPeriod">
+					<xsl:variable name="previousRate">
+						<xsl:choose>
+							<xsl:when test="position() = 1">
+								<xsl:value-of select="$previousRate1"/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of
+									select="format-number(preceding-sibling::calculationPeriod[1]/fixedRatePeriod/fixedRate div 100, '##.##########')"
+								/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:variable>
+					<xsl:variable name="thisPeriodRate"
+						select="format-number(fixedRatePeriod/fixedRate div 100, '##.##########')"/>
+					<xsl:if test="$thisPeriodRate != $previousRate">
+						<xsl:call-template name="create-step">
+							<xsl:with-param name="stepDate"
+								select="mx:execute-formula($FpMLDateFormula, concat('date:', calculationStartDate, ',format:yyyymmdd,outputFormat:yyyy-mm-dd'))"/>
+							<xsl:with-param name="stepValue"
+								select="format-number($thisPeriodRate, '##.##########')"/>
+						</xsl:call-template>
+					</xsl:if>
+				</xsl:for-each>
+			</xsl:for-each>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream2.calculationPeriodFrequency.periodMultiplier2">
+		<xsl:choose>
+			<xsl:when test="$leg2.calculation.periodUnit = 'quarter'">
+				<xsl:value-of select="$leg2.calculation.periodMultiplier * 3"/>
+			</xsl:when>
+			<xsl:when test="$leg2.calculation.periodMultiplier = '0'">
+				<xsl:value-of select="'1'"/>
+			</xsl:when>
+			<xsl:when
+				test="$swapStream2.paymentSchedule.zeroCouponMode = 'true' and $leg2.payoutType = 'fixedRate'">
+				<xsl:value-of select="'1'"/>
+			</xsl:when>
+			<xsl:when test="$leg2.singlePeriod = 'true' and $leg2.payoutType = 'fixedRate'">
+				<xsl:value-of select="'1'"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$leg2.calculation.periodMultiplier"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.paymentDates.periodMultiplier"
+		select="leg2.payment.periodMultiplier"/>
+
+	<xsl:variable name="swapStream2.fixingDates.periodMultiplier2">
+		<xsl:choose>
+			<xsl:when test="$swapStream2.isInflationIndexed = 'true'">
+				<xsl:value-of select="$swapStream2.fixingDates.periodMultiplier"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$leg2.reset.shifter.periodMultiplier"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="leg2.periodUnit">
+		<xsl:call-template name="extract-shifter-payment-periodUnit">
+			<xsl:with-param name="legNb" select="2"/>
+			<xsl:with-param name="tradeNb" select="$trdNb"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.paymentDaysOffset.period">
+		<xsl:choose>
+			<xsl:when test="$leg2.periodUnit = 'businessDay'">D</xsl:when>
+			<xsl:when test="$leg2.periodUnit = 'day'">D</xsl:when>
+			<xsl:when test="$leg2.periodUnit = 'week'">W</xsl:when>
+			<xsl:when test="$leg2.periodUnit = 'month'">M</xsl:when>
+			<xsl:when test="$leg2.periodUnit = 'year'">Y</xsl:when>
+			<xsl:otherwise>Business</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.paymentDaysOffset.periodMultiplier">
+		<xsl:value-of
+			select="/MxML/trades/trade[$trdNb]/tradeBody/*/stream[2]/streamTemplate/streamSchedules/paymentSchedule/shifter/shift/periodMultiplier"
+		/>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.paymentDaysOffset.dayType">
+		<xsl:choose>
+			<xsl:when
+				test="$swapStream2.paymentDaysOffset.periodMultiplier = '0' and $leg2.periodUnit = 'businessDay'"
+				>Business</xsl:when>
+			<xsl:otherwise>
+				<xsl:choose>
+					<xsl:when test="$leg2.periodUnit = 'day'">Calendar</xsl:when>
+					<xsl:otherwise>Business</xsl:otherwise>
+				</xsl:choose>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="zeroCouponMode"
+		select="/MxML/trades/trade[1]/tradeBody/*/stream[streamTemplate/leg = 2]/streamTemplate/streamSchedules/paymentSchedule/zeroCouponMode"/>
+	<xsl:variable name="singlePeriod"
+		select="/MxML/trades/trade[1]/tradeBody/*/stream[streamTemplate/leg = 2]/streamTemplate/streamSchedules/singlePeriod"/>
+	<xsl:variable name="leg2.periodMultiplier">
+		<xsl:call-template name="extract-shifter-payment-periodMultiplier">
+			<xsl:with-param name="legNb" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="dateShifterDirection">
+		<xsl:call-template name="extract-payment-dateShifterDirection">
+			<xsl:with-param name="legNb" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<!--margin stream2-->
+	<xsl:variable name="swapStream2.margin">
+		<xsl:choose>
+			<xsl:when test="$swapStream2.isInflationIndexed = 'true'">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:call-template name="extract-margin">
+					<xsl:with-param name="stream" select="2"/>
+				</xsl:call-template>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.step.nodes">
+		<xsl:choose>
+			<xsl:when test="$swapStream2.isInflationIndexed = 'true'">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:variable name="initialSpread"
+					select="format-number($swapStream2.margin, '##.##########')"/>
+				<xsl:for-each
+					select="/MxML/trades/trade[(not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))][@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod">
+					<xsl:variable name="previousSpread1">
+						<xsl:choose>
+							<xsl:when test="position() = 1">
+								<xsl:value-of select="$initialSpread"/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of
+									select="format-number(preceding-sibling::interestPaymentPeriod[1]/calculationPeriod[last()]/floatingRatePeriod/margin, '##.##########')"
+								/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:variable>
+					<xsl:for-each select="calculationPeriod">
+						<xsl:variable name="previousSpread">
+							<xsl:choose>
+								<xsl:when test="position() = 1">
+									<xsl:value-of select="$previousSpread1"/>
+								</xsl:when>
+								<xsl:otherwise>
+									<xsl:value-of
+										select="format-number(preceding-sibling::calculationPeriod[1]/floatingRatePeriod/margin, '##.##########')"
+									/>
+								</xsl:otherwise>
+							</xsl:choose>
+						</xsl:variable>
+						<xsl:variable name="thisPeriodSpread"
+							select="format-number(floatingRatePeriod/margin, '##.##########')"/>
+						<xsl:if test="$previousSpread != $thisPeriodSpread">
+							<xsl:call-template name="create-step">
+								<xsl:with-param name="stepDate"
+									select="mx:execute-formula($FpMLDateFormula, concat('date:', calculationStartDate, ',format:yyyymmdd,outputFormat:yyyy-mm-dd'))"/>
+								<xsl:with-param name="stepValue"
+									select="format-number($thisPeriodSpread div 100, '##.##########')"
+								/>
+							</xsl:call-template>
+						</xsl:if>
+					</xsl:for-each>
+				</xsl:for-each>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<!-- swapStream2.spreadScheduleType -->
+	<xsl:variable name="swapStream2.spreadScheduleType">
+		<xsl:choose>
+			<xsl:when test="$swapStream2.isInflationIndexed = 'true'">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:variable name="spreadSchedule.initialValue"
+					select="format-number($swapStream2.margin div 100, '##.##########')"/>
+				<xsl:choose>
+					<xsl:when test="number($spreadSchedule.initialValue) > 0">
+						<xsl:value-of select="'Long'"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="'Short'"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.spreadSchedule.nodes">
+		<xsl:choose>
+			<xsl:when test="$swapStream2.isInflationIndexed = 'true'">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:call-template name="create-spreadSchedule">
+					<xsl:with-param name="initialValue"
+						select="format-number($swapStream2.margin div 100, '##.##########')"/>
+					<xsl:with-param name="step.nodes" select="$swapStream2.step.nodes"/>
+					<xsl:with-param name="type" select="$swapStream2.spreadScheduleType"/>
+				</xsl:call-template>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<!--stream2 initialCapitalExchange-->
+	<xsl:variable name="swapStream2.initialExchange">
+		<xsl:if test="$Mxgroup = 'CS'">
+			<xsl:variable name="value">
+				<xsl:call-template name="extract-initialCapitalExchange">
+					<xsl:with-param name="tradeRef" select="$contractRef"/>
+					<xsl:with-param name="stream" select="2"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="string-length($value) &gt; 0">
+					<xsl:value-of select="$value"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="'false'"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<!--stream2 finalCapitalExchange-->
+	<xsl:variable name="swapStream2.finalExchange">
+		<xsl:if test="$Mxgroup = 'CS'">
+			<xsl:variable name="value">
+				<xsl:call-template name="extract-finalCapitalExchange">
+					<xsl:with-param name="tradeRef" select="$contractRef"/>
+					<xsl:with-param name="stream" select="2"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="string-length($value) &gt; 0">
+					<xsl:value-of select="$value"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="'false'"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<!--stream2 intermediateCapitalExchange-->
+	<xsl:variable name="swapStream2.intermediateExchange">
+		<xsl:if test="$Mxgroup = 'CS'">
+			<xsl:variable name="value">
+				<xsl:call-template name="extract-intermediateCapitalExchange">
+					<xsl:with-param name="stream" select="2"/>
+					<xsl:with-param name="legNb" select="$trdNb"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="string-length($value) &gt; 0">
+					<xsl:value-of select="$value"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="'false'"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable name="oldSwapStream2.intermediateExchange">
+		<xsl:if test="$Mxgroup = 'CS'">
+			<xsl:variable name="legNb">
+				<xsl:choose>
+					<xsl:when test="$event = 'partyAssignment'">
+						<xsl:value-of select="2"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="1"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+			<xsl:variable name="value">
+				<xsl:call-template name="extract-intermediateCapitalExchange">
+					<xsl:with-param name="legNb" select="number($legNb)"/>
+					<xsl:with-param name="stream" select="2"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="string-length($value) &gt; 0">
+					<xsl:value-of select="$value"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="'false'"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<!-- swapStream2 : Payers and receivers  -->
+	<xsl:variable name="swapStream2.payerPartyReference.href">
+		<xsl:call-template name="swapStream-payerPartyReferenceHref">
+			<xsl:with-param name="nbTradeNode" select="$nbTradeNode"/>
+			<xsl:with-param name="leg" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream2.receiverPartyReference.href">
+		<xsl:call-template name="swapStream-receiverPartyReferenceHref">
+			<xsl:with-param name="nbTradeNode" select="$nbTradeNode"/>
+			<xsl:with-param name="leg" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<!-- swapStream2.notionalSchedule.notionalStepSchedule.steps -->
+	<xsl:variable name="swapStream2.capitalPaymentFlowCustomized">
+		<xsl:choose>
+			<xsl:when
+				test="string-length(/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/capital/amortizingRule/amortizingFormula) &gt; 0"
+				>true</xsl:when>
+			<xsl:when test="MxML/trades/trade[@id = $contractRef]/tradeBody/*/customized = 'true'">
+				<xsl:choose>
+					<xsl:when
+						test="MxML/trades/trade[@id = $contractRef]/tradeBody/*/customizations/*[leg = '2']/customizedObject = 'capitalPaymentFlow'"
+						>true</xsl:when>
+					<xsl:otherwise>false</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:otherwise>false</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+    
+	<xsl:variable name="swapStream2.mainOriginalStrikeCustomized">
+		<xsl:choose>
+			<xsl:when test="MxML/trades/trade[@id = $contractRef]/tradeBody/*/customizations/*[leg = '2']/customizedObject = 'mainOriginalStrike'">true</xsl:when>
+			<xsl:otherwise>false</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	
+	<xsl:variable name="swapStream2.notionalSchedule.notionalStepSchedule.steps">
+		<xsl:if test="$swapStream2.capitalPaymentFlowCustomized = 'true'">
+			<xsl:variable name="event"
+				select="name(/MxML/contractEvents/contractEvent/contractEventBody/*)"/>
+			<xsl:variable name="eventImpactDate"
+				select="/MxML/contractEvents/contractEvent/contractEventImpacts/contractEventImpact/contractEventImpactHeader/contractEventImpactDate"/>
+			<xsl:for-each
+				select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod">
+				<xsl:if
+					test="
+						string-length($eventImpactDate) = 0 or
+						not($ird.fpml.terminating.event = 'true') or
+						($eventImpactDate &gt; calculationPeriod[1]/calculationEndDate) or
+						(calculationPeriod[1]/contributionFlows/contributionFlow[1]/calculationPeriod/notionalAmount &gt; 0)">
+					<xsl:variable name="ippPos" select="position()"/>
+					<xsl:for-each select="calculationPeriod">
+						<xsl:variable name="cpPos" select="position()"/>
+						<xsl:for-each select="contributionFlows/contributionFlow">
+							<xsl:variable name="pos" select="position()"/>
+							<xsl:variable name="tmpPos">
+								<xsl:choose>
+									<xsl:when test="$pos = 1">
+										<xsl:choose>
+											<xsl:when test="$cpPos = 1">
+												<xsl:variable name="tmpCpPos">
+												<xsl:value-of
+												select="count(/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[$ippPos - 1]/calculationPeriod)"
+												/>
+												</xsl:variable>
+												<xsl:value-of
+												select="count(/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[$ippPos - 1]/calculationPeriod[$tmpCpPos]/contributionFlows/contributionFlow)"
+												/>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:value-of
+												select="count(/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[$ippPos]/calculationPeriod[$cpPos - 1]/contributionFlows/contributionFlow)"
+												/>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="$pos - 1"/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:variable>
+							<xsl:variable name="tmpCpPos">
+								<xsl:choose>
+									<xsl:when test="$pos = 1">
+										<xsl:choose>
+											<xsl:when test="$cpPos = 1">
+												<xsl:value-of
+												select="count(/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[$ippPos - 1]/calculationPeriod)"
+												/>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:value-of select="$cpPos - 1"/>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="$cpPos"/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:variable>
+							<xsl:variable name="tmpIppPos">
+								<xsl:choose>
+									<xsl:when test="$pos = 1">
+										<xsl:choose>
+											<xsl:when test="$cpPos = 1">
+												<xsl:value-of select="$ippPos - 1"/>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:value-of select="$ippPos"/>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="$ippPos"/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:variable>
+							<xsl:variable name="previousNotional">
+								<xsl:choose>
+									<xsl:when test="($pos = 1) and ($cpPos = 1) and ($ippPos = 1)">
+										<xsl:variable name="event"
+											select="name(/MxML/contractEvents/contractEvent/contractEventBody/*)"/>
+										<xsl:choose>
+											<xsl:when test="$event = 'partyAssignment'">
+												<xsl:value-of
+												select="$swapStream2.notionalSchedule.notionalStepSchedule.value"
+												/>
+											</xsl:when>
+											<xsl:when test="$event = 'unwind'">
+												<xsl:value-of
+												select="$swapStream2.notionalSchedule.remainingLiveQuantity"
+												/>
+											</xsl:when>
+											<xsl:otherwise>
+												<xsl:value-of
+												select="$swapStream2.notionalSchedule.notionalStepSchedule.initialValue"
+												/>
+											</xsl:otherwise>
+										</xsl:choose>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of
+											select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[position() = $tmpIppPos]/calculationPeriod[position() = $tmpCpPos]/contributionFlows/contributionFlow[position() = $tmpPos]/calculationPeriod/notionalAmount"
+										/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:variable>
+							<xsl:variable name="thisPeriodNotional"
+								select="calculationPeriod/notionalAmount"/>
+							<xsl:if
+								test="format-number($thisPeriodNotional, '##.##########') != format-number($previousNotional, '##.##########') and $thisPeriodNotional &gt;= 0">
+								<xsl:element name="step">
+									<xsl:if
+										test="string-length(calculationPeriod/calculationStartDate) &gt; 0">
+										<xsl:element name="stepDate">
+											<xsl:value-of
+												select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', calculationPeriod/calculationStartDate))"
+											/>
+										</xsl:element>
+									</xsl:if>
+									<xsl:element name="stepValue">
+										<xsl:value-of
+											select="format-number($thisPeriodNotional, '##.##########')"
+										/>
+									</xsl:element>
+								</xsl:element>
+							</xsl:if>
+						</xsl:for-each>
+					</xsl:for-each>
+				</xsl:if>
+			</xsl:for-each>
+		</xsl:if>
+	</xsl:variable>
+
+
+	<!-- swapStream2.initialStub -->
+	<xsl:variable name="swapStream2.initialStub.floatingRate.params">
+		<xsl:call-template name="extract-initialStub-indexLabel">
+			<xsl:with-param name="tradeRef" select="$contractRef"/>
+			<xsl:with-param name="stream" select="2"/>
+			<xsl:with-param name="index" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.initialStub.floatingRate2.params">
+		<xsl:call-template name="extract-initialStub-indexLabel">
+			<xsl:with-param name="tradeRef" select="$contractRef"/>
+			<xsl:with-param name="stream" select="2"/>
+			<xsl:with-param name="index" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<!-- swapStream2.finalStub -->
+	<xsl:variable name="swapStream2.finalStub.floatingRate.params">
+		<xsl:call-template name="extract-finalStub-indexLabel">
+			<xsl:with-param name="legNb" select="$trdNb"/>
+			<xsl:with-param name="stream" select="2"/>
+			<xsl:with-param name="index" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.finalStub.floatingRate2.params">
+		<xsl:call-template name="extract-finalStub-indexLabel">
+			<xsl:with-param name="legNb" select="$trdNb"/>
+			<xsl:with-param name="stream" select="2"/>
+			<xsl:with-param name="index" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<!-- swapStream2.precision -->
+	<xsl:variable name="swapStream2.precision" select="$leg2.roundingPrecision + 2"/>
+
+	<!-- swapStream2.paymentSchedule.zeroCouponMode -->
+	<xsl:variable name="swapStream2.paymentSchedule.zeroCouponMode">
+		<xsl:call-template name="extract-paymentSchedule-zeroCouponMode">
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<!-- swapStream2.compoundingMethod -->
+	<xsl:variable name="swapStream2.compoundingFormula">
+		<xsl:call-template name="extract-compoundingFormula">
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.compoundingScope">
+		<xsl:call-template name="extract-compoundingScope">
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.compoundingMethod">
+		<xsl:if
+			test="string-length($swapStream2.compoundingFormula) &gt; 0 and $leg2.payoutType = 'floatingRate'">
+			<xsl:value-of
+				select="mx:execute-formula($mapCompounding, concat('compoundingFormula:', $swapStream2.compoundingFormula, ',compoundingScope:', $swapStream2.compoundingScope))"
+			/>
+		</xsl:if>
+	</xsl:variable>
+
+	<!-- swapStream2.averageMethod -->
+	<xsl:variable name="swapStream2.averageMethod">
+		<xsl:variable name="averageMethod">
+			<xsl:call-template name="extract-averageMethod">
+				<xsl:with-param name="stream" select="2"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:choose>
+			<xsl:when test="$averageMethod = 'weighted'">Weighted</xsl:when>
+			<xsl:when test="$averageMethod = 'unweighted'">Unweighted</xsl:when>
+			<xsl:otherwise/>
+		</xsl:choose>
+	</xsl:variable>
+
+	<!-- number of InterestPaymentPeriod nodes-->
+	<xsl:variable name="nbInterestPaymentPeriod2"
+		select="count(/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod)"/>
+	<!-- number of calculationPeriod nodes-->
+	<xsl:variable name="nbCalculationPeriod2"
+		select="count(/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod)"/>
+
+	<!-- swapStream2.firstPeriodStartDate -->
+	<xsl:variable name="swapStream2.firstPeriodStartDate">
+		<xsl:variable name="unadjustedStartDate">
+			<xsl:value-of
+				select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod/unadjustedStartDate"
+			/>
+		</xsl:variable>
+		<xsl:variable name="calculationStartDate1">
+			<xsl:value-of
+				select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod/calculationStartDate"
+			/>
+		</xsl:variable>
+		<xsl:variable name="calculationStartDate">
+			<xsl:choose>
+				<xsl:when test="string-length($unadjustedStartDate) &gt; 0">
+					<xsl:value-of select="$unadjustedStartDate"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="$calculationStartDate1"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="effectiveDate">
+			<xsl:value-of
+				select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/effectiveDate"
+			/>
+		</xsl:variable>
+		<xsl:variable name="couponLength">
+			<xsl:value-of
+				select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/streamTemplate/potentialStubs/initialStubCharacteristics/couponLength"
+			/>
+		</xsl:variable>
+		<xsl:variable name="dateTreatment">
+			<xsl:value-of
+				select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/streamTemplate/streamSchedules/calculationSchedule/scheduleGenerator/standardScheduleGenerator/startDateTreatment/dateTreatment"
+			/>
+		</xsl:variable>
+
+		<!-- Return empty to prevent the tag to be generated for fullCoupon stubs -->
+		<xsl:if test="$couponLength != 'fullCoupon'">
+			<!-- Returns empty to prevent the tag to be generated as there is no unadjusted date available -->
+			<xsl:if test="$dateTreatment = 'indifferent'">
+				<xsl:if test="number($effectiveDate) &gt; number($calculationStartDate)">
+					<xsl:value-of
+						select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $calculationStartDate))"
+					/>
+				</xsl:if>
+			</xsl:if>
+		</xsl:if>
+	</xsl:variable>
+
+	<!-- swapStream2.firstRegularPeriodStartDate -->
+	<xsl:variable name="swapStream2.firstRegularPeriodStartDate">
+		<xsl:if
+			test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/stubPeriods/initialStub">
+			<xsl:variable name="swapStream2.firstRegularPeriodStartDateTmp">
+				<xsl:choose>
+					<xsl:when
+						test="$nbInterestPaymentPeriod2 = '1' and $nbCalculationPeriod2 &gt; 1">
+						<xsl:choose>
+							<xsl:when
+								test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod/calculationPeriod[2]/unadjustedStartDate">
+								<xsl:value-of
+									select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod/calculationPeriod[2]/unadjustedStartDate"
+								/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of
+									select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod/calculationPeriod[2]/calculationStartDate"
+								/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:choose>
+							<xsl:when
+								test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[2]/calculationPeriod/unadjustedStartDate">
+								<xsl:value-of
+									select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[2]/calculationPeriod/unadjustedStartDate"
+								/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of
+									select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[2]/calculationPeriod/calculationStartDate"
+								/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+
+			<!-- In case there is only one period, ie the STUB is the whole period, there is no regularPeriod so the first regular period is set to NOTHING-->
+			<xsl:choose>
+				<xsl:when test="$swapStream2.firstRegularPeriodStartDateTmp = ''">
+					<xsl:value-of select="''"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of
+						select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $swapStream2.firstRegularPeriodStartDateTmp))"
+					/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<!-- swapStream2.lastRegularPeriodEndDate -->
+	<xsl:variable name="swapStream2.lastRegularPeriodEndDate">
+		<xsl:if
+			test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/stubPeriods/finalStub">
+			<xsl:variable name="swapStream2.lastRegularPeriodEndDateTmp">
+				<xsl:choose>
+					<xsl:when
+						test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod2) - 1]/calculationPeriod/unadjustedEndDate">
+						<xsl:value-of
+							select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod2) - 1]/calculationPeriod/unadjustedEndDate"
+						/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of
+							select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod2) - 1]/calculationPeriod/calculationEndDate"
+						/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+
+			<!-- In case there is only one period, ie the STUB is the whole period, there is no regularPeriod so the first regular period is set to startDate-->
+			<xsl:choose>
+				<xsl:when test="$swapStream2.lastRegularPeriodEndDateTmp = ''">
+					<xsl:value-of select="$swapStream2.effectiveDate.unadjustedDate"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of
+						select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $swapStream2.lastRegularPeriodEndDateTmp))"
+					/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<!-- swapStream2.stubPeriodType -->
+	<xsl:variable name="swapStream2.stubPeriodType">
+		<xsl:variable name="swapStream2.initialStub"
+			select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/stubPeriods/initialStub"/>
+		<xsl:variable name="swapStream2.finalStub"
+			select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/stubPeriods/finalStub"/>
+		<xsl:variable name="swapStream2.isDualStub">
+			<xsl:choose>
+				<xsl:when
+					test="(string-length($stubPeriodPosition) &gt; 0) and (contains($stubPeriodPosition, 'bothSides')) and ($swapStream2.initialStub) and ($swapStream2.finalStub)"
+					>true</xsl:when>
+				<xsl:otherwise>false</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:choose>
+			<xsl:when
+				test="($swapStream2.isDualStub = 'true') or ($swapStream2.initialStub and $swapStream2.finalStub)">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:when test="$swapStream2.initialStub">
+				<xsl:variable name="couponLength"
+					select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/streamTemplate/potentialStubs/initialStubCharacteristics/couponLength"/>
+				<xsl:choose>
+					<xsl:when test="$couponLength = 'shortCoupon'">
+						<xsl:value-of select="'ShortInitial'"/>
+					</xsl:when>
+					<xsl:when test="$couponLength = 'longCoupon'">
+						<xsl:value-of select="'LongInitial'"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="''"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:when test="$swapStream2.finalStub">
+				<xsl:variable name="couponLength"
+					select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/streamTemplate/potentialStubs/finalStubCharacteristics/couponLength"/>
+				<xsl:choose>
+					<xsl:when test="$couponLength = 'shortCoupon'">
+						<xsl:value-of select="'ShortFinal'"/>
+					</xsl:when>
+					<xsl:when test="$couponLength = 'longCoupon'">
+						<xsl:value-of select="'LongFinal'"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="''"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:when>
+			<xsl:otherwise/>
+		</xsl:choose>
+	</xsl:variable>
+
+	<!-- swapStream2.firstPaymentDate -->
+	<xsl:variable name="swapStream2.firstPaymentDate">
+		<xsl:if
+			test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/stubPeriods/initialStub">
+			<xsl:variable name="swapStream2.firstPaymentDateTmp">
+				<xsl:choose>
+					<xsl:when
+						test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/unadjustedPaymentDate">
+						<xsl:value-of
+							select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/unadjustedPaymentDate"
+						/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:choose>
+							<xsl:when
+								test="$swapStream2.payRelativeTo2 = 'CalculationPeriodEndDate'">
+								<xsl:choose>
+									<xsl:when
+										test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[last()]/unadjustedEndDate">
+										<xsl:value-of
+											select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[last()]/unadjustedEndDate"
+										/>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of
+											select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod[last()]/calculationEndDate"
+										/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<xsl:when
+								test="$swapStream2.payRelativeTo2 = 'CalculationPeriodStartDate'">
+								<xsl:choose>
+									<xsl:when
+										test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod/unadjustedStartDate">
+										<xsl:value-of
+											select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod/unadjustedStartDate"
+										/>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of
+											select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/calculationPeriod/calculationStartDate"
+										/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of
+									select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[1]/paymentDate"
+								/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+			<xsl:if test="string-length($swapStream2.firstPaymentDateTmp) &gt; 0">
+				<xsl:value-of
+					select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $swapStream2.firstPaymentDateTmp))"
+				/>
+			</xsl:if>
+		</xsl:if>
+	</xsl:variable>
+
+	<!-- swapStream2.lastRegularPaymentDate -->
+	<xsl:variable name="swapStream2.lastRegularPaymentDate">
+		<xsl:if
+			test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/stubPeriods/finalStub">
+			<xsl:variable name="swapStream2.lastRegularPaymentDateTmp">
+				<xsl:choose>
+					<xsl:when
+						test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod2) - 1]/unadjustedPaymentDate">
+						<xsl:value-of
+							select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod2) - 1]/unadjustedPaymentDate"
+						/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:choose>
+							<xsl:when
+								test="$swapStream2.paymentScheduleNature = 'deducedFrom' and $swapStream2.paymentUnderlyingSchedule = 'calculationSchedule'">
+								<xsl:variable name="calendarTmp">
+									<xsl:value-of
+										select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/streamTemplate/paymentBusinessCenters/businessCenter"
+									/>
+								</xsl:variable>
+								<xsl:if
+									test="$calendarTmp != '' and $swapStream2.lastRegularPeriodEndDate != ''">
+									<xsl:variable name="fromAsMx">
+										<xsl:value-of
+											select="mx:execute-formula('mx.xml2xml.ECN.common.utils.adaptDate', concat('date:', $swapStream2.lastRegularPeriodEndDate, ',format:yyyy-MM-dd,outputFormat:yyyyMMdd'))"
+										/>
+									</xsl:variable>
+									<xsl:value-of
+										select="mx:execute-formula('mx.xml2xml.ECN.common.utils.dateshiftAdjusted2', concat('date:', $fromAsMx, ',days:', $swapStream2.paymentDaysOffset.periodMultiplier))"
+									/>
+								</xsl:if>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of
+									select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[2]/cashFlows/interestFlows/interestPaymentPeriod[number($nbInterestPaymentPeriod2) - 1]/paymentDate"
+								/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+
+			<!-- In case there is only one period, ie the STUB is the whole period, there is no regularPeriod so the first regular period is set to NOTHING-->
+			<xsl:choose>
+				<xsl:when test="$swapStream2.lastRegularPaymentDateTmp = ''">
+					<xsl:value-of select="''"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of
+						select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $swapStream2.lastRegularPaymentDateTmp))"
+					/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<!-- ======= -->
+	<!-- premium -->
+	<!-- ======= -->
+	<xsl:variable name="premium.receiverPartyReference.href">
+		<xsl:call-template name="extract-settlFlow-receiverPartyRefId"/>
+	</xsl:variable>
+	<xsl:variable name="premium.payerPartyReference.href">
+		<xsl:variable name="premium.payerPartyReferencePre">
+			<xsl:call-template name="extract-settlFlow-payerPartyRefId"/>
+		</xsl:variable>
+		<xsl:choose>
+			<xsl:when test="string-length(premium.payerPartyReference) &gt; 0">
+				<xsl:value-of select="$premium.payerPartyReferencePre"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$ctpNameRef"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<!-- ======= -->
+	<!-- exercise -->
+	<!-- ======= -->
+	<xsl:variable name="exercise.optionHolderReference">
+		<xsl:call-template name="extract-optionHolderReference">
+			<xsl:with-param name="legNb" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="exercise.optionWriterReference">
+		<xsl:call-template name="extract-optionWriterReference">
+			<xsl:with-param name="legNb" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="exercise.optionForm">
+		<xsl:call-template name="extract-optionForm">
+			<xsl:with-param name="legNb" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="exercise.buyerPartyReference.href"
+		select="substring($exercise.optionHolderReference, 2)"/>
+	<xsl:variable name="exercise.sellerPartyReference.href"
+		select="substring($exercise.optionWriterReference, 2)"/>
+	<xsl:variable name="exercizePenaltyFee">
+		<xsl:call-template name="extract-exercizePenaltyFee"/>
+	</xsl:variable>
+
+	<!-- ============= -->
+	<!-- Mutual Breaks -->
+	<!-- ============= -->
+	<xsl:variable name="mandatoryEarlyTerminationModel.adjustedDate">
+		<xsl:variable name="exercizeStartDate">
+			<xsl:call-template name="extract-mutualBreak-exercizeScheduleBuilder-exercizeStartDate"
+			/>
+		</xsl:variable>
+		<xsl:variable name="notification.dateShifterLabel"
+			select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/payout/option/mutualBreakSchedule/notificationEffectiveRelationship/notificationSchedulesShifter/dateShifterLabel"/>
+		<xsl:variable name="mandatoryEarlyTerminationModel.adjustedDateTmp">
+			<xsl:if
+				test="string-length($exercizeStartDate) &gt; 0 and $isMandatoryEarlyTermination = 'true'">
+				<xsl:value-of
+					select="mx:execute-formula('mx.xml2xml.ECN.common.utils.addDateOffset', concat('date:', $exercizeStartDate, ',shfiter:', $notification.dateShifterLabel))"
+				/>
+			</xsl:if>
+		</xsl:variable>
+		<xsl:if test="string-length($mandatoryEarlyTerminationModel.adjustedDateTmp) &gt; 0">
+			<xsl:value-of
+				select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $mandatoryEarlyTerminationModel.adjustedDateTmp))"
+			/>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable name="mandatoryEarlyTerminationModel.cashSettlement.adjustedDate.nodes">
+		<xsl:for-each
+			select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/payout/option/mutualBreakSchedule/exercizeEvents/exercizeEvent">
+			<xsl:if test="string-length(exercizeEffectiveDate) &gt; 0">
+				<adjustedDate>
+					<xsl:value-of
+						select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', exercizeEffectiveDate))"
+					/>
+				</adjustedDate>
+			</xsl:if>
+		</xsl:for-each>
+	</xsl:variable>
+
+	<xsl:variable name="optionalEarlyTerminationModel.cashSettlement.adjustedDate.nodes">
+		<xsl:for-each
+			select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/payout/option/mutualBreakSchedule/exercizeEvents/exercizeEvent">
+			<xsl:if test="string-length(exercizeEffectiveDate) &gt; 0">
+				<adjustedDate>
+					<xsl:value-of
+						select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', exercizeEffectiveDate))"
+					/>
+				</adjustedDate>
+			</xsl:if>
+		</xsl:for-each>
+	</xsl:variable>
+
+	<xsl:variable name="mandatoryEarlyTerminationModel.dateAdjustments.businessDayConvention">
+		<xsl:variable name="businessDayConventionTmpMx">
+			<xsl:choose>
+				<xsl:when
+					test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/payout/option/mutualBreakSchedule/exercizeScheduleBuilder/exercizeStreamSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention">
+					<xsl:variable name="businessDayConventionTmpMxTmp">
+						<xsl:value-of
+							select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/payout/option/mutualBreakSchedule/exercizeScheduleBuilder/exercizeStreamSchedule/scheduleGenerator/standardScheduleGenerator/businessDayConvention"
+						/>
+					</xsl:variable>
+					<xsl:value-of
+						select="concat('businessDayConvention:', normalize-space($businessDayConventionTmpMxTmp))"
+					/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="$swapStream1.paramBusinessDayConvention"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="businessDayConventionMx">
+			<xsl:value-of select="$businessDayConventionTmpMx"/>
+		</xsl:variable>
+		<xsl:variable name="businessDayConventionTmp">
+			<xsl:value-of
+				select="mx:execute-formula('public.xml2xml.mapping.mxml2fpml.common.businessDayConvention', $businessDayConventionMx)"
+			/>
+		</xsl:variable>
+		<xsl:value-of select="$businessDayConventionTmp"/>
+	</xsl:variable>
+
+	<xsl:variable name="earlyTerminationProvision.dateAdjustments.businessDayConvention">
+		<xsl:variable name="paymentBusinessDayConvention">
+			<xsl:choose>
+				<xsl:when
+					test="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/stream[1]/streamTemplate[payoutType = 'floatingRate']">
+					<xsl:value-of
+						select="mx:execute-formula($mapBusinessDayConv, concat('businessDayConvention:', normalize-space($leg1.payment.businessDayConvention)))"
+					/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of
+						select="mx:execute-formula($mapBusinessDayConv, concat('businessDayConvention:', normalize-space($leg2.payment.businessDayConvention)))"
+					/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="breakCalculationMethod">
+			<xsl:variable name="label" select="'BRCALCMETH'"/>
+			<xsl:call-template name="extract-udf">
+				<xsl:with-param name="label" select="$label"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:choose>
+			<xsl:when test="$breakCalculationMethod = 'ISDA Standard Method'">
+				<xsl:value-of select="'FOLLOWING'"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$paymentBusinessDayConvention"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="businessCenter.nodes">
+		<xsl:variable name="businessCentersTmp">
+			<xsl:call-template name="getBusinessCenterFromNotificationEffectiveCalendar">
+				<xsl:with-param name="mapBusinessCenter"
+					select="$mapBusinessCenter"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:if test="$businessCentersTmp != 'UNMAPPED'">
+			<xsl:variable name="_value.tokens">
+				<xsl:call-template name="str:_split-pattern">
+					<xsl:with-param name="string" select="$businessCentersTmp"/>
+					<xsl:with-param name="pattern" select="';'"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:variable name="value.tokens" select="exsl:node-set($_value.tokens)/token"/>
+			<xsl:for-each select="$value.tokens">
+				<xsl:variable name="pos" select="position()"/>
+				<xsl:variable name="token" select="string($value.tokens[$pos])"/>
+				<businessCenter>
+					<xsl:value-of select="$token"/>
+				</businessCenter>
+			</xsl:for-each>
+		</xsl:if>
+	</xsl:variable>
+	
+	<xsl:variable name="stream2.businessCenter.nodes">
+		<xsl:variable name="businessCentersTmp">
+			<xsl:call-template name="getBusinessCenterFromNotificationEffectiveCalendar">
+				<xsl:with-param name="legNumber" select="2"/>
+				<xsl:with-param name="mapBusinessCenter" select="$mapBusinessCenters"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:if test="$businessCentersTmp != 'UNMAPPED'">
+			<xsl:variable name="_value.tokens">
+				<xsl:call-template name="str:_split-pattern">
+					<xsl:with-param name="string" select="$businessCentersTmp"/>
+					<xsl:with-param name="pattern" select="';'"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:variable name="value.tokens" select="exsl:node-set($_value.tokens)/token"/>
+			<xsl:for-each select="$value.tokens">
+				<xsl:variable name="pos" select="position()"/>
+				<xsl:variable name="token" select="string($value.tokens[$pos])"/>
+				<businessCenter>
+					<xsl:value-of select="$token"/>
+				</businessCenter>
+			</xsl:for-each>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable name="tradeDateMx">
+		<xsl:call-template name="extract-tradeDate"/>
+	</xsl:variable>
+	<xsl:variable name="exercizeStartDate">
+		<xsl:call-template name="extract-mutualBreak-exercizeScheduleBuilder-exercizeStartDate"/>
+	</xsl:variable>
+	<xsl:variable name="exercizeStartDelay">
+		<xsl:call-template name="extract-mutualBreak-exercizeScheduleBuilder-exercizeStartDelay"/>
+	</xsl:variable>
+	<xsl:variable name="mutualBreakSchedule">
+		<xsl:call-template name="extract-mutualBreakSchedule"/>
+	</xsl:variable>
+
+	<xsl:variable name="mutualBreak.dateDifference" select="$exercizeStartDate - $tradeDateMx"/>
+
+	<!-- The difference between the (novation) trade date and exercize date is computed and compared to ISDA shifters -->
+	<!-- Possible values are 1d, 6m, 1y .. 12y, 15y, 20y, 25y, 30y -->
+	<xsl:variable name="mutualBreak.isIsda">
+		<xsl:choose>
+			<xsl:when
+				test="
+					$mutualBreak.dateDifference = 1
+					or $mutualBreak.dateDifference = 600
+					or $mutualBreak.dateDifference = 9400
+					or $mutualBreak.dateDifference = 10000
+					or $mutualBreak.dateDifference = 20000
+					or $mutualBreak.dateDifference = 30000
+					or $mutualBreak.dateDifference = 40000
+					or $mutualBreak.dateDifference = 50000
+					or $mutualBreak.dateDifference = 60000
+					or $mutualBreak.dateDifference = 70000
+					or $mutualBreak.dateDifference = 80000
+					or $mutualBreak.dateDifference = 90000
+					or $mutualBreak.dateDifference = 100000
+					or $mutualBreak.dateDifference = 110000
+					or $mutualBreak.dateDifference = 120000
+					or $mutualBreak.dateDifference = 150000
+					or $mutualBreak.dateDifference = 200000
+					or $mutualBreak.dateDifference = 250000
+					or $mutualBreak.dateDifference = 300000
+					"
+				>true</xsl:when>
+			<xsl:otherwise>false</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="exercizeStartDelay.periodMultiplier"> 
+		<xsl:if test="string-length($exercizeStartDelay) &gt; 0">
+			<xsl:value-of select="substring-before($exercizeStartDelay, 'd')"/>
+			<xsl:value-of select="substring-before($exercizeStartDelay, 'm')"/>
+			<xsl:value-of select="substring-before($exercizeStartDelay, 'y')"/>
+			<xsl:value-of select="substring-before($exercizeStartDelay, 'w')"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable name="mutualBreak.exercizeScheduleBuilder.periodMultiplier">
+		<xsl:if test="string-length($mutualBreakSchedule) &gt; 0">
+			
+			<xsl:variable name="mutualBreak.dateDifference.periodMultiplier"> 
+				<xsl:choose>
+					<xsl:when test="$mutualBreak.dateDifference = 1">1</xsl:when>
+					<xsl:when test="$mutualBreak.dateDifference = 600">6</xsl:when>
+					<xsl:when test="$mutualBreak.dateDifference = 9400">6</xsl:when>
+					<xsl:when
+						test="string-length($mutualBreak.dateDifference) = 5 and translate($mutualBreak.dateDifference, '0', '') = substring($mutualBreak.dateDifference, 1, 1)">
+						<xsl:value-of select="substring($mutualBreak.dateDifference, 1, 1)"/>
+					</xsl:when>
+					<xsl:when test="string-length($mutualBreak.dateDifference) = 6">
+						<xsl:value-of select="substring($mutualBreak.dateDifference, 1, 2)"/>
+					</xsl:when>
+				</xsl:choose>
+			</xsl:variable>
+			
+			<xsl:choose>
+				<!-- If the exercise start delay label exists -->
+				<xsl:when test="string-length($exercizeStartDelay.periodMultiplier) &gt; 0"> 
+					<xsl:value-of select="$exercizeStartDelay.periodMultiplier"/>
+				</xsl:when>
+				<!-- If the time interval to the first exercise date corresponds to ISDA shifter -->
+				<xsl:when test="$mutualBreak.isIsda = 'true'">
+					<xsl:value-of select="$mutualBreak.dateDifference.periodMultiplier"/>
+				</xsl:when>
+			</xsl:choose>
+			
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable name="mandatoryEarlyTerminationModel.periodMultiplier">
+		<xsl:value-of select="$mutualBreak.exercizeScheduleBuilder.periodMultiplier"/>
+	</xsl:variable>
+
+	<xsl:variable name="mandatoryEarlyTerminationModel.period">
+		<xsl:variable name="exercizeStartDelay">
+			<xsl:call-template name="extract-mutualBreak-exercizeScheduleBuilder-exercizeStartDelay"
+			/>
+		</xsl:variable>
+		<xsl:choose>
+			<xsl:when test="string-length($mandatoryEarlyTerminationModel.periodMultiplier) &gt; 0">
+				<xsl:value-of
+					select="translate(substring-after($exercizeStartDelay, $mandatoryEarlyTerminationModel.periodMultiplier), $lowercase, $uppercase)"
+				/>
+			</xsl:when>
+			<xsl:otherwise/>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="mandatoryEarlyTerminationModel.calculationAgentPartyReference">
+		<xsl:variable name="breakableBy"
+			select="/MxML/trades/trade[1]/tradeBody/*/payout/option/breakableBy"/>
+		<xsl:choose>
+			<xsl:when test="$breakableBy = 'them'">
+				<!-- counterparty reference -->
+				<xsl:value-of select="$ctpNameRef"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<!-- our part reference -->
+				<xsl:value-of select="$ourNameRef"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="earliestExerciseDateTenor.periodMultiplier">
+		<xsl:value-of select="$mutualBreak.exercizeScheduleBuilder.periodMultiplier"/>
+	</xsl:variable>
+
+	<xsl:variable name="earliestExerciseDateTenor.period">
+		<xsl:variable name="earliestExerciseDateTenor.periodUnit">
+			<xsl:choose>
+				<xsl:when test="$mutualBreak.dateDifference = 1">D</xsl:when>
+				<xsl:when test="$mutualBreak.dateDifference = 600">M</xsl:when>
+				<xsl:when test="$mutualBreak.dateDifference = 9400">M</xsl:when>
+				<xsl:when test="string-length($mutualBreak.dateDifference) = 5">Y</xsl:when>
+				<xsl:when test="string-length($mutualBreak.dateDifference) = 6">Y</xsl:when>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:choose>
+			<xsl:when
+				test="(string-length($earliestExerciseDateTenor.periodMultiplier) &gt; 0) and (string-length($exercizeStartDelay.periodMultiplier) &gt; 0)">
+				<xsl:value-of
+					select="translate(substring-after($exercizeStartDelay, $earliestExerciseDateTenor.periodMultiplier), $lowercase, $uppercase)"
+				/>
+			</xsl:when>
+			<xsl:when
+				test="(string-length($earliestExerciseDateTenor.periodMultiplier) &gt; 0) and ($mutualBreak.isIsda = 'true')">
+				<xsl:value-of select="$earliestExerciseDateTenor.periodUnit"/>
+			</xsl:when>
+			<xsl:otherwise/>
+		</xsl:choose>
+	</xsl:variable>
+
+	<!--  earlyTerminationProvision : exerciseFrequency                        -->
+	<!--  If the frequency is 'specific' then use the <exercizeFrequencyLabel> -->
+	<!--  If the frequency is 'Inherited' then this is deduced from the        -->
+	<!--  underlying schedule frequency                                        -->
+	<xsl:variable name="mutualBreak.exerciseFrequency.scheduleFrequency">
+
+		<xsl:variable name="mutualBreakSchedule.periodMultiplier">
+			<xsl:call-template name="extract-mutualBreak-exercizeScheduleBuilder-periodMultiplier"/>
+		</xsl:variable>
+
+		<xsl:variable name="mutualBreakSchedule.periodUnit">
+			<xsl:call-template name="extract-mutualBreak-exercizeScheduleBuilder-periodUnit"/>
+		</xsl:variable>
+
+		<xsl:variable name="exercizeLegNature">
+			<xsl:variable name="legN">
+				<xsl:call-template
+					name="extract-mutualBreak-exercizeScheduleBuilder-exercizeLegNature"/>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="string-length($legN) &gt; 0">
+					<xsl:value-of select="$legN"/>
+				</xsl:when>
+				<xsl:otherwise>fixed</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+
+		<xsl:variable name="calculation.periodMultiplier">
+			<xsl:call-template name="extract-mutualPeriodMultiplier">
+				<xsl:with-param name="payout" select="$exercizeLegNature"/>
+			</xsl:call-template>
+		</xsl:variable>
+
+		<xsl:variable name="calculation.periodUnit">
+			<xsl:call-template name="extract-mutualPeriodUnit">
+				<xsl:with-param name="payout" select="$exercizeLegNature"/>
+			</xsl:call-template>
+		</xsl:variable>
+
+		<xsl:variable name="exercizeFrequencyLabel">
+			<xsl:call-template
+				name="extract-mutualBreak-exercizeScheduleBuilder-exercizeFrequencyLabel"/>
+		</xsl:variable>
+
+		<xsl:variable name="mutualBreak.periodUnit"
+			select="mx:execute-formula('public.xml2xml.mapping.mxml2fpml.common.periodUnit', concat('periodUnit:', $calculation.periodUnit))"/>
+
+		<xsl:variable name="frequencyLabel">
+			<xsl:choose>
+				<xsl:when test="string-length($exercizeFrequencyLabel) &gt; 0">
+					<xsl:value-of select="$exercizeFrequencyLabel"/>
+				</xsl:when>
+				<xsl:when test="string-length($mutualBreakSchedule.periodMultiplier) &gt; 0">
+					<xsl:value-of select="$mutualBreakSchedule.periodMultiplier"/>
+					<xsl:value-of
+						select="translate(substring($mutualBreakSchedule.periodUnit, 1, 1), $lowercase, $uppercase)"
+					/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of
+						select="concat($calculation.periodMultiplier, $mutualBreak.periodUnit/row[1])"
+					/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="mutualBreak.scheduleFrequency"
+			select="translate($frequencyLabel, $lowercase, $uppercase)"/>
+		<xsl:value-of select="$mutualBreak.scheduleFrequency"/>
+	</xsl:variable>
+
+	<xsl:variable name="exerciseFrequency.periodMultiplier">
+		<xsl:variable name="mutualBreak.scheduleFrequency.periodMultiplier">
+			<xsl:choose>
+				<xsl:when test="$mutualBreak.exerciseFrequency.scheduleFrequency = '12M'"
+					>1</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of
+						select="substring-before($mutualBreak.exerciseFrequency.scheduleFrequency, 'D')"/>
+					<xsl:value-of
+						select="substring-before($mutualBreak.exerciseFrequency.scheduleFrequency, 'M')"/>
+					<xsl:value-of
+						select="substring-before($mutualBreak.exerciseFrequency.scheduleFrequency, 'Y')"/>
+					<xsl:value-of
+						select="substring-before($mutualBreak.exerciseFrequency.scheduleFrequency, 'W')"
+					/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:value-of select="$mutualBreak.scheduleFrequency.periodMultiplier"/>
+	</xsl:variable>
+
+	<xsl:variable name="exerciseFrequency.period">
+		<xsl:variable name="mutualBreak.scheduleFrequency.periodUnit">
+			<xsl:choose>
+				<xsl:when test="$mutualBreak.exerciseFrequency.scheduleFrequency = '12M'"
+					>Y</xsl:when>
+				<xsl:otherwise>
+					<xsl:if test="string-length($exerciseFrequency.periodMultiplier) &gt; 0">
+						<xsl:value-of
+							select="substring-after($mutualBreak.exerciseFrequency.scheduleFrequency, $exerciseFrequency.periodMultiplier)"
+						/>
+					</xsl:if>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:value-of select="$mutualBreak.scheduleFrequency.periodUnit"/>
+	</xsl:variable>
+
+	<xsl:variable name="optionalEarlyTerminationModel.calculationAgentParty">
+		<xsl:value-of select="'ExercisingParty'"/>
+	</xsl:variable>
+	<xsl:variable name="optionalEarlyTerminationModel.calculationAgentPartyReference">
+		<xsl:variable name="breakableBy"
+			select="/MxML/trades/trade[1]/tradeBody/*/payout/option/breakableBy"/>
+		<xsl:choose>
+			<xsl:when test="$breakableBy = 'them'">
+				<!-- counterparty reference -->
+				<xsl:value-of select="$ctpNameRef"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<!-- our part reference -->
+				<xsl:value-of select="$ourNameRef"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="optionalEarlyTerminationAdjustedDates.node">
+		<xsl:for-each
+			select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/payout/option/mutualBreakSchedule/exercizeEvents/exercizeEvent">
+			<xsl:variable name="adjustedExerciseDate">
+				<xsl:value-of select="exercizeDate"/>
+			</xsl:variable>
+			<xsl:variable name="adjustedEarlyTerminationDate">
+				<xsl:value-of select="exercizeEffectiveDate"/>
+			</xsl:variable>
+			<xsl:variable name="adjustedCashSettlementValuationDate">
+				<xsl:value-of select="secondExercizeDate"/>
+			</xsl:variable>
+			<xsl:variable name="adjustedCashSettlementPaymentDate">
+				<xsl:value-of select="exercizeEffectiveDate"/>
+			</xsl:variable>
+			<xsl:variable name="adjustedExerciseFeePaymentDate">
+				<xsl:value-of select="exercizeEffectiveDate"/>
+			</xsl:variable>
+			<xsl:if
+				test="string-length($adjustedExerciseDate) &gt; 0 or string-length($adjustedEarlyTerminationDate) &gt; 0">
+				<earlyTerminationEvent>
+					<adjustedExerciseDate>
+						<xsl:value-of
+							select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $adjustedExerciseDate))"
+						/>
+					</adjustedExerciseDate>
+					<adjustedEarlyTerminationDate>
+						<xsl:value-of
+							select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $adjustedEarlyTerminationDate))"
+						/>
+					</adjustedEarlyTerminationDate>
+					<xsl:if test="string-length($adjustedCashSettlementValuationDate) &gt; 0">
+						<adjustedCashSettlementValuationDate>
+							<xsl:value-of
+								select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $adjustedCashSettlementValuationDate))"
+							/>
+						</adjustedCashSettlementValuationDate>
+					</xsl:if>
+					<xsl:if test="string-length($adjustedCashSettlementPaymentDate) &gt; 0">
+						<adjustedCashSettlementPaymentDate>
+							<xsl:value-of
+								select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $adjustedCashSettlementPaymentDate))"
+							/>
+						</adjustedCashSettlementPaymentDate>
+					</xsl:if>
+					<xsl:if test="string-length($adjustedExerciseFeePaymentDate) &gt; 0">
+						<adjustedExerciseFeePaymentDate>
+							<xsl:value-of
+								select="mx:execute-formula('mx.xml2xml.transform.mxml2fpml.utils.toFpMLDate', concat('mxmlDate:', $adjustedExerciseFeePaymentDate))"
+							/>
+						</adjustedExerciseFeePaymentDate>
+					</xsl:if>
+				</earlyTerminationEvent>
+			</xsl:if>
+		</xsl:for-each>
+	</xsl:variable>
+	<xsl:variable name="earliestExerciseTime.businessCenter.name">
+		<xsl:call-template name="getBusinessCenterFromNotificationEffectiveCalendar">
+			<xsl:with-param name="mapBusinessCenter"
+				select="$mapBusinessCenter"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="expirationTime.businessCenter.name">
+		<xsl:call-template name="getBusinessCenterFromNotificationEffectiveCalendar">
+			<xsl:with-param name="mapBusinessCenter"
+				select="$mapBusinessCenter"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="latestExerciseTime.businessCenter.name">
+		<xsl:call-template name="getBusinessCenterFromNotificationEffectiveCalendar">
+			<xsl:with-param name="mapBusinessCenter"
+				select="$mapBusinessCenter"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="cashSettlementValuationTime.businessCenter.name">
+		<xsl:call-template name="getBusinessCenterFromNotificationEffectiveCalendar">
+			<xsl:with-param name="mapBusinessCenter"
+				select="$mapBusinessCenter"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="optionalEarlyTerminationModel.optionStyle">
+		<xsl:value-of select="'bermudan'"/>
+	</xsl:variable>
+	<xsl:variable name="bermudaExerciseDates.id" select="'exerciseSchedule'"/>
+
+	<xsl:variable name="relevantUnderlyingDate.id" select="'relevantUnderlyingSchedule'"/>
+	<xsl:variable name="relevantUnderlyingDate.dateAdjustments.businessDayConvention">
+		<xsl:choose>
+			<xsl:when test="$isExtendableSwap='true'">
+				<xsl:variable
+					name="relevantUnderlyingDate.dateAdjustments.businessDayConvention.tmp">
+					<xsl:call-template name="extract-businessDayConvention">
+						<xsl:with-param name="legNb" select="1"/>
+						<xsl:with-param name="schedule" select="'calculationSchedule'"/>
+					</xsl:call-template>
+				</xsl:variable>
+				<xsl:value-of
+					select="mx:execute-formula($mapBusinessDayConv, concat('businessDayConvention:', $relevantUnderlyingDate.dateAdjustments.businessDayConvention.tmp))"
+				/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:call-template name="extract-BermudanDateAdjustmentsBusinessDayConvention"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	
+	<xsl:variable name="bermudaExerciseDates.dateAdjustments.businessDayConvention">
+		<xsl:choose>
+			<xsl:when test="$isExtendableSwap='true'">
+				<xsl:variable
+					name="bermudaExerciseDates.dateAdjustments.businessDayConvention.tmp">
+					<xsl:call-template name="extract-businessDayConvention">
+						<xsl:with-param name="legNb" select="1"/>
+						<xsl:with-param name="schedule" select="'calculationSchedule'"/>
+					</xsl:call-template>
+				</xsl:variable>
+				<xsl:value-of
+					select="mx:execute-formula($mapBusinessDayConv, concat('businessDayConvention:', $bermudaExerciseDates.dateAdjustments.businessDayConvention.tmp))"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:call-template name="extract-BermudanDateAdjustmentsBusinessDayConvention"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	
+	<xsl:variable name="optionalEarlyTerminationModel.id" select="'exerciseDate'"/>
+	<xsl:variable name="relevantUnderlyingDate.dateAdjustments.businessCenter">
+		<xsl:call-template name="getBusinessCenterFromNotificationEffectiveCalendar">
+			<xsl:with-param name="mapBusinessCenter"
+				select="$mapBusinessCenter"/>
+		</xsl:call-template>
+	</xsl:variable>
+	
+	<xsl:variable name="bermudaExerciseDates.dateAdjustments.businessCenter">
+		<xsl:call-template name="getBusinessCenterFromNotificationEffectiveCalendar">
+			<xsl:with-param name="mapBusinessCenter"
+				select="$mapBusinessCenter"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<!-- =========================================== -->
+	<!-- Specific Cross Currency Swap Mark To Market -->
+	<!-- =========================================== -->
+	<xsl:variable name="swapStream1.indexedObjectNature">
+		<xsl:call-template name="extract-indexedObjectNature">
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.indexedObjectNature">
+		<xsl:call-template name="extract-indexedObjectNature">
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.indexed">
+		<xsl:call-template name="extract-indexed">
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.indexed">
+		<xsl:call-template name="extract-indexed">
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.indexed.indexLabel">
+		<xsl:call-template name="extract-indexationRulesLists-indexLabel">
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.indexed.indexLabel">
+		<xsl:call-template name="extract-indexationRulesLists-indexLabel">
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<!-- swapStream1 : to extract initialValue if absence of Fwd start capital -->
+	<xsl:variable name="swapStream1.fxLinkedNotionalSchedule.initialValue">
+		<xsl:variable name="initialCapitalAmount">
+			<xsl:call-template name="extract-initialCapitalAmount">
+				<xsl:with-param name="legNb" select="1"/>
+				<xsl:with-param name="stream" select="1"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:if
+			test="string-length($swapStream1.indexedObjectNature) &gt; 0 and $swapStream1.indexed = 'true'">
+			<xsl:choose>
+				<!-- In case of forward start and fixing referenceDate is greater than systemDate or equal, the intial amount is not fixed -->
+				<xsl:when
+					test="/MxML/trades/trade[@id = $contractRef]/tradeBody/currencySwap/stream[1]/streamTemplate/indexationRulesLists/indexationRulesList/indexedObjectNature = 'initialCapital' and /MxML/trades/trade[@id = $contractRef]/tradeBody/currencySwap/stream[1]/indexationLists/indexationList[indexedObjectNature = 'initialCapital']/indexationSchedules/indexationSchedule/indexations/indexation/date &gt; /MxML/trades/trade[@id = $contractRef]/tradeInputConditions/systemDate"/>
+				<xsl:when
+					test="/MxML/trades/trade[@id = $contractRef]/tradeBody/currencySwap/stream[1]/streamTemplate/indexationRulesLists/indexationRulesList/indexedObjectNature = 'initialCapital' and /MxML/trades/trade[@id = $contractRef]/tradeBody/currencySwap/stream[1]/indexationLists/indexationList[indexedObjectNature = 'initialCapital']/indexationSchedules/indexationSchedule/indexations/indexation/date = /MxML/trades/trade[@id = $contractRef]/tradeInputConditions/systemDate"/>
+				<xsl:when
+					test="$event = 'unwind' and $unwoundRatio = 1 and not($swapStream1.isInflationIndexed = 'true')">
+					<xsl:value-of select="$initialCapitalAmount"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:choose>
+						<xsl:when test="$swapStream1.isInflationIndexed = 'true'">
+							<xsl:value-of select="''"/>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:value-of
+								select="$swapStream1.notionalSchedule.notionalStepSchedule.initialValue"
+							/>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+	<!-- swapStream2 : to extract initialValue if absence of Fwd start capital -->
+	<xsl:variable name="swapStream2.fxLinkedNotionalSchedule.initialValue">
+		<xsl:variable name="initialCapitalAmount">
+			<xsl:call-template name="extract-initialCapitalAmount">
+				<xsl:with-param name="legNb" select="1"/>
+				<xsl:with-param name="stream" select="2"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:if
+			test="string-length($swapStream2.indexedObjectNature) &gt; 0 and $swapStream2.indexed = 'true'">
+			<xsl:choose>
+				<!-- In case of forward start and fixing referenceDate is greater than systemDate or equal, the intial amount is not fixed -->
+				<xsl:when
+					test="/MxML/trades/trade[@id = $contractRef]/tradeBody/currencySwap/stream[2]/streamTemplate/indexationRulesLists/indexationRulesList/indexedObjectNature = 'initialCapital' and /MxML/trades/trade[@id = $contractRef]/tradeBody/currencySwap/stream[2]/indexationLists/indexationList[indexedObjectNature = 'initialCapital']/indexationSchedules/indexationSchedule/indexations/indexation/date &gt; /MxML/trades/trade[@id = $contractRef]/tradeInputConditions/systemDate"/>
+				<xsl:when
+					test="/MxML/trades/trade[@id = $contractRef]/tradeBody/currencySwap/stream[2]/streamTemplate/indexationRulesLists/indexationRulesList/indexedObjectNature = 'initialCapital' and /MxML/trades/trade[@id = $contractRef]/tradeBody/currencySwap/stream[2]/indexationLists/indexationList[indexedObjectNature = 'initialCapital']/indexationSchedules/indexationSchedule/indexations/indexation/date = /MxML/trades/trade[@id = $contractRef]/tradeInputConditions/systemDate"/>
+				<xsl:when
+					test="$event = 'unwind' and $unwoundRatio = 1 and not($swapStream2.isInflationIndexed = 'true')">
+					<xsl:value-of select="$initialCapitalAmount"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:choose>
+						<xsl:when test="$swapStream2.isInflationIndexed = 'true'">
+							<xsl:value-of select="''"/>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:value-of
+								select="$swapStream2.notionalSchedule.notionalStepSchedule.initialValue"
+							/>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.fxLinkedNotionalSchedule.varyingNotionalCurrency">
+		<xsl:choose>
+			<xsl:when test="$swapStream1.isInflationIndexed = 'true'">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:if test="$swapStream1.indexed = 'true'">
+					<xsl:value-of
+						select="$swapStream1.notionalSchedule.notionalStepSchedule.currency"/>
+				</xsl:if>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream2.fxLinkedNotionalSchedule.varyingNotionalCurrency">
+		<xsl:choose>
+			<xsl:when test="$swapStream2.isInflationIndexed = 'true'">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:if test="$swapStream2.indexed = 'true'">
+					<xsl:value-of
+						select="$swapStream2.notionalSchedule.notionalStepSchedule.currency"/>
+				</xsl:if>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream1.fxLinkedNotionalSchedule.varyingNotionalFixingDates.periodMultiplier">
+		<xsl:if test="$swapStream1.indexed = 'true'">
+			<xsl:value-of select="$swapStream1.fixingDates.periodMultiplier"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream2.fxLinkedNotionalSchedule.varyingNotionalFixingDates.periodMultiplier">
+		<xsl:if test="$swapStream2.indexed = 'true'">
+			<xsl:value-of select="$swapStream2.fixingDates.periodMultiplier"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream1.fxLinkedNotionalSchedule.varyingNotionalFixingDates.businessDayConvention">
+		<xsl:if test="$swapStream1.indexed = 'true'">
+			<xsl:value-of select="'NONE'"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream2.fxLinkedNotionalSchedule.varyingNotionalFixingDates.businessDayConvention">
+		<xsl:if test="$swapStream2.indexed = 'true'">
+			<xsl:value-of select="'NONE'"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream1.fxLinkedNotionalSchedule.varyingNotionalFixingDates.businessCenter">
+		<xsl:if
+			test="$swapStream1.indexed = 'true' and $swapStream1.fxLinkedNotionalSchedule.varyingNotionalFixingDates.businessDayConvention != 'NONE'">
+			<xsl:value-of select="$swapStream1.resetDatesAdjustments.businessCenter.nodes"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream2.fxLinkedNotionalSchedule.varyingNotionalFixingDates.businessCenter">
+		<xsl:if
+			test="$swapStream2.indexed = 'true' and $swapStream2.fxLinkedNotionalSchedule.varyingNotionalFixingDates.businessDayConvention != 'NONE'">
+			<xsl:value-of select="$swapStream2.resetDatesAdjustments.businessCenter.nodes"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream1.fxLinkedNotionalSchedule.varyingNotionalFixingDates.businessCenter.nodes">
+		<xsl:if test="$swapStream1.indexed = 'true'">
+			<xsl:variable name="indexationRulesListsBusinessCenterNodes">
+				<xsl:call-template name="extract-indexationRulesListsBusinessCenterNodes">
+					<xsl:with-param name="tradeRef" select="$nbTradeNode"/>
+					<xsl:with-param name="legNb" select="1"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:variable name="varyingNotionalFixingDates.HolidaysBC">
+				<xsl:value-of select="exsl:node-set($swapStream1.fxSpotRateSource)//row[5]"/>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="string-length($indexationRulesListsBusinessCenterNodes) &gt; 0">
+					<xsl:copy-of select="$indexationRulesListsBusinessCenterNodes"/>
+				</xsl:when>
+				<xsl:when
+					test="string-length($varyingNotionalFixingDates.HolidaysBC) &gt; 0 and $varyingNotionalFixingDates.HolidaysBC != 'UNMAPPED'">
+					<xsl:variable name="holidaysBCToken">
+						<xsl:call-template name="str:tokenize">
+							<xsl:with-param name="string"
+								select="$varyingNotionalFixingDates.HolidaysBC"/>
+							<xsl:with-param name="delimiters" select="';'"/>
+						</xsl:call-template>
+					</xsl:variable>
+					<xsl:variable name="holidaysBCToken.tokens"
+						select="exsl:node-set($holidaysBCToken)/token"/>
+					<xsl:for-each select="$holidaysBCToken.tokens">
+						<xsl:variable name="pos" select="position()"/>
+						<businessCenter>
+							<xsl:value-of select="$holidaysBCToken.tokens[$pos]"/>
+						</businessCenter>
+					</xsl:for-each>
+				</xsl:when>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream2.fxLinkedNotionalSchedule.varyingNotionalFixingDates.businessCenter.nodes">
+		<xsl:if test="$swapStream2.indexed = 'true'">
+			<xsl:variable name="indexationRulesListsBusinessCenterNodes">
+				<xsl:call-template name="extract-indexationRulesListsBusinessCenterNodes">
+					<xsl:with-param name="tradeRef" select="$nbTradeNode"/>
+					<xsl:with-param name="legNb" select="2"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:variable name="varyingNotionalFixingDates.HolidaysBC">
+				<xsl:value-of select="exsl:node-set($swapStream2.fxSpotRateSource)//row[5]"/>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="string-length($indexationRulesListsBusinessCenterNodes) &gt; 0">
+					<xsl:copy-of select="$indexationRulesListsBusinessCenterNodes"/>
+				</xsl:when>
+				<xsl:when
+					test="string-length($varyingNotionalFixingDates.HolidaysBC) &gt; 0 and $varyingNotionalFixingDates.HolidaysBC != 'UNMAPPED'">
+					<xsl:variable name="holidaysBCToken">
+						<xsl:call-template name="str:tokenize">
+							<xsl:with-param name="string"
+								select="$varyingNotionalFixingDates.HolidaysBC"/>
+							<xsl:with-param name="delimiters" select="';'"/>
+						</xsl:call-template>
+					</xsl:variable>
+					<xsl:variable name="holidaysBCToken.tokens"
+						select="exsl:node-set($holidaysBCToken)/token"/>
+					<xsl:for-each select="$holidaysBCToken.tokens">
+						<xsl:variable name="pos" select="position()"/>
+						<businessCenter>
+							<xsl:value-of select="$holidaysBCToken.tokens[$pos]"/>
+						</businessCenter>
+					</xsl:for-each>
+				</xsl:when>
+			</xsl:choose>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream1.fxLinkedNotionalSchedule.varyingNotionalFixingDates.dateRelativeTo.href">
+		<xsl:choose>
+			<xsl:when
+				test="$swapStream1.indexed = 'true' and $leg1.reset.shifter.periodMultiplier != '' and $typology = 'Xccy FX Reset'">
+				<xsl:value-of select="$swapStream1.leg1.resetDate.id"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$swapStream1.fixingDates.dateRelativeToHref"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream2.fxLinkedNotionalSchedule.varyingNotionalFixingDates.dateRelativeTo.href">
+		<xsl:choose>
+			<xsl:when
+				test="$swapStream2.indexed = 'true' and $leg2.reset.shifter.periodMultiplier != '' and $typology = 'Xccy FX Reset'">
+				<xsl:value-of select="$swapStream2.leg2.resetDate.id"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$swapStream2.fixingDates.dateRelativeToHref"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.fxLinkedNotionalSchedule.constantNotionalScheduleReference.href">
+		<xsl:choose>
+			<xsl:when test="$swapStream1.isInflationIndexed = 'true'">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:if test="$swapStream1.indexed = 'true'">
+					<xsl:choose>
+						<xsl:when test="$swapStream2.indexed = 'true'">
+							<xsl:value-of select="$swapStream1.calculationPeriodDates.identifier"/>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:value-of select="$swapStream2.notionalSchedule.id"/>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:if>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream2.fxLinkedNotionalSchedule.constantNotionalScheduleReference.href">
+		<xsl:choose>
+			<xsl:when test="$swapStream2.isInflationIndexed = 'true'">
+				<xsl:value-of select="''"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:if test="$swapStream2.indexed = 'true'">
+					<xsl:choose>
+						<xsl:when test="$swapStream1.indexed = 'true'">
+							<xsl:value-of select="$swapStream2.calculationPeriodDates.identifier"/>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:value-of select="$swapStream1.notionalSchedule.id"/>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:if>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream1.fxLinkedNotionalSchedule.varyingNotionalInterimExchangePaymentDates.dateRelativeTo.href">
+		<xsl:if test="$swapStream1.indexed = 'true'">
+			<xsl:value-of select="$swapStream1.paymentDates.id"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream2.fxLinkedNotionalSchedule.varyingNotionalInterimExchangePaymentDates.dateRelativeTo.href">
+		<xsl:if test="$swapStream2.indexed = 'true'">
+			<xsl:value-of select="$swapStream2.paymentDates.id"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream1.fxLinkedNotionalSchedule.varyingNotionalInterimExchangePaymentDates.periodMultiplier">
+		<xsl:if test="$swapStream1.indexed = 'true'">
+			<xsl:value-of select="'0'"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream2.fxLinkedNotionalSchedule.varyingNotionalInterimExchangePaymentDates.periodMultiplier">
+		<xsl:if test="$swapStream2.indexed = 'true'">
+			<xsl:value-of select="'0'"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream1.fxLinkedNotionalSchedule.varyingNotionalInterimExchangePaymentDates.period">
+		<xsl:if test="$swapStream1.indexed = 'true'">
+			<xsl:value-of select="'D'"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream2.fxLinkedNotionalSchedule.varyingNotionalInterimExchangePaymentDates.period">
+		<xsl:if test="$swapStream2.indexed = 'true'">
+			<xsl:value-of select="'D'"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream1.fxLinkedNotionalSchedule.varyingNotionalInterimExchangePaymentDates.businessDayConvention">
+		<xsl:if test="$swapStream1.indexed = 'true'">
+			<xsl:value-of select="'NONE'"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable
+		name="swapStream2.fxLinkedNotionalSchedule.varyingNotionalInterimExchangePaymentDates.businessDayConvention">
+		<xsl:if test="$swapStream2.indexed = 'true'">
+			<xsl:value-of select="'NONE'"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<!-- ================= End specific MTM ================= -->
+	<!-- Optional Early Termination -->
+	<xsl:variable name="optionalEarlyTermination.singlePartyOption.buyerRef">
+		<xsl:variable name="breakableBy"
+			select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/payout/option/breakableBy"/>
+		<xsl:choose>
+			<xsl:when test="$breakableBy = 'them'">
+				<!-- counterparty reference -->
+				<xsl:call-template name="extract-ctpNameRef">
+					<xsl:with-param name="tradeRef" select="$contractRef"/>
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:when test="$breakableBy = 'us'">
+				<!-- ourparty reference -->
+				<xsl:call-template name="extract-ourNameRef">
+					<xsl:with-param name="tradeRef" select="$contractRef"/>
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:otherwise/>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="optionalEarlyTermination.singlePartyOption.sellerRef">
+		<xsl:variable name="breakableBy"
+			select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/payout/option/breakableBy"/>
+		<xsl:choose>
+			<xsl:when test="$breakableBy = 'them'">
+				<!-- ourparty reference -->
+				<xsl:call-template name="extract-ourNameRef">
+					<xsl:with-param name="tradeRef" select="$contractRef"/>
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:when test="$breakableBy = 'us'">
+				<!-- counterparty reference -->
+				<xsl:call-template name="extract-ctpNameRef">
+					<xsl:with-param name="tradeRef" select="$contractRef"/>
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:otherwise/>
+		</xsl:choose>
+	</xsl:variable>
+
+	<!-- Exercise Notice -->
+	<xsl:variable name="exerciseNotice.node">
+		<xsl:variable name="breakableBy"
+			select="/MxML/trades/trade[@id = $contractRef]/tradeBody/*/payout/option/breakableBy"/>
+		<xsl:variable name="optionalEarlyTermination.exerciseNotice1.partyRef">
+			<xsl:choose>
+				<xsl:when
+					test="$breakableBy = 'both' or string-length($breakableBy) = 0 or $breakableBy = 'them'">
+					<xsl:call-template name="extract-ctpNameRef">
+						<xsl:with-param name="tradeRef" select="$contractRef"/>
+					</xsl:call-template>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:call-template name="extract-ourNameRef">
+						<xsl:with-param name="tradeRef" select="$contractRef"/>
+					</xsl:call-template>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="optionalEarlyTermination.exerciseNotice2.partyRef">
+			<xsl:choose>
+				<xsl:when test="$breakableBy = 'both' or string-length($breakableBy) = 0">
+					<xsl:call-template name="extract-ourNameRef">
+						<xsl:with-param name="tradeRef" select="$contractRef"/>
+					</xsl:call-template>
+				</xsl:when>
+				<xsl:otherwise/>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="optionalEarlyTermination.exerciseNotice1.exerciseNoticePartyRef">
+			<xsl:choose>
+				<xsl:when test="$breakableBy = 'us'">
+					<xsl:call-template name="extract-ctpNameRef">
+						<xsl:with-param name="tradeRef" select="$contractRef"/>
+					</xsl:call-template>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:call-template name="extract-ourNameRef">
+						<xsl:with-param name="tradeRef" select="$contractRef"/>
+					</xsl:call-template>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="optionalEarlyTermination.exerciseNotice2.exerciseNoticePartyRef">
+			<xsl:choose>
+				<xsl:when test="$breakableBy = 'both' or string-length($breakableBy) = 0">
+					<xsl:call-template name="extract-ctpNameRef">
+						<xsl:with-param name="tradeRef" select="$contractRef"/>
+					</xsl:call-template>
+				</xsl:when>
+				<xsl:otherwise/>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="optionalEarlyTermination.exerciseNotice1.businessCenter">
+			<xsl:variable name="partyName">
+				<xsl:call-template name="extract-ctpNameByRef">
+					<xsl:with-param name="partyID"
+						select="$optionalEarlyTermination.exerciseNotice1.exerciseNoticePartyRef"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:variable name="templateLabel">
+				<xsl:call-template name="extract-templateLabel"> </xsl:call-template>
+			</xsl:variable>
+			<xsl:variable name="exerciseNotificationLocation"
+				select="mx:execute-formula($mapNotificationLocation, concat('instrument:', $templateLabel, ',counterparty:', $partyName))"/>
+			<xsl:choose>
+				<xsl:when
+					test="string-length($exerciseNotificationLocation/row[1]) &gt; 0 and not($exerciseNotificationLocation/row[1] = '') and not($exerciseNotificationLocation/row[1] = 'UNMAPPED')">
+					<xsl:value-of select="$exerciseNotificationLocation/row[1]"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="$bermudaExerciseDates.dateAdjustments.businessCenter"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="optionalEarlyTermination.exerciseNotice2.businessCenter">
+			<xsl:variable name="partyName">
+				<xsl:call-template name="extract-ctpNameByRef">
+					<xsl:with-param name="partyID"
+						select="$optionalEarlyTermination.exerciseNotice2.exerciseNoticePartyRef"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:variable name="templateLabel">
+				<xsl:call-template name="extract-templateLabel"> </xsl:call-template>
+			</xsl:variable>
+			<xsl:variable name="exerciseNotificationLocation"
+				select="mx:execute-formula($mapNotificationLocation, concat('instrument:', $templateLabel, ',counterparty:', $partyName))"/>
+			<xsl:choose>
+				<xsl:when
+					test="string-length($exerciseNotificationLocation/row[1]) &gt; 0 and not($exerciseNotificationLocation/row[1] = '') and not($exerciseNotificationLocation/row[1] = 'UNMAPPED')">
+					<xsl:value-of select="$exerciseNotificationLocation/row[1]"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="$bermudaExerciseDates.dateAdjustments.businessCenter"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<exerciseNotice>
+			<xsl:if test="string-length($optionalEarlyTermination.exerciseNotice1.partyRef) &gt; 0">
+				<partyReference>
+					<xsl:attribute name="href">
+						<xsl:value-of select="$optionalEarlyTermination.exerciseNotice1.partyRef"/>
+					</xsl:attribute>
+				</partyReference>
+			</xsl:if>
+			<xsl:if
+				test="string-length($optionalEarlyTermination.exerciseNotice1.exerciseNoticePartyRef) &gt; 0">
+				<exerciseNoticePartyReference>
+					<xsl:attribute name="href">
+						<xsl:value-of
+							select="$optionalEarlyTermination.exerciseNotice1.exerciseNoticePartyRef"
+						/>
+					</xsl:attribute>
+				</exerciseNoticePartyReference>
+			</xsl:if>
+			<xsl:if
+				test="string-length($optionalEarlyTermination.exerciseNotice1.businessCenter) &gt; 0">
+				<xsl:variable name="_value.tokens">
+					<xsl:call-template name="str:_split-pattern">
+						<xsl:with-param name="string"
+							select="$optionalEarlyTermination.exerciseNotice1.businessCenter"/>
+						<xsl:with-param name="pattern" select="';'"/>
+					</xsl:call-template>
+				</xsl:variable>
+				<xsl:variable name="value.tokens" select="exsl:node-set($_value.tokens)/token"/>
+				<xsl:for-each select="$value.tokens">
+					<xsl:variable name="pos" select="position()"/>
+					<xsl:variable name="token" select="string($value.tokens[$pos])"/>
+					<businessCenter>
+						<xsl:value-of select="$token"/>
+					</businessCenter>
+				</xsl:for-each>
+			</xsl:if>
+		</exerciseNotice>
+		<xsl:if test="$breakableBy = 'both' or string-length($breakableBy) = 0">
+			<exerciseNotice>
+				<xsl:if
+					test="string-length($optionalEarlyTermination.exerciseNotice2.partyRef) &gt; 0">
+					<partyReference>
+						<xsl:attribute name="href">
+							<xsl:value-of
+								select="$optionalEarlyTermination.exerciseNotice2.partyRef"/>
+						</xsl:attribute>
+					</partyReference>
+				</xsl:if>
+				<xsl:if
+					test="string-length($optionalEarlyTermination.exerciseNotice2.exerciseNoticePartyRef) &gt; 0">
+					<exerciseNoticePartyReference>
+						<xsl:attribute name="href">
+							<xsl:value-of
+								select="$optionalEarlyTermination.exerciseNotice2.exerciseNoticePartyRef"
+							/>
+						</xsl:attribute>
+					</exerciseNoticePartyReference>
+				</xsl:if>
+				<xsl:if
+					test="string-length($optionalEarlyTermination.exerciseNotice2.businessCenter) &gt; 0">
+					<xsl:variable name="_value.tokens">
+						<xsl:call-template name="str:_split-pattern">
+							<xsl:with-param name="string"
+								select="$optionalEarlyTermination.exerciseNotice2.businessCenter"/>
+							<xsl:with-param name="pattern" select="';'"/>
+						</xsl:call-template>
+					</xsl:variable>
+					<xsl:variable name="value.tokens" select="exsl:node-set($_value.tokens)/token"/>
+					<xsl:for-each select="$value.tokens">
+						<xsl:variable name="pos" select="position()"/>
+						<xsl:variable name="token" select="string($value.tokens[$pos])"/>
+						<businessCenter>
+							<xsl:value-of select="$token"/>
+						</businessCenter>
+					</xsl:for-each>
+				</xsl:if>
+			</exerciseNotice>
+		</xsl:if>
+	</xsl:variable>
+
+	<!-- Rate Cut-Off variables -->
+	<xsl:variable name="swapStream1.rateCutOffDaysOffset.periodMultiplier">
+		<xsl:call-template name="extract-rateCutOffDaysOffset-periodMultiplier">
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.rateCutOffDaysOffset.period">
+		<xsl:if test="string-length($swapStream1.rateCutOffDaysOffset.periodMultiplier) &gt; 0">
+			<xsl:value-of select="'D'"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream1.rateCutOffDaysOffset.dayType">
+		<xsl:if test="string-length($swapStream1.rateCutOffDaysOffset.periodMultiplier) &gt; 0">
+			<xsl:value-of select="'Business'"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream2.rateCutOffDaysOffset.periodMultiplier">
+		<xsl:call-template name="extract-rateCutOffDaysOffset-periodMultiplier">
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.rateCutOffDaysOffset.period">
+		<xsl:if test="string-length($swapStream2.rateCutOffDaysOffset.periodMultiplier) &gt; 0">
+			<xsl:value-of select="'D'"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.rateCutOffDaysOffset.dayType">
+		<xsl:if test="string-length($swapStream2.rateCutOffDaysOffset.periodMultiplier) &gt; 0">
+			<xsl:value-of select="'Business'"/>
+		</xsl:if>
+	</xsl:variable>
+
+	<!-- **************** -->
+	<!-- Additional Terms -->
+	<!-- **************** -->
+	<!-- Assuming the fixed leg is always the first one -->
+	<xsl:variable name="additionalTerms.bondReference.bond.couponRate">
+		<xsl:call-template name="extract-fixedRate">
+			<xsl:with-param name="legNb" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="instrumentIds"
+		select="mx:execute-formula('public.ECN.import.FpML.mapping.outbound.bondInstrumentId')"/>
+	<xsl:variable name="additionalTerms.bondReference.bond.instrumentId.nodes">
+		<xsl:choose>
+			<xsl:when test="$typology = 'Asset Swap IRS'">
+				<!-- Generation of intrument ids -->
+				<xsl:for-each select="exsl:node-set($instrumentIds)//row[position() mod 2 = 0]">
+					<xsl:if
+						test="string-length(preceding-sibling::row[1]/cell) &gt; 0 and string-length(cell) &gt; 0">
+						<xsl:element name="instrumentId">
+							<xsl:attribute name="instrumentIdScheme">
+								<xsl:value-of select="preceding-sibling::row[1]/cell"/>
+							</xsl:attribute>
+							<xsl:value-of select="cell"/>
+						</xsl:element>
+					</xsl:if>
+				</xsl:for-each>
+			</xsl:when>
+		</xsl:choose>
+	</xsl:variable>
+
+	<!-- ======================= -->
+	<!-- stub periods management -->
+	<!-- ======================= -->
+	<xsl:variable name="swapStream1.initialStubCharacteristics.periodIndex">
+		<xsl:call-template name="extract-initialStubCharacteristics-periodIndex">
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream2.initialStubCharacteristics.periodIndex">
+		<xsl:call-template name="extract-initialStubCharacteristics-periodIndex">
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream1.finalStubCharacteristics.periodIndex">
+		<xsl:call-template name="extract-finalStubCharacteristics-periodIndex">
+			<xsl:with-param name="stream" select="1"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<xsl:variable name="swapStream2.finalStubCharacteristics.periodIndex">
+		<xsl:call-template name="extract-finalStubCharacteristics-periodIndex">
+			<xsl:with-param name="stream" select="2"/>
+		</xsl:call-template>
+	</xsl:variable>
+
+	<!-- ======================= -->
+	<!-- Extendable swap         -->
+	<!-- ======================= -->
+
+	<xsl:variable name="extendable.exerciseNotice.node">
+		<exerciseNotice>
+			<xsl:if test="string-length($exercise.buyerPartyReference.href) &gt; 0">
+				<partyReference>
+					<xsl:attribute name="href">
+						<xsl:value-of select="$exercise.buyerPartyReference.href"/>
+					</xsl:attribute>
+				</partyReference>
+			</xsl:if>
+			<xsl:if test="string-length($exercise.sellerPartyReference.href) &gt; 0">
+				<exerciseNoticePartyReference>
+					<xsl:attribute name="href">
+						<xsl:value-of select="$exercise.sellerPartyReference.href"/>
+					</xsl:attribute>
+				</exerciseNoticePartyReference>
+			</xsl:if>
+			<xsl:variable name="relevantUnderlyingDate.dateAdjustments.businessCenter.tmp">
+				<xsl:call-template name="extract-businessCenterLabel"/>
+			</xsl:variable>
+			<businessCenter>
+				<xsl:choose>
+					<xsl:when test="string-length($mapBusinessCenter) &gt; 0">
+						<xsl:value-of	select="mx:execute-formula($mapBusinessCenter, concat('businessCenter:', $relevantUnderlyingDate.dateAdjustments.businessCenter.tmp))"	/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of	select="$relevantUnderlyingDate.dateAdjustments.businessCenter.tmp"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</businessCenter>
+		</exerciseNotice>
+	</xsl:variable>
+	
+<!--	<xsl:variable name="relevantUnderlyingDate.dateAdjustments.businessCenter">
+				<xsl:call-template name="getBusinessCenterFromNotificationEffectiveCalendar">
+					<xsl:with-param name="mapBusinessCenter"
+						select="$mapBusinessCenter"/>
+				</xsl:call-template>
+	</xsl:variable>-->
+
+
+</xsl:stylesheet>

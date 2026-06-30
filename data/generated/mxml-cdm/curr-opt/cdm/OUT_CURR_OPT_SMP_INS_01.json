@@ -1,0 +1,228 @@
+{
+  "trade" : {
+    "product" : {
+      "taxonomy" : [ {
+        "source" : "ISDA",
+        "productQualifier" : "ForeignExchange_VanillaOption"
+      } ],
+      "economicTerms" : {
+        "payout" : [ {
+          "OptionPayout" : {
+            "payerReceiver" : {
+              "payer" : "Party2",
+              "receiver" : "Party1"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-1"
+                }
+              }
+            },
+            "settlementTerms" : {
+              "settlementDate" : {
+                "valueDate" : "2002-06-06"
+              }
+            },
+            "buyerSeller" : {
+              "buyer" : "Party1",
+              "seller" : "Party2"
+            },
+            "underlier" : {
+              "Observable" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "observable-1"
+                }
+              }
+            },
+            "optionType" : "Put",
+            "exerciseTerms" : {
+              "style" : "European",
+              "expirationDate" : [ {
+                "adjustableDate" : {
+                  "adjustedDate" : {
+                    "value" : "2002-06-04"
+                  }
+                }
+              } ],
+              "expirationTime" : {
+                "hourMinuteTime" : "10:00:00",
+                "businessCenter" : {
+                  "value" : "USNY"
+                }
+              },
+              "expirationTimeType" : "SpecificTime"
+            },
+            "strike" : {
+              "strikePrice" : {
+                "value" : 0.492,
+                "unit" : {
+                  "currency" : {
+                    "value" : "USD"
+                  }
+                },
+                "perUnitOf" : {
+                  "currency" : {
+                    "value" : "AUD"
+                  }
+                },
+                "priceType" : "ExchangeRate"
+              }
+            }
+          }
+        } ]
+      }
+    },
+    "tradeLot" : [ {
+      "priceQuantity" : [ {
+        "quantity" : [ {
+          "value" : {
+            "value" : 75000000,
+            "unit" : {
+              "currency" : {
+                "value" : "AUD"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-1"
+            } ]
+          }
+        }, {
+          "value" : {
+            "value" : 36900000,
+            "unit" : {
+              "currency" : {
+                "value" : "USD"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-2"
+            } ]
+          }
+        } ],
+        "observable" : {
+          "value" : {
+            "Asset" : {
+              "Cash" : {
+                "identifier" : [ {
+                  "identifier" : {
+                    "value" : "AUD"
+                  },
+                  "identifierType" : "CurrencyCode"
+                } ]
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "observable-1"
+            } ]
+          }
+        }
+      } ]
+    } ],
+    "counterparty" : [ {
+      "role" : "Party1",
+      "partyReference" : {
+        "externalReference" : "party1"
+      }
+    }, {
+      "role" : "Party2",
+      "partyReference" : {
+        "externalReference" : "party2"
+      }
+    } ],
+    "tradeIdentifier" : [ {
+      "issuerReference" : {
+        "externalReference" : "party1"
+      },
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX376",
+          "meta" : {
+            "scheme" : "http://www.murex.com/fx/trade-id"
+          }
+        }
+      } ]
+    }, {
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX376",
+          "meta" : {
+            "scheme" : "http://www.murex.com/fx/trade-id"
+          }
+        }
+      } ]
+    } ],
+    "tradeDate" : {
+      "value" : "2001-12-04"
+    },
+    "party" : [ {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "party1"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "party1"
+      }
+    }, {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "party2"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "party2"
+      }
+    } ]
+  },
+  "transferHistory" : [ {
+    "transfer" : {
+      "quantity" : {
+        "value" : 36900,
+        "unit" : {
+          "currency" : {
+            "value" : "USD"
+          }
+        }
+      },
+      "asset" : {
+        "Cash" : {
+          "identifier" : [ {
+            "identifier" : {
+              "value" : "USD"
+            },
+            "identifierType" : "CurrencyCode"
+          } ]
+        }
+      },
+      "settlementDate" : {
+        "unadjustedDate" : "2001-12-06",
+        "dateAdjustments" : {
+          "businessDayConvention" : "NONE"
+        }
+      },
+      "payerReceiver" : {
+        "payerPartyReference" : {
+          "externalReference" : "party1"
+        },
+        "receiverPartyReference" : {
+          "externalReference" : "party2"
+        }
+      },
+      "transferExpression" : {
+        "priceTransfer" : "Premium"
+      }
+    }
+  } ]
+}

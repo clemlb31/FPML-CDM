@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MxML version="1-1">
+	<events>
+		<mainEvent>
+			<action>insertion</action>
+			<object href="#contract_0">
+				<objectNature>contract</objectNature>
+			</object>
+			<inputBy>
+				<userName>MUREXBO</userName>
+				<group>BO</group>
+			</inputBy>
+		</mainEvent>
+	</events>
+	<contracts>
+		<contract mefClassInstanceType="0" mefClass="mxContractISINGLE" id="contract_0">
+			<contractHeader>
+				<contractCategory>
+					<typology>IRS</typology>
+				</contractCategory>
+				<contractSource>
+					<sourceModule>mx</sourceModule>
+					<publishingSystem>MX</publishingSystem>
+				</contractSource>
+			</contractHeader>
+			<contractComponents>
+				<contractComponent>
+					<typologyId>0</typologyId>
+					<tradeReference href="#trade_0"/>
+				</contractComponent>
+			</contractComponents>
+		</contract>
+	</contracts>
+	<trades>
+		<trade id="trade_0" mefClass="mxContractITRADE" mefClassInstanceType="0">
+			<parties>
+				<party id="party_0">
+					<partyName>MUREX</partyName>
+				</party>
+				<party id="party_1">
+					<partyName>CTP</partyName>
+				</party>
+			</parties>
+			<portfolios>
+				<portfolio id="portfolio_0">
+					<portfolioLabel>MX_PTF</portfolioLabel>
+				</portfolio>
+			</portfolios>
+			<tradeHeader>
+				<tradeDate>20141013</tradeDate>
+				<tradeCategory>
+					<tradeDestination>external</tradeDestination>
+					<tradeFamily>IRD</tradeFamily>
+					<tradeGroup>IRS</tradeGroup>
+					<typology>IRS</typology>
+				</tradeCategory>
+				<tradeSource>
+					<replacementDate>20141013</replacementDate>
+				</tradeSource>
+				<tradeViews>
+					<tradeView>
+						<partyReference href="#party_0">
+							<portfolioReference href="#portfolio_0"/>
+						</partyReference>
+						<userName>TradeViewUser</userName>
+						<tradeId>
+							<tradeExternalId>17869553</tradeExternalId>
+						</tradeId>
+					</tradeView>
+					<tradeView>
+						<partyReference href="#party_1"/>
+					</tradeView>
+				</tradeViews>
+			</tradeHeader>
+			<tradeBody>
+				<interestRateSwap>
+					<templateID>
+						<templateType>insSWAP</templateType>
+						<templateLabel>EUR EURIBOR ZC 6M</templateLabel>
+					</templateID>
+					<structure>
+						<numberOfPhases>1</numberOfPhases>
+						<numberOfLegs>2</numberOfLegs>
+						<schedulesConstraintsAcrossLegs>independentSchedules</schedulesConstraintsAcrossLegs>
+						<stubPeriodPosition>upFront</stubPeriodPosition>
+					</structure>
+					<stream>
+						<streamTemplate>
+							<phase>1</phase>
+							<leg>1</leg>
+							<payoutType>floatingRate</payoutType>
+							<paymentCurrency>EUR</paymentCurrency>
+							<paymentPosition>inArrears</paymentPosition>
+							<paymentBusinessCenters>
+								<businessCenterLabel>GLO</businessCenterLabel>
+							</paymentBusinessCenters>
+							<streamSchedules>
+								<calculationSchedule>
+									<scheduleNature>drivingSchedule</scheduleNature>
+									<scheduleGenerator>
+										<scheduleGeneratorLabel>6M MODFOL</scheduleGeneratorLabel>
+										<standardScheduleGenerator>
+											<businessDayConvention>modifiedFollowing</businessDayConvention>
+											<endOfMonthTreatment>normal</endOfMonthTreatment>
+										</standardScheduleGenerator>
+									</scheduleGenerator>
+									<frequency>
+										<periodUnit>month</periodUnit>
+										<periodMultiplier>6</periodMultiplier>
+									</frequency>
+								</calculationSchedule>
+								<calculationEndSchedule>
+									<scheduleNature>equalTo</scheduleNature>
+									<underlyingSchedule>calculationSchedule</underlyingSchedule>
+								</calculationEndSchedule>
+								<paymentSchedule>
+									<scheduleNature>deducedFrom</scheduleNature>
+									<underlyingSchedule>calculationEndSchedule</underlyingSchedule>
+									<zeroCouponMode>true</zeroCouponMode>
+									<shifter>
+										<dateShifterLabel>+0 DAY MODFOL</dateShifterLabel>
+									</shifter>
+								</paymentSchedule>
+								<resetSchedule>
+									<scheduleNature>deducedFrom</scheduleNature>
+									<underlyingSchedule>calculationSchedule</underlyingSchedule>
+									<shifter>
+										<dateShifterLabel>-2 BUSINESS DAY</dateShifterLabel>
+										<shift>
+											<periodUnit>businessDay</periodUnit>
+											<periodMultiplier>-2</periodMultiplier>
+										</shift>
+									</shifter>
+								</resetSchedule>
+								<singlePeriod>false</singlePeriod>
+							</streamSchedules>
+							<floatingRateStreamTemplate>
+								<index>
+									<indexLabel>EUR EURIBOR 6M</indexLabel>
+								</index>
+								<resetBusinessCenters>
+									<businessCenterLabel>GLO</businessCenterLabel>
+								</resetBusinessCenters>
+								<resetPosition>upFront</resetPosition>
+							</floatingRateStreamTemplate>
+							<rateConvention>
+								<rateConventionLabel>LIN ACT/360</rateConventionLabel>
+								<dayCountFraction>
+									<dayCountFractionLabel>ACT/360</dayCountFractionLabel>
+									<businessObjectId mefClass="mxStaticsDatesIDAY_COUNT_FRACTION">
+										<identifier>ACT/360</identifier>
+										<primarySystem>MX</primarySystem>
+									</businessObjectId>
+									<dayCountDescription/>
+									<numeratorConvention>ACT</numeratorConvention>
+									<denominatorConvention>360</denominatorConvention>
+									<dayCountStandardDenomination>ACT/360</dayCountStandardDenomination>
+									<periodsBreakdown>
+										<dayCountPeriodicity>year</dayCountPeriodicity>
+									</periodsBreakdown>
+								</dayCountFraction>
+							</rateConvention>
+							<capitalExchanges>
+								<initialCapitalExchange>false</initialCapitalExchange>
+								<finalCapitalExchange>false</finalCapitalExchange>
+								<intermediateCapitalExchange>false</intermediateCapitalExchange>
+							</capitalExchanges>
+							<compounding>
+								<compoundingFormula>I+M at I+M</compoundingFormula>
+								<compoundingScope>zeroCoupon</compoundingScope>
+							</compounding>
+						</streamTemplate>
+						<payerPartyReference href="#party_1"/>
+						<receiverPartyReference href="#party_0">
+							<portfolioReference href="#portfolio_0"/>
+						</receiverPartyReference>
+						<effectiveDate>20141015</effectiveDate>
+						<maturity>20171015</maturity>
+						<rollDate>20141015</rollDate>
+						<capital>
+							<initialCapitalAmount>10000000</initialCapitalAmount>
+							<initialCapitalCurrency>EUR</initialCapitalCurrency>
+						</capital>
+						<floatingRateStream>
+							<margin>0.1</margin>
+						</floatingRateStream>
+					</stream>
+					<stream>
+						<streamTemplate>
+							<phase>1</phase>
+							<leg>2</leg>
+							<payoutType>fixedRate</payoutType>
+							<paymentCurrency>EUR</paymentCurrency>
+							<paymentPosition>inArrears</paymentPosition>
+							<paymentBusinessCenters>
+								<businessCenterLabel>GLO</businessCenterLabel>
+							</paymentBusinessCenters>
+							<streamSchedules>
+								<calculationSchedule>
+									<scheduleNature>drivingSchedule</scheduleNature>
+									<scheduleGenerator>
+										<scheduleGeneratorLabel>ZERO COUPON</scheduleGeneratorLabel>
+										<standardScheduleGenerator>
+											<businessDayConvention>none</businessDayConvention>
+											<endOfMonthTreatment>normal</endOfMonthTreatment>
+										</standardScheduleGenerator>
+									</scheduleGenerator>
+									<frequency>
+										<periodUnit>businessDay</periodUnit>
+										<periodMultiplier>0</periodMultiplier>
+									</frequency>
+								</calculationSchedule>
+								<calculationEndSchedule>
+									<scheduleNature>equalTo</scheduleNature>
+									<underlyingSchedule>calculationSchedule</underlyingSchedule>
+								</calculationEndSchedule>
+								<paymentSchedule>
+									<scheduleNature>deducedFrom</scheduleNature>
+									<underlyingSchedule>calculationEndSchedule</underlyingSchedule>
+									<zeroCouponMode>true</zeroCouponMode>
+									<shifter>
+										<dateShifterLabel>+0 DAY MODFOL</dateShifterLabel>
+									</shifter>
+								</paymentSchedule>
+								<singlePeriod>false</singlePeriod>
+							</streamSchedules>
+							<capitalExchanges>
+								<initialCapitalExchange>false</initialCapitalExchange>
+								<finalCapitalExchange>false</finalCapitalExchange>
+								<intermediateCapitalExchange>false</intermediateCapitalExchange>
+							</capitalExchanges>
+							<rateConvention>
+								<rateConventionLabel>LIN ACT/360</rateConventionLabel>
+								<dayCountFraction>
+									<dayCountFractionLabel>ACT/360</dayCountFractionLabel>
+									<businessObjectId mefClass="mxStaticsDatesIDAY_COUNT_FRACTION">
+										<identifier>ACT/360</identifier>
+										<primarySystem>MX</primarySystem>
+									</businessObjectId>
+									<dayCountDescription/>
+									<numeratorConvention>ACT</numeratorConvention>
+									<denominatorConvention>360</denominatorConvention>
+									<dayCountStandardDenomination>ACT/360</dayCountStandardDenomination>
+									<periodsBreakdown>
+										<dayCountPeriodicity>year</dayCountPeriodicity>
+									</periodsBreakdown>
+								</dayCountFraction>
+							</rateConvention>
+							<compounding>
+								<compoundingFormula>I+M at I+M</compoundingFormula>
+								<compoundingScope>zeroCoupon</compoundingScope>
+							</compounding>
+						</streamTemplate>
+						<payerPartyReference href="#party_0">
+							<portfolioReference href="#portfolio_0"/>
+						</payerPartyReference>
+						<receiverPartyReference href="#party_1"/>
+						<effectiveDate>20141015</effectiveDate>
+						<maturity>20171015</maturity>
+						<rollDate>20141015</rollDate>
+						<capital>
+							<initialCapitalAmount>10000000</initialCapitalAmount>
+							<initialCapitalCurrency>EUR</initialCapitalCurrency>
+							<repayment>
+								<repaymentAmount>12000000</repaymentAmount>
+							</repayment>
+						</capital>
+					</stream>
+				</interestRateSwap>
+			</tradeBody>
+			<tradeInputConditions>
+				<inputBy>
+					<userName>TradeInputUser</userName>
+				</inputBy>
+				<systemDate>20120630</systemDate>
+			</tradeInputConditions>
+		</trade>
+	</trades>
+</MxML>

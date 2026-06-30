@@ -1,0 +1,228 @@
+{
+  "trade" : {
+    "product" : {
+      "taxonomy" : [ {
+        "source" : "ISDA",
+        "productQualifier" : "CreditDefaultSwap_SingleName"
+      } ],
+      "economicTerms" : {
+        "effectiveDate" : {
+          "adjustableDate" : {
+            "unadjustedDate" : "2002-10-15",
+            "dateAdjustments" : {
+              "businessDayConvention" : "FOLLOWING"
+            }
+          }
+        },
+        "terminationDate" : {
+          "adjustableDate" : {
+            "unadjustedDate" : "2008-01-15",
+            "dateAdjustments" : {
+              "businessDayConvention" : "FOLLOWING"
+            }
+          }
+        },
+        "payout" : [ {
+          "CreditDefaultPayout" : {
+            "payerReceiver" : {
+              "payer" : "Party1",
+              "receiver" : "Party2"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-1"
+                }
+              }
+            },
+            "generalTerms" : {
+              "referenceInformation" : {
+                "referenceEntity" : {
+                  "name" : {
+                    "value" : "MUREX_BELLINI_CORP",
+                    "meta" : {
+                      "scheme" : "http://www.fpml.org/spec/2003/entity-name-RED-1-0"
+                    }
+                  },
+                  "entityIdentifier" : [ {
+                    "identifier" : {
+                      "value" : "FG3991",
+                      "meta" : {
+                        "scheme" : "http://www.fpml.org/spec/2003/entity-id-RED-1-0"
+                      }
+                    },
+                    "identifierType" : "REDID"
+                  } ]
+                },
+                "referenceObligation" : [ {
+                  "security" : {
+                    "identifier" : [ {
+                      "identifier" : {
+                        "value" : "XSNOREFOBL00",
+                        "meta" : {
+                          "scheme" : "http://www.fpml.org/spec/2002/instrument-id-ISIN"
+                        }
+                      },
+                      "identifierType" : "ISIN"
+                    } ]
+                  }
+                } ]
+              }
+            },
+            "transactedPrice" : {
+              "marketFixedRate" : 0.0295269992
+            }
+          }
+        }, {
+          "InterestRatePayout" : {
+            "payerReceiver" : {
+              "payer" : "Party2",
+              "receiver" : "Party1"
+            },
+            "priceQuantity" : {
+              "quantitySchedule" : {
+                "address" : {
+                  "scope" : "DOCUMENT",
+                  "value" : "quantity-1"
+                }
+              }
+            },
+            "rateSpecification" : {
+              "FixedRateSpecification" : {
+                "rateSchedule" : {
+                  "price" : {
+                    "address" : {
+                      "scope" : "DOCUMENT",
+                      "value" : "price-1"
+                    }
+                  }
+                }
+              }
+            },
+            "calculationPeriodDates" : {
+              "calculationPeriodFrequency" : {
+                "periodMultiplier" : 3,
+                "period" : "M"
+              }
+            },
+            "paymentDates" : {
+              "paymentFrequency" : {
+                "periodMultiplier" : 3,
+                "period" : "M"
+              },
+              "firstPaymentDate" : "2003-01-15"
+            }
+          }
+        } ],
+        "calculationAgent" : {
+          "calculationAgentParty" : "CalculationAgentIndependent"
+        }
+      }
+    },
+    "tradeLot" : [ {
+      "priceQuantity" : [ {
+        "price" : [ {
+          "value" : {
+            "value" : 0.00009,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            },
+            "perUnitOf" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            },
+            "priceType" : "InterestRate"
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "price-1"
+            } ]
+          }
+        } ]
+      }, {
+        "quantity" : [ {
+          "value" : {
+            "value" : 5000000,
+            "unit" : {
+              "currency" : {
+                "value" : "EUR"
+              }
+            }
+          },
+          "meta" : {
+            "location" : [ {
+              "scope" : "DOCUMENT",
+              "value" : "quantity-1"
+            } ]
+          }
+        } ]
+      } ]
+    } ],
+    "counterparty" : [ {
+      "role" : "Party1",
+      "partyReference" : {
+        "externalReference" : "DTCC000003A7"
+      }
+    }, {
+      "role" : "Party2",
+      "partyReference" : {
+        "externalReference" : "party2"
+      }
+    } ],
+    "ancillaryParty" : [ {
+      "role" : "CalculationAgentIndependent",
+      "partyReference" : [ {
+        "externalReference" : "DTCC000003A7"
+      } ]
+    } ],
+    "tradeIdentifier" : [ {
+      "issuerReference" : {
+        "externalReference" : "DTCC000003A7"
+      },
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX194",
+          "meta" : {
+            "scheme" : "http://www.murex.com/contract-id"
+          }
+        }
+      } ]
+    }, {
+      "assignedIdentifier" : [ {
+        "identifier" : {
+          "value" : "MX194",
+          "meta" : {
+            "scheme" : "http://www.murex.com/contract-id"
+          }
+        }
+      } ]
+    } ],
+    "tradeDate" : {
+      "value" : "2002-12-02"
+    },
+    "party" : [ {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "party2"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "party2"
+      }
+    }, {
+      "partyId" : [ {
+        "identifier" : {
+          "value" : "DTCC000003A7"
+        }
+      } ],
+      "meta" : {
+        "externalKey" : "DTCC000003A7"
+      }
+    } ]
+  }
+}

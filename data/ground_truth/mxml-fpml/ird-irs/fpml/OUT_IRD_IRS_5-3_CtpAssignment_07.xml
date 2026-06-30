@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<requestConfirmation xmlns="http://www.fpml.org/FpML-5/confirmation" fpmlVersion="5-3">
+	<header>
+		<messageId messageIdScheme="http://www.murex.com/message-id">MX295935</messageId>
+		<sentBy>BARCLAYS</sentBy>
+		<sendTo>BARCLAYS</sendTo>
+		<creationTimestamp>2012-11-27T13:54:11.000+01:00</creationTimestamp>
+	</header>
+	<isCorrection>false</isCorrection>
+	<correlationId correlationIdScheme="http://www.murex.com/correlation-id">1234</correlationId>
+	<sequenceNumber>1</sequenceNumber>
+	<onBehalfOf>
+		<partyReference href="UBS-RCSR"/>
+	</onBehalfOf>
+	<novation>
+		<eventIdentifier>
+			<partyReference href="UBS-RCSR"/>
+			<eventId>36727</eventId>
+		</eventIdentifier>
+		<oldTrade>
+			<tradeHeader>
+				<partyTradeIdentifier>
+					<partyReference href="UBS-RCSR"/>
+					<tradeId tradeIdScheme="http://www.murex.com/contract-id">MX295935</tradeId>
+				</partyTradeIdentifier>
+				<tradeDate>2014-09-08</tradeDate>
+			</tradeHeader>
+			<swap>
+				<swapStream id="fixedLeg">
+					<payerPartyReference href="UBS-RCSR"/>
+					<receiverPartyReference href="_3229"/>
+					<calculationPeriodDates id="leg_1_calculationPeriodDates">
+						<effectiveDate>
+							<unadjustedDate>2014-09-10</unadjustedDate>
+							<dateAdjustments>
+								<businessDayConvention>NONE</businessDayConvention>
+							</dateAdjustments>
+							<adjustedDate>2014-09-10</adjustedDate>
+						</effectiveDate>
+						<terminationDate>
+							<unadjustedDate>2016-09-10</unadjustedDate>
+							<dateAdjustments>
+								<businessDayConvention>MODFOLLOWING</businessDayConvention>
+								<businessCenters>
+									<businessCenter>USNY</businessCenter>
+								</businessCenters>
+							</dateAdjustments>
+							<adjustedDate>2016-09-12</adjustedDate>
+						</terminationDate>
+						<calculationPeriodDatesAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>USNY</businessCenter>
+							</businessCenters>
+						</calculationPeriodDatesAdjustments>
+						<calculationPeriodFrequency>
+							<periodMultiplier>1</periodMultiplier>
+							<period>Y</period>
+							<rollConvention>10</rollConvention>
+						</calculationPeriodFrequency>
+					</calculationPeriodDates>
+					<paymentDates id="leg_1_paymentDates">
+						<calculationPeriodDatesReference href="leg_1_calculationPeriodDates"/>
+						<paymentFrequency>
+							<periodMultiplier>1</periodMultiplier>
+							<period>Y</period>
+						</paymentFrequency>
+						<payRelativeTo>CalculationPeriodEndDate</payRelativeTo>
+						<paymentDaysOffset>
+							<periodMultiplier>2</periodMultiplier>
+							<period>D</period>
+							<dayType>Business</dayType>
+						</paymentDaysOffset>
+						<paymentDatesAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>USNY</businessCenter>
+							</businessCenters>
+						</paymentDatesAdjustments>
+					</paymentDates>
+					<calculationPeriodAmount>
+						<calculation>
+							<notionalSchedule id="leg_1_notionalSchedule">
+								<notionalStepSchedule>
+									<initialValue>1200000000</initialValue>
+									<currency>USD</currency>
+								</notionalStepSchedule>
+							</notionalSchedule>
+							<fixedRateSchedule>
+								<initialValue>0.001</initialValue>
+							</fixedRateSchedule>
+							<dayCountFraction>ACT/360</dayCountFraction>
+						</calculation>
+					</calculationPeriodAmount>
+					<cashflows>
+						<cashflowsMatchParameters>true</cashflowsMatchParameters>
+						<paymentCalculationPeriod>
+							<adjustedPaymentDate>2015-09-14</adjustedPaymentDate>
+							<calculationPeriod>
+								<unadjustedStartDate>2014-09-10</unadjustedStartDate>
+								<unadjustedEndDate>2015-09-10</unadjustedEndDate>
+								<adjustedStartDate>2014-09-10</adjustedStartDate>
+								<adjustedEndDate>2015-09-10</adjustedEndDate>
+								<notionalAmount>1200000000</notionalAmount>
+								<fixedRate>0.001</fixedRate>
+								<dayCountYearFraction>1.01388888888889</dayCountYearFraction>
+							</calculationPeriod>
+							<presentValueAmount>
+								<currency>USD</currency>
+								<amount>1216666.66666664</amount>
+							</presentValueAmount>
+						</paymentCalculationPeriod>
+						<paymentCalculationPeriod>
+							<adjustedPaymentDate>2016-09-14</adjustedPaymentDate>
+							<calculationPeriod>
+								<unadjustedStartDate>2015-09-10</unadjustedStartDate>
+								<unadjustedEndDate>2016-09-10</unadjustedEndDate>
+								<adjustedStartDate>2015-09-10</adjustedStartDate>
+								<adjustedEndDate>2016-09-12</adjustedEndDate>
+								<notionalAmount>0</notionalAmount>
+								<fixedRate>0.001</fixedRate>
+								<dayCountYearFraction>1.02222222222222</dayCountYearFraction>
+							</calculationPeriod>
+							<presentValueAmount>
+								<currency>USD</currency>
+								<amount>0</amount>
+							</presentValueAmount>
+						</paymentCalculationPeriod>
+					</cashflows>
+				</swapStream>
+				<swapStream id="floatingLeg">
+					<payerPartyReference href="_3229"/>
+					<receiverPartyReference href="UBS-RCSR"/>
+					<calculationPeriodDates id="leg_2_calculationPeriodDates">
+						<effectiveDate>
+							<unadjustedDate>2014-09-10</unadjustedDate>
+							<dateAdjustments>
+								<businessDayConvention>NONE</businessDayConvention>
+							</dateAdjustments>
+							<adjustedDate>2014-09-10</adjustedDate>
+						</effectiveDate>
+						<terminationDate>
+							<unadjustedDate>2016-09-10</unadjustedDate>
+							<dateAdjustments>
+								<businessDayConvention>MODFOLLOWING</businessDayConvention>
+								<businessCenters>
+									<businessCenter>USNY</businessCenter>
+								</businessCenters>
+							</dateAdjustments>
+							<adjustedDate>2016-09-12</adjustedDate>
+						</terminationDate>
+						<calculationPeriodDatesAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>USNY</businessCenter>
+							</businessCenters>
+						</calculationPeriodDatesAdjustments>
+						<calculationPeriodFrequency>
+							<periodMultiplier>12</periodMultiplier>
+							<period>M</period>
+							<rollConvention>10</rollConvention>
+						</calculationPeriodFrequency>
+					</calculationPeriodDates>
+					<paymentDates id="leg_2_paymentDates">
+						<calculationPeriodDatesReference href="leg_2_calculationPeriodDates"/>
+						<paymentFrequency>
+							<periodMultiplier>12</periodMultiplier>
+							<period>M</period>
+						</paymentFrequency>
+						<payRelativeTo>CalculationPeriodEndDate</payRelativeTo>
+						<paymentDaysOffset>
+							<periodMultiplier>2</periodMultiplier>
+							<period>D</period>
+							<dayType>Business</dayType>
+						</paymentDaysOffset>
+						<paymentDatesAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>USNY</businessCenter>
+							</businessCenters>
+						</paymentDatesAdjustments>
+					</paymentDates>
+					<resetDates id="leg_2_resetDates">
+						<calculationPeriodDatesReference href="leg_2_calculationPeriodDates"/>
+						<resetRelativeTo>CalculationPeriodEndDate</resetRelativeTo>
+						<fixingDates>
+							<periodMultiplier>0</periodMultiplier>
+							<period>D</period>
+							<businessDayConvention>PRECEDING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>USNY</businessCenter>
+							</businessCenters>
+							<dateRelativeTo href="leg_2_calculationPeriodDates"/>
+						</fixingDates>
+						<resetFrequency>
+							<periodMultiplier>12</periodMultiplier>
+							<period>M</period>
+						</resetFrequency>
+						<resetDatesAdjustments>
+							<businessDayConvention>PRECEDING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>USNY</businessCenter>
+							</businessCenters>
+						</resetDatesAdjustments>
+					</resetDates>
+					<calculationPeriodAmount>
+						<calculation>
+							<notionalSchedule id="leg_2_notionalSchedule">
+								<notionalStepSchedule>
+									<initialValue>1200000000</initialValue>
+									<currency>USD</currency>
+								</notionalStepSchedule>
+							</notionalSchedule>
+							<floatingRateCalculation>
+								<floatingRateIndex>USD-Federal Funds-H.15-OIS-COMPOUND</floatingRateIndex>
+								<indexTenor>
+									<periodMultiplier>12</periodMultiplier>
+									<period>M</period>
+								</indexTenor>
+							</floatingRateCalculation>
+							<dayCountFraction>ACT/360</dayCountFraction>
+						</calculation>
+					</calculationPeriodAmount>
+					<cashflows>
+						<cashflowsMatchParameters>true</cashflowsMatchParameters>
+						<paymentCalculationPeriod>
+							<adjustedPaymentDate>2015-09-14</adjustedPaymentDate>
+							<calculationPeriod>
+								<unadjustedStartDate>2014-09-10</unadjustedStartDate>
+								<unadjustedEndDate>2015-09-10</unadjustedEndDate>
+								<adjustedStartDate>2014-09-10</adjustedStartDate>
+								<adjustedEndDate>2015-09-10</adjustedEndDate>
+								<notionalAmount>1200000000</notionalAmount>
+								<floatingRateDefinition>
+									<rateObservation>
+										<adjustedFixingDate>2015-09-09</adjustedFixingDate>
+										<observedRate>0.001161</observedRate>
+										<observationWeight>1</observationWeight>
+									</rateObservation>
+									<spread>0</spread>
+								</floatingRateDefinition>
+								<dayCountYearFraction>1.01388888888889</dayCountYearFraction>
+							</calculationPeriod>
+							<presentValueAmount>
+								<currency>USD</currency>
+								<amount>1412549.99999987</amount>
+							</presentValueAmount>
+						</paymentCalculationPeriod>
+						<paymentCalculationPeriod>
+							<adjustedPaymentDate>2016-09-14</adjustedPaymentDate>
+							<calculationPeriod>
+								<unadjustedStartDate>2015-09-10</unadjustedStartDate>
+								<unadjustedEndDate>2016-09-10</unadjustedEndDate>
+								<adjustedStartDate>2015-09-10</adjustedStartDate>
+								<adjustedEndDate>2016-09-12</adjustedEndDate>
+								<notionalAmount>0</notionalAmount>
+								<floatingRateDefinition>
+									<rateObservation>
+										<adjustedFixingDate>2016-09-12</adjustedFixingDate>
+										<observationWeight>1</observationWeight>
+									</rateObservation>
+									<spread>0</spread>
+								</floatingRateDefinition>
+								<dayCountYearFraction>1.02222222222222</dayCountYearFraction>
+							</calculationPeriod>
+							<presentValueAmount>
+								<currency>USD</currency>
+								<amount>0</amount>
+							</presentValueAmount>
+						</paymentCalculationPeriod>
+					</cashflows>
+				</swapStream>
+				<additionalPayment>
+					<payerPartyReference href="_15573"/>
+					<receiverPartyReference href="UBS-RCSR"/>
+					<paymentAmount>
+						<currency>USD</currency>
+						<amount>50000</amount>
+					</paymentAmount>
+					<paymentDate>
+						<unadjustedDate>2016-09-12</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>USNY</businessCenter>
+							</businessCenters>
+						</dateAdjustments>
+						<adjustedDate>0002-11-30</adjustedDate>
+					</paymentDate>
+				</additionalPayment>
+			</swap>
+		</oldTrade>
+		<transferor href="_3229"/>
+		<transferee href="_15573"/>
+		<remainingParty href="UBS-RCSR"/>
+		<novationDate>2015-09-15</novationDate>
+		<executionDateTime>2015-09-15T12:19:25Z</executionDateTime>
+		<novationTradeDate>2015-09-15</novationTradeDate>
+		<novatedAmount>
+			<currency>USD</currency>
+			<amount>400000000</amount>
+		</novatedAmount>
+		<remainingAmount>
+			<currency>USD</currency>
+			<amount>800000000</amount>
+		</remainingAmount>
+	</novation>
+	<party id="_15573">
+		<partyId>BARCLAYS</partyId>
+	</party>
+	<party id="UBS-RCSR">
+		<partyId>BARCLAYS</partyId>
+	</party>
+	<party id="_3229">
+		<partyId>BARCLAYS</partyId>
+	</party>
+</requestConfirmation>

@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<requestConfirmation xmlns="http://www.fpml.org/FpML-5/confirmation" fpmlVersion="5-3">
+	<header>
+		<messageId messageIdScheme="http://www.murex.com/message-id">MX5922659</messageId>
+		<sentBy>BARCLAYS</sentBy>
+		<sendTo>BARCLAYS</sendTo>
+		<creationTimestamp>2012-11-27T13:54:11.000+01:00</creationTimestamp>
+	</header>
+	<isCorrection>false</isCorrection>
+	<correlationId correlationIdScheme="http://www.murex.com/correlation-id">1234</correlationId>
+	<sequenceNumber>1</sequenceNumber>
+	<onBehalfOf>
+		<partyReference href="UBS-RCSR"/>
+	</onBehalfOf>
+	<novation>
+		<eventIdentifier>
+			<partyReference href="UBS-RCSR"/>
+			<eventId>5027941</eventId>
+		</eventIdentifier>
+		<newTrade>
+			<tradeHeader>
+				<partyTradeIdentifier>
+					<partyReference href="UBS-RCSR"/>
+					<tradeId tradeIdScheme="http://www.fpml.org/coding-scheme/external/unique-transaction-identifier">MX5922659</tradeId>
+				</partyTradeIdentifier>
+				<tradeDate>2019-02-04</tradeDate>
+			</tradeHeader>
+			<capFloor>
+				<capFloorStream>
+					<payerPartyReference href="_439330"/>
+					<receiverPartyReference href="UBS-RCSR"/>
+					<calculationPeriodDates id="floatingRateCalculationPeriodDates1">
+						<effectiveDate>
+							<unadjustedDate>2019-02-06</unadjustedDate>
+							<dateAdjustments>
+								<businessDayConvention>MODFOLLOWING</businessDayConvention>
+								<businessCenters>
+									<businessCenter>EUTA</businessCenter>
+								</businessCenters>
+							</dateAdjustments>
+							<adjustedDate>2019-02-06</adjustedDate>
+						</effectiveDate>
+						<terminationDate>
+							<unadjustedDate>2019-08-06</unadjustedDate>
+							<dateAdjustments>
+								<businessDayConvention>MODFOLLOWING</businessDayConvention>
+								<businessCenters>
+									<businessCenter>EUTA</businessCenter>
+								</businessCenters>
+							</dateAdjustments>
+							<adjustedDate>2019-08-06</adjustedDate>
+						</terminationDate>
+						<calculationPeriodDatesAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+						</calculationPeriodDatesAdjustments>
+						<calculationPeriodFrequency>
+							<periodMultiplier>3</periodMultiplier>
+							<period>M</period>
+							<rollConvention>6</rollConvention>
+						</calculationPeriodFrequency>
+					</calculationPeriodDates>
+					<paymentDates>
+						<calculationPeriodDatesReference href="floatingRateCalculationPeriodDates1"/>
+						<paymentFrequency>
+							<periodMultiplier>3</periodMultiplier>
+							<period>M</period>
+						</paymentFrequency>
+						<payRelativeTo>CalculationPeriodEndDate</payRelativeTo>
+						<paymentDatesAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+						</paymentDatesAdjustments>
+					</paymentDates>
+					<resetDates id="resetDates">
+						<calculationPeriodDatesReference href="floatingRateCalculationPeriodDates1"/>
+						<resetRelativeTo>CalculationPeriodStartDate</resetRelativeTo>
+						<fixingDates>
+							<periodMultiplier>-2</periodMultiplier>
+							<period>D</period>
+							<dayType>Business</dayType>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+							<dateRelativeTo href="floatingRateCalculationPeriodDates1"/>
+						</fixingDates>
+						<resetFrequency>
+							<periodMultiplier>3</periodMultiplier>
+							<period>M</period>
+						</resetFrequency>
+						<resetDatesAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+						</resetDatesAdjustments>
+					</resetDates>
+					<calculationPeriodAmount>
+						<calculation>
+							<notionalSchedule>
+								<notionalStepSchedule>
+									<initialValue>250000.</initialValue>
+									<currency>EUR</currency>
+								</notionalStepSchedule>
+							</notionalSchedule>
+							<floatingRateCalculation>
+								<floatingRateIndex>EUR-EURIBOR-Reuters</floatingRateIndex>
+								<indexTenor>
+									<periodMultiplier>3</periodMultiplier>
+									<period>M</period>
+								</indexTenor>
+								<capRateSchedule>
+									<initialValue>0.02456</initialValue>
+									<buyer>Receiver</buyer>
+									<seller>Payer</seller>
+								</capRateSchedule>
+							</floatingRateCalculation>
+							<dayCountFraction>ACT/360</dayCountFraction>
+						</calculation>
+					</calculationPeriodAmount>
+					<cashflows>
+						<cashflowsMatchParameters>true</cashflowsMatchParameters>
+						<paymentCalculationPeriod>
+							<adjustedPaymentDate>2019-05-06</adjustedPaymentDate>
+							<calculationPeriod>
+								<unadjustedStartDate>2019-02-06</unadjustedStartDate>
+								<unadjustedEndDate>2019-05-06</unadjustedEndDate>
+								<adjustedStartDate>2019-02-06</adjustedStartDate>
+								<adjustedEndDate>2019-05-06</adjustedEndDate>
+								<notionalAmount>250000</notionalAmount>
+								<floatingRateDefinition>
+									<rateObservation>
+										<adjustedFixingDate>2019-02-04</adjustedFixingDate>
+										<observationWeight>1</observationWeight>
+									</rateObservation>
+									<spread>0</spread>
+									<capRate>
+										<strikeRate>0.02456</strikeRate>
+									</capRate>
+								</floatingRateDefinition>
+								<dayCountYearFraction>0.247222222222222</dayCountYearFraction>
+							</calculationPeriod>
+						</paymentCalculationPeriod>
+						<paymentCalculationPeriod>
+							<adjustedPaymentDate>2019-08-06</adjustedPaymentDate>
+							<calculationPeriod>
+								<unadjustedStartDate>2019-05-06</unadjustedStartDate>
+								<unadjustedEndDate>2019-08-06</unadjustedEndDate>
+								<adjustedStartDate>2019-05-06</adjustedStartDate>
+								<adjustedEndDate>2019-08-06</adjustedEndDate>
+								<notionalAmount>250000</notionalAmount>
+								<floatingRateDefinition>
+									<rateObservation>
+										<adjustedFixingDate>2019-05-02</adjustedFixingDate>
+										<observationWeight>1</observationWeight>
+									</rateObservation>
+									<spread>0</spread>
+									<capRate>
+										<strikeRate>0.02456</strikeRate>
+									</capRate>
+								</floatingRateDefinition>
+								<dayCountYearFraction>0.255555555555556</dayCountYearFraction>
+							</calculationPeriod>
+						</paymentCalculationPeriod>
+					</cashflows>
+				</capFloorStream>
+				<premium id="premium_1">
+					<payerPartyReference href="_439330"/>
+					<receiverPartyReference href="UBS-RCSR"/>
+					<paymentAmount>
+						<currency>EUR</currency>
+						<amount>565.5208333333</amount>
+					</paymentAmount>
+					<paymentDate>
+						<unadjustedDate>2019-02-06</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+						</dateAdjustments>
+						<adjustedDate id="premium_paydate_1">2019-02-06</adjustedDate>
+					</paymentDate>
+				</premium>
+				<premium id="premium_2">
+					<payerPartyReference href="_439330"/>
+					<receiverPartyReference href="UBS-RCSR"/>
+					<paymentAmount>
+						<currency>EUR</currency>
+						<amount>584.5833333333</amount>
+					</paymentAmount>
+					<paymentDate>
+						<unadjustedDate>2019-05-06</unadjustedDate>
+						<dateAdjustments>
+							<businessDayConvention>MODFOLLOWING</businessDayConvention>
+							<businessCenters>
+								<businessCenter>EUTA</businessCenter>
+							</businessCenters>
+						</dateAdjustments>
+						<adjustedDate id="premium_paydate_2">2019-05-06</adjustedDate>
+					</paymentDate>
+				</premium>
+			</capFloor>
+		</newTrade>
+		<transferor href="_439282"/>
+		<transferee href="_439330"/>
+		<remainingParty href="UBS-RCSR"/>
+		<novationDate>2019-02-04</novationDate>
+		<executionDateTime>2020-11-20T11:51:36Z</executionDateTime>
+		<novationTradeDate>2019-02-04</novationTradeDate>
+		<novatedAmount>
+			<currency>EUR</currency>
+			<amount>250000</amount>
+		</novatedAmount>
+		<remainingAmount>
+			<currency>EUR</currency>
+			<amount>750000</amount>
+		</remainingAmount>
+	</novation>
+	<party id="_439330">
+		<partyId>BARCLAYS</partyId>
+	</party>
+	<party id="UBS-RCSR">
+		<partyId>BARCLAYS</partyId>
+	</party>
+	<party id="_439282">
+		<partyId>BARCLAYS</partyId>
+	</party>
+</requestConfirmation>

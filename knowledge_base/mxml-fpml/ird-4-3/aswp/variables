@@ -1,0 +1,136 @@
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:str="http://exslt.org/strings" xmlns:exsl="http://exslt.org/common" xmlns="http://www.fpml.org/2007/FpML-4-3" xmlns:mx="http://murex.com/xslt/common" xmlns:date="http://exslt.org/dates-and-times" xmlns:exslt="http://exslt.org/common" exclude-result-prefixes="mx exslt date str" version="1.0">
+	<xsl:import href="mx.xml2xml.extract.mxml.products.ird.aswp.templates"/>
+	<xsl:import href="mx.xml2xml.extract.mxml.products.ird.templates"/>
+	<!--Param User Defined Field Label For Internal Counterparty-->
+	<xsl:param name="internalUdfLabel" select="''"/>
+	<xsl:variable name="contractualDefinitions.overriding"/>
+	<!--instrumentIdScheme-->
+	<xsl:variable name="instrumentIdScheme" select="'http://www.fpml.org/spec/2002/instrument-id-ISIN-1-0'"/>
+	<xsl:variable name="swapStream1.inflationRate.period">
+		<xsl:if test="contains($typology,'Inflation')  or $Mxgroup = 'INFLS' or contains($typology,'Asset Swap IRS') or $Mxgroup = 'ASWP'">
+			<xsl:variable name="tmp">
+				<xsl:call-template name="extract-returnShifter-periodUnit">
+					<xsl:with-param name="legNb" select="1"/>
+					<xsl:with-param name="stream" select="1"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:variable name="result">
+				<xsl:if test="string-length ($tmp) &gt; 0">
+					<xsl:value-of select="mx:execute-formula($mapPeriodUnit,concat('periodUnit:',$tmp))/row[1]"/>
+				</xsl:if>
+			</xsl:variable>
+			<xsl:call-template name="AssertNotMapped">
+				<xsl:with-param name="value" select="$result"/>
+				<xsl:with-param name="message" select="concat('Period Unit for Inflation Lag Shifter ', $tmp,' not mapped')"/>
+				<xsl:with-param name="formula" select="$mapPeriodUnit"/>
+			</xsl:call-template>
+			<xsl:value-of select="$result"/>
+		</xsl:if>
+	</xsl:variable>
+	<xsl:variable name="swapStream2.inflationRate.period">
+		<xsl:if test="contains($typology,'Inflation')  or $Mxgroup = 'INFLS' or contains($typology,'Asset Swap IRS') or $Mxgroup = 'ASWP'">
+			<xsl:variable name="tmp">
+				<xsl:call-template name="extract-returnShifter-periodUnit">
+					<xsl:with-param name="legNb" select="1"/>
+					<xsl:with-param name="stream" select="2"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:variable name="result">
+				<xsl:if test="string-length ($tmp) &gt; 0">
+					<xsl:value-of select="mx:execute-formula($mapPeriodUnit,concat('periodUnit:',$tmp))/row[1]"/>
+				</xsl:if>
+			</xsl:variable>
+			<xsl:call-template name="AssertNotMapped">
+				<xsl:with-param name="value" select="$result"/>
+				<xsl:with-param name="message" select="concat('Period Unit for Inflation Lag Shifter ', $tmp,' not mapped')"/>
+				<xsl:with-param name="formula" select="$mapPeriodUnit"/>
+			</xsl:call-template>
+			<xsl:value-of select="$result"/>
+		</xsl:if>
+	</xsl:variable>
+	<!-- spreadSchedule.nodes stream1-->
+	<xsl:variable name="swapStream1.spreadSchedule.nodes">
+		<xsl:choose>
+			<xsl:when test="string-length($swapStream1.spreadSchedule.initialValue) &gt; 0 and $swapStream1.spreadSchedule.initialValue != '0.'">
+				<xsl:call-template name="create-spreadSchedule">
+					<xsl:with-param name="initialValue" select="$swapStream1.spreadSchedule.initialValue"/>
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:when test="string-length($stream1.margin) &gt; 0 and $stream1.margin != '0.'">
+				<xsl:call-template name="create-spreadSchedule">
+					<xsl:with-param name="initialValue" select="format-number($stream1.margin div 100, '##.########')"/>
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:when test="string-length($swapStream1.spreadSchedule.initialValue) &gt; 0 and $swapStream1.spreadSchedule.initialValue != '0.'">
+				<xsl:call-template name="create-spreadSchedule">
+					<xsl:with-param name="initialValue" select="$swapStream1.spreadSchedule.initialValue"/>
+					<xsl:with-param name="step.nodes" select="$swapStream1.spreadSchedule.step.nodes"/>
+				</xsl:call-template>
+			</xsl:when>
+		</xsl:choose>
+	</xsl:variable>
+	<!-- spreadSchedule.nodes stream2 -->
+	<xsl:variable name="swapStream2.spreadSchedule.nodes">
+		<xsl:choose>
+			<xsl:when test="string-length($swapStream2.spreadSchedule.initialValue) &gt; 0 and $swapStream2.spreadSchedule.initialValue != '0.'">
+				<xsl:call-template name="create-spreadSchedule">
+					<xsl:with-param name="initialValue" select="$swapStream2.spreadSchedule.initialValue"/>
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:when test="string-length($stream2.margin) &gt; 0 and $stream2.margin != '0.'">
+				<xsl:call-template name="create-spreadSchedule">
+					<xsl:with-param name="initialValue" select="format-number($stream2.margin div 100, '##.########')"/>
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:when test="string-length($swapStream2.spreadSchedule.initialValue) &gt; 0 and $swapStream2.spreadSchedule.initialValue != '0.'">
+				<xsl:call-template name="create-spreadSchedule">
+					<xsl:with-param name="initialValue" select="$swapStream2.spreadSchedule.initialValue"/>
+					<xsl:with-param name="step.nodes" select="$swapStream2.spreadSchedule.step.nodes"/>
+				</xsl:call-template>
+			</xsl:when>
+		</xsl:choose>
+	</xsl:variable>
+	<!--Asset Swaps Variables-->
+	<xsl:variable name="additionalTerms.bondReference.bond.instrumentId">
+		<xsl:call-template name="extract-securityId-isin">
+			<xsl:with-param name="legNb" select="1"/>
+			<xsl:with-param name="stream" select="$indexedStreamNumber"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="indexedStreamNumber">
+		<xsl:choose>
+			<xsl:when test="$tradeGroup = 'ASWP' and /MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[1]/streamTemplate/indexationRulesLists/indexationRulesList[1]/indexationRules/indexationRule[1]/indexationNature = 'inflation'">
+				<xsl:value-of select="1"/>
+			</xsl:when>
+			<xsl:when test="$tradeGroup = 'ASWP' and /MxML/trades/trade[(not(tradeHeader/tradeUserDefinedFields/userDefinedField[fieldLabel=$internalUdfLabel]/fieldValue=&quot;true&quot;) and not(tradeHeader/tradeCategory/tradeDestination = &quot;internal&quot;) and ((not(tradeStatus/physicalStatus = &quot;dead&quot;) and count(../trade) &gt; 1) or (count(../trade) = 1) or (count(../trade) = count(../trade/tradeStatus[physicalStatus = &quot;dead&quot;]))))]/tradeBody/*/stream[2]/streamTemplate/indexationRulesLists/indexationRulesList[1]/indexationRules/indexationRule[1]/indexationNature = 'inflation'">
+				<xsl:value-of select="2"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="1"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	<xsl:variable name="additionalTerms.bondReference.bond.couponRate">
+		<xsl:call-template name="extract-fixedRate">
+			<xsl:with-param name="legNb" select="1"/>
+			<xsl:with-param name="stream" select="$indexedStreamNumber"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="indexationFormula">
+		<xsl:call-template name="extract-indexationFormula">
+			<xsl:with-param name="stream" select="$indexedStreamNumber"/>
+		</xsl:call-template>
+	</xsl:variable> 
+	<xsl:variable name="notionalLeg1">
+		<xsl:call-template name="extract-initialCapitalAmount">
+			<xsl:with-param name="legNb" select="'1'"/>
+			<xsl:with-param name="stream" select="'1'"/>
+		</xsl:call-template>
+	</xsl:variable>
+	<xsl:variable name="notionalLeg2">
+		<xsl:call-template name="extract-initialCapitalAmount">
+			<xsl:with-param name="legNb" select="'1'"/>
+			<xsl:with-param name="stream" select="'2'"/>
+		</xsl:call-template>
+	</xsl:variable>
+</xsl:stylesheet>
