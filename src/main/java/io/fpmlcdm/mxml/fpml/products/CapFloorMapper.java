@@ -287,7 +287,8 @@ public final class CapFloorMapper extends SwapMapper {
             } else {
                 elText(doc, ro, "observationWeight", "1");
             }
-            elText(doc, frd, "spread", "0");
+            String margin = frp != null ? XmlUtils.getTextContent(frp, "margin") : null;
+            elText(doc, frd, "spread", (margin == null || margin.isEmpty()) ? "0" : pct(margin));
 
             // per-period strike (after spread): period strike else stream strike else 0
             String pStrike = periodStrike(calcPeriod);

@@ -705,7 +705,8 @@ public class SwapMapper implements MxmlProductMapper {
                 } else {
                     elText(doc, ro, "observationWeight", "1");
                 }
-                elText(doc, frd, "spread", "0");
+                String margin = frp != null ? XmlUtils.getTextContent(frp, "margin") : null;
+                elText(doc, frd, "spread", (margin == null || margin.isEmpty()) ? "0" : pct(margin));
             } else {
                 elText(doc, cp, "fixedRate", pct(XmlUtils.getTextContent(
                         XmlUtils.findElementByPath(calcPeriod, "fixedRatePeriod", "fixedRate"))));
