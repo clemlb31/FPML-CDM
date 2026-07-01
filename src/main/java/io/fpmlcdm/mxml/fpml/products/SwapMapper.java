@@ -635,9 +635,19 @@ public class SwapMapper implements MxmlProductMapper {
     }
 
     protected static boolean isCashflowsImpacting(String customizedObject) {
-        // Confirmed impacting object; kept narrow (other values may also impact,
-        // but only capitalPaymentFlow is verified against the reference data).
-        return "capitalPaymentFlow".equals(customizedObject);
+        // Customizations that make the cashflows diverge from the schedule
+        // parameters (-> cashflowsMatchParameters=false). Verified against the
+        // reference: capitalPaymentFlow (amortizing/known-amount, INS_09),
+        // mainStrike + interestMargin (stepped strike/margin, cap/floor SteppedStrike).
+        if (customizedObject == null) return false;
+        switch (customizedObject) {
+            case "capitalPaymentFlow":
+            case "mainStrike":
+            case "interestMargin":
+                return true;
+            default:
+                return false;
+        }
     }
 
     protected void buildCashflows(Document doc, Element ss, Element stream, boolean floating) {
