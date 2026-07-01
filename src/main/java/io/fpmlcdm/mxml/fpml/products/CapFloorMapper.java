@@ -69,6 +69,13 @@ public final class CapFloorMapper extends SwapMapper {
                 "http://www.fpml.org/coding-scheme/external/unique-transaction-identifier");
 
         Element capFloor = el(doc, fpmlTrade, "capFloor");
+        // productId (UPI) from the UPI_ID user-defined field, when present.
+        String upi = userDefinedField(trade, "UPI_ID");
+        if (upi != null && !upi.isEmpty()) {
+            Element pid = elText(doc, capFloor, "productId", upi);
+            pid.setAttribute("productIdScheme",
+                    "http://www.fpml.org/coding-scheme/external/iso4914");
+        }
         buildCapFloorStream(doc, capFloor, stream, context);
 
         buildParties(doc, root, trade);
@@ -313,6 +320,20 @@ public final class CapFloorMapper extends SwapMapper {
         Element pti = th != null ? XmlUtils.getFirstChildElement(th, "partyTradeIdentifier") : null;
         Element tid = pti != null ? XmlUtils.getFirstChildElement(pti, "tradeId") : null;
         if (tid != null) tid.setAttribute("tradeIdScheme", scheme);
+    }
+
+    /** Value of a trade user-defined field by label, or null if absent/empty. */
+    private String userDefinedField(Element trade, String label) {
+        Element th = XmlUtils.getFirstChildElement(trade, "tradeHeader");
+        Element udfs = th != null ? XmlUtils.getFirstChildElement(th, "tradeUserDefinedFields") : null;
+        if (udfs == null) return null;
+        for (Element udf : XmlUtils.getChildElements(udfs, "userDefinedField")) {
+            if (label.equals(XmlUtils.getTextContent(udf, "fieldLabel"))) {
+                String v = XmlUtils.getTextContent(udf, "fieldValue");
+                return (v != null && !v.isEmpty()) ? v : null;
+            }
+        }
+        return null;
     }
 
     private String streamPayout(Element stream) {
