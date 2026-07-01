@@ -271,7 +271,18 @@ public class SwapMapper implements MxmlProductMapper {
             buildResetDates(doc, ss, stream, st, leg, legCpdId);
         }
         buildCalculationPeriodAmount(doc, ss, stream, st, leg, floating);
+        emitPrincipalExchangesFlags(doc, ss, stream); // no-op for IRS; CS overrides
         buildCashflows(doc, ss, stream, floating);
+    }
+
+    /** Hook: emit {@code <principalExchanges>} flags after calculationPeriodAmount. No-op for IRS. */
+    protected void emitPrincipalExchangesFlags(Document doc, Element swapStream, Element stream) {
+        // overridden by CsMapper
+    }
+
+    /** Hook: emit {@code <principalExchange>} cashflow entries at the head of cashflows. No-op for IRS. */
+    protected void emitPrincipalExchanges(Document doc, Element cashflows, Element stream) {
+        // overridden by CsMapper
     }
 
     protected void buildCalculationPeriodDates(Document doc, Element ss, Element stream,
@@ -659,6 +670,7 @@ public class SwapMapper implements MxmlProductMapper {
         Element cf = el(doc, ss, "cashflows");
         elText(doc, cf, "cashflowsMatchParameters",
                 cashflowsMatchParameters(stream) ? "true" : "false");
+        emitPrincipalExchanges(doc, cf, stream); // no-op for IRS; CS overrides
 
         List<Element> ipps = XmlUtils.getChildElements(interestFlows, "interestPaymentPeriod");
 

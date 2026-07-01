@@ -38,6 +38,7 @@ public final class MxmlToFpmlConverter {
     private void registerDefaultMappers() {
         detector.register(new io.fpmlcdm.mxml.fpml.products.SwapMapper());
         detector.register(new io.fpmlcdm.mxml.fpml.products.CapFloorMapper());
+        detector.register(new io.fpmlcdm.mxml.fpml.products.CsMapper());
         // detector.register(new io.fpmlcdm.mxml.fpml.products.FraMapper());
         // ...
     }
